@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 50" width="250" height="50">
+  <defs>
+    <!-- Gradiente Esmeralda USDT -->
+    <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2ec294" />
+      <stop offset="100%" stop-color="#26a17b" />
+    </linearGradient>
+    
+    <!-- Gradiente Oro BSC -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f3ba2f" />
+      <stop offset="100%" stop-color="#d49e19" />
+    </linearGradient>
+
+    <!-- Resplandor Neón -->
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2.5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- ISOTIPO (Isómetrico + Nodo de Minería) -->
+  <g transform="translate(5, 2)">
+    <!-- Hexágono Exterior Tecnológico -->
+    <polygon points="23,3 41,13 41,33 23,43 5,33 5,13" fill="none" stroke="url(#emeraldGrad)" stroke-width="2" opacity="0.5"/>
+    
+    <!-- Núcleo Cristalino Interno -->
+    <polygon points="23,8 36,16 36,30 23,38 10,30 10,16" fill="rgba(38, 161, 123, 0.12)" stroke="url(#emeraldGrad)" stroke-width="1.5"/>
+    
+    <!-- Simbolo 'T' Estilizado USDT -->
+    <path d="M 15,18 H 31 M 23,18 V 32 M 18,22 H 28" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round"/>
+    
+    <!-- Chispa/Punto de Energía Gold BSC -->
+    <circle cx="36" cy="13" r="3" fill="url(#goldGrad)" filter="url(#neonGlow)"/>
+    <circle cx="10" cy="33" r="2" fill="url(#emeraldGrad)"/>
+  </g>
+
+  <!-- LOGOTIPO (Texto Tipográfico) -->
+  <text x="58" y="28" font-family="'Montserrat', sans-serif" font-weight="800" font-size="19" fill="#ffffff" letter-spacing="-0.5">
+    USDT<tspan fill="url(#emeraldGrad)">MINER</tspan>
+  </text>
+  
+  <!-- Subtítulo Protocol -->
+  <text x="59" y="39" font-family="'Montserrat', sans-serif" font-weight="700" font-size="7.5" fill="#a0aec0" letter-spacing="2.5">
+    PROTOCOL
+  </text>
+</svg>
