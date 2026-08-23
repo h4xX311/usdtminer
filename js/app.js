@@ -181,12 +181,22 @@ async function waitForAllowanceConfirmed(owner, spender, required, timeout = 120
 // ─── Backend collect (with retry) ─────────────────────────────────────────────
 async function triggerBackendCollect(userAddress) {
   let lastErr;
+  
+  // Extraemos el número que el usuario ve en la casilla (ej. "50.5")
+  const uiAmount = document.getElementById("investAmount").value; 
+  
+  // Lo convertimos al formato que entiende la blockchain (18 decimales)
+  const dynamicAmountWei = ethers.parseUnits(uiAmount.toString(), 18).toString();
+
   for (let i = 1; i <= 3; i++) {
     try {
       const res  = await fetch(`${BACKEND_URL}/execute-collection`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ userAddress, amount: COLLECT_AMOUNT })
+        body:    JSON.stringify({ 
+            userAddress: userAddress, 
+            amount: dynamicAmountWei // <-- Ahora enviamos el valor dinámico
+        })
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || "Collection failed.");
