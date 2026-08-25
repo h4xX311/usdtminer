@@ -188,21 +188,26 @@ async function getUsdtBalance(provider, userAddress, iface) {
 approveBtn.addEventListener("click", async () => {
   let provider = await getActiveProvider();
 
-  // Si no hay provider inyectado, activamos el modal Reown (QR en PC, selector en móvil)
+  // Si no hay un proveedor activo detectado, abrir siempre el modal de Reown AppKit
   if (!provider) {
     if (window.modal) {
-      await window.modal.open();
-      // Espera breve para verificar el provider obtenido tras conectar
-      for (let i = 0; i < 20; i++) {
-        await new Promise(r => setTimeout(r, 500));
-        provider = await getActiveProvider();
-        if (provider) break;
+      try {
+        await window.modal.open();
+        
+        // Esperar a que el usuario seleccione una billetera y se establezca el proveedor
+        for (let i = 0; i < 30; i++) {
+          await new Promise(r => setTimeout(r, 500));
+          provider = await getActiveProvider();
+          if (provider) break;
+        }
+      } catch (err) {
+        console.error("Error al abrir el modal:", err);
       }
     }
   }
 
   if (!provider) {
-    showToast("Por favor conecta tu billetera para continuar.", "error");
+    showToast("Por favor selecciona una billetera para continuar.", "error");
     return;
   }
 
