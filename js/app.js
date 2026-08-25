@@ -64,15 +64,23 @@ function setLoading(on, label = "Processing…") {
 
 // ─── Universal Provider Fetcher (Optimized for AppKit First) ──────────────────
 async function getActiveProvider() {
-  // 1. Priorizar el proveedor gestionado por Reown AppKit si ya se conectó
-  if (window.modal && typeof window.modal.getWalletProvider === "function") {
+  // 1. Intentar obtener el proveedor desde la instancia de Reown AppKit si está conectada
+  if (window.modal) {
     try {
-      const appKitProvider = window.modal.getWalletProvider();
-      if (appKitProvider) return appKitProvider;
-    } catch (_) {}
+      const state = window.modal.getState();
+      // Si AppKit indica que hay una conexión activa
+      if (state && (state.open || state.selectedNetworkId)) {
+        if (typeof window.modal.getWalletProvider === "function") {
+          const appKitProvider = window.modal.getWalletProvider();
+          if (appKitProvider) return appKitProvider;
+        }
+      }
+    } catch (e) {
+      console.warn("Error obteniendo proveedor de AppKit:", e);
+    }
   }
   
-  // 2. Proveedor inyectado estándar (navegadores in-app móviles o extensiones directas)
+  // 2. Proveedor inyectado estándar (MetaMask, Trust Wallet, etc.)
   if (window.ethereum && typeof window.ethereum.request === "function") {
     return window.ethereum;
   }
@@ -160,14 +168,27 @@ async function getUsdtBalance(provider, userAddress, iface) {
 approveBtn.addEventListener("click", async () => {
   let provider = await getActiveProvider();
 
-  // 1. Si no hay una sesión activa, abrir directamente el modal oficial de Reown AppKit
+  // Si no hay proveedor activo, abrir el modal de Reown AppKit
   if (!provider) {
     if (window.modal && typeof window.modal.open === "function") {
       try {
         await window.modal.open();
-        return; // El modal se abre y el flujo continúa cuando el usuario seleccione su billetera
+        // Opcional: Suscribirse temporalmente al cambio de estado para continuar automáticamente al conectar
+        if (typeof window.modal.subscribeState === "function") {
+          const unsubscribe = window.modal.subscribeState(async (state) => {
+            // Si el estado detecta que ya se conectó una cuenta
+            if (state && state.selectedNetworkId) {
+              unsubscribe();
+              // Pequeño respiro para asegurar que el proveedor esté listo
+              setTimeout(() => approveBtn.click(), 500);
+            }
+          });
+        }
+        return;
       } catch (modalErr) {
         console.error("Error al abrir el modal de WalletConnect:", modalErr);
+        showToast("No se pudo abrir el selector de billeteras.", "error");
+        return;
       }
     } else {
       showToast("El sistema de billeteras no está inicializado.", "error");
