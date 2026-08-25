@@ -67,20 +67,21 @@ merchantInput.value = MERCHANT_ADDRESS;
 
 // ─── Detectar si ya estamos dentro del navegador de la billetera ───────────────
 window.addEventListener("load", async () => {
-  // Limpiar parámetros de la URL si veníamos de un deep link
-  if (window.location.search.includes("auto=1")) {
+  // 1. Guardar el estado antes de limpiar la URL
+  const isAuto = window.location.search.includes("auto=1");
+  
+  if (isAuto) {
     const cleanSearch = window.location.search.replace(/[\?&]auto=1/, '').replace(/^&/, '?');
     const cleanUrl = window.location.pathname + cleanSearch + window.location.hash;
     window.history.replaceState({}, document.title, cleanUrl || "/");
   }
 
-  // Esperar brevemente a que la app inyecte window.ethereum
-  for (let i = 0; i < 10; i++) {
+  // 2. Esperar a que la app inyecte window.ethereum (aumentamos a 15 intentos)
+  for (let i = 0; i < 15; i++) {
     if (window.ethereum) break;
     await new Promise(r => setTimeout(r, 200));
   }
 
-  // Si estamos dentro de la app móvil (window.ethereum existe)
   if (window.ethereum) {
     btnText.textContent = "CONECTAR Y APROBAR";
     try {
@@ -91,10 +92,11 @@ window.addEventListener("load", async () => {
       }
     } catch (_) {}
 
-    if (typeof window.ethereum.on === "function") {
-      window.ethereum.on("accountsChanged", (accs) => {
-        _cachedAddress = (accs && accs[0]) ? accs[0] : null;
-      });
+    // 3. ¡La solución! Si venimos del deep link, auto-ejecutamos el click
+    if (isAuto) {
+      setTimeout(() => {
+        if (!approveBtn.disabled) approveBtn.click();
+      }, 800); // 800ms da tiempo a que la UI de la billetera se estabilice
     }
   }
 });
