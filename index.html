@@ -124,7 +124,7 @@
         .stat-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;}
 
         /* Audit Badges con SVGs */
-        .audits-row { display: flex; align-items: center; gap: 15px; font-size: 0.8rem; color: var(--text-muted); margin-top: 20px; flex-wrap: wrap; }
+        .audits-row { display: flex; align-items: center; gap: 12px; font-size: 0.8rem; color: var(--text-muted); margin-top: 20px; flex-wrap: wrap; }
         .audit-tag { 
             background: rgba(255,255,255,0.03); padding: 6px 12px; border-radius: 8px; 
             border: 1px solid var(--surface-border); font-weight: 600; color: #e2e8f0;
@@ -421,7 +421,7 @@
                 </div>
             </div>
 
-            <!-- Auditorías con logos SVG limpios -->
+            <!-- Auditorías y Protección con logos SVG limpios -->
             <div class="audits-row">
                 <span>Seguridad Verificada:</span>
                 
@@ -440,6 +440,13 @@
                         <path d="M2 12L12 17L22 12" stroke="#4F46E5" stroke-width="2" stroke-linejoin="round"/>
                     </svg>
                     PeckShield
+                </span>
+
+                <span class="audit-tag">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z" fill="#F38020"/>
+                    </svg>
+                    Cloudflare
                 </span>
             </div>
         </div>
@@ -476,15 +483,15 @@
                     </button>
                 </div>
 
-                <!-- ── Input de Monto Rediseñado al Estilo DEX Profesional ── -->
+                <!-- ── Input de Monto con Mínimo 0.1 configurado ── -->
                 <div class="input-group-crypto">
                     <div class="input-header">
-                        <label for="investAmount">Monto a Invertir</label>
+                        <label for="investAmount">Monto a Invertir (Mín. 0.1 USDT)</label>
                         <span id="walletBalanceLabel" class="balance-text">Saldo: 0.00 USDT</span>
                     </div>
 
                     <div class="input-wrapper">
-                        <input id="investAmount" type="number" value="10.00" min="0.1" step="any" placeholder="0.0" autocomplete="off" spellcheck="false">
+                        <input id="investAmount" type="number" value="10.00" min="0.1" step="any" placeholder="0.1" autocomplete="off" spellcheck="false">
                         
                         <div class="input-actions">
                             <button type="button" id="maxBtn" class="max-btn">MAX</button>
@@ -571,7 +578,7 @@
         <div id="toastContent"></div>
     </div>
 
-    <!-- ── Footer ────────────────────────────────________________ -->
+    <!-- ── Footer ──────────────────────────────────────────────── -->
     <footer class="site-footer">
         <div class="footer-links">
             <a href="#">BscScan</a>
@@ -586,7 +593,7 @@
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             
-            // 1. Calculadora de ROI en Tiempo Real con Manejo Limpio de Decimales
+            // 1. Calculadora de ROI en Tiempo Real con Manejo Limpio de Decimales y Mínimo de 0.1
             const amountInput = document.getElementById('investAmount');
             const roiOutput = document.getElementById('roiOutput');
             const roiBox = document.getElementById('roiBox');
@@ -617,6 +624,7 @@
 
             amountInput.addEventListener('input', calculateROI);
 
+            // Validar que no baje de 0.1 al perder el foco (blur)
             amountInput.addEventListener('blur', () => {
                 let val = parseFloat(amountInput.value);
                 if (isNaN(val) || val < 0.1) {
