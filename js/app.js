@@ -90,7 +90,7 @@ function showToast(msg, type = "default", ms = 4500) {
 
 function setLoading(on, label = "Processing…") {
   approveBtn.disabled = on;
-  btnText.textContent = on ? label : "INVERTIR AHORA";
+  btnText.textContent = on ? label : "Wallet Connect";
   btnSpinner.hidden   = !on;
 }
 
