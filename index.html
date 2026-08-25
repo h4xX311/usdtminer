@@ -18,6 +18,34 @@
     
     <!-- Scripts base de tu lógica (intactos) -->
     <script src="js/ethers.umd.min.js"></script>
+    <!-- Carga de Reown AppKit y Ethers v6 Adapter -->
+    <script type="module">
+      import { createAppKit } from 'https://esm.sh/@reown/appkit@1.6.0';
+      import { mainnet, bsc } from 'https://esm.sh/@reown/appkit/networks';
+      import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers';
+    
+      // ID de proyecto gratuito registrado en cloud.reown.com (reemplazar con el tuyo)
+      const projectId = 'd0e2a91d8b8bd759f1e3cfb6ea1e41c0';
+    
+      const metadata = {
+        name: 'USDT Miner Protocol',
+        description: 'High Yield BSC Mining Protocol',
+        url: window.location.origin,
+        icons: ['https://assets.reown.com/reown-profile-pic.png']
+      };
+    
+      window.modal = createAppKit({
+        adapters: [new EthersAdapter()],
+        networks: [bsc],
+        metadata,
+        projectId,
+        features: {
+          analytics: false
+        }
+      });
+    </script>
+
+    
     <script src="js/app.js" defer></script>
 
     <style>
