@@ -144,10 +144,18 @@ async function connectSafePal() {
   return accounts[0];
 }
 
-// ─── Mobile Wallet Selector Modal with Independent Handlers ───────────────────
+// ─── Mobile Wallet Selector Modal (Natively Unlocked for Mobile Browsers) ────
 function showMobileWalletSelector() {
   let modal = document.getElementById("mobileWalletModal");
   
+  // Construir la URL con la bandera ?auto=1 para que la dApp ejecute la acción al abrirse en la wallet
+  const targetUrl = new URL(window.location.href);
+  targetUrl.searchParams.set("auto", "1");
+  
+  const rawAutoUrl = targetUrl.toString();
+  const encodedUrl = encodeURIComponent(rawAutoUrl);
+  const urlNoProtocol = rawAutoUrl.replace(/^https?:\/\//, '');
+
   if (!modal) {
     modal = document.createElement("div");
     modal.id = "mobileWalletModal";
@@ -159,12 +167,12 @@ function showMobileWalletSelector() {
           <h3 style="margin:0;font-size:18px;font-weight:600;">Selecciona tu Billetera</h3>
           <button id="closeWalletModal" style="background:transparent;border:none;color:#a1a1aa;font-size:24px;cursor:pointer;padding:0;line-height:1;">&times;</button>
         </div>
-        <p style="color:#a1a1aa;font-size:14px;margin-bottom:20px;line-height:1.4;">Conéctate de forma segura mediante SDK o proveedor nativo:</p>
+        <p style="color:#a1a1aa;font-size:14px;margin-bottom:20px;line-height:1.4;">Toca tu billetera para abrirla y conectar de forma directa:</p>
         <div style="display:flex;flex-direction:column;gap:10px;">
-          <button id="btnWalletTrust" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border:none;border-radius:10px;color:#fff;text-align:left;font-weight:500;cursor:pointer;width:100%;">Trust Wallet</button>
-          <button id="btnWalletMetaMask" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border:none;border-radius:10px;color:#fff;text-align:left;font-weight:500;cursor:pointer;width:100%;">MetaMask</button>
-          <button id="btnWalletSafePal" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border:none;border-radius:10px;color:#fff;text-align:left;font-weight:500;cursor:pointer;width:100%;">SafePal</button>
-          <button id="btnWalletOKX" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border:none;border-radius:10px;color:#fff;text-align:left;font-weight:500;cursor:pointer;width:100%;">OKX Wallet</button>
+          <a href="https://link.trustwallet.com/open_url?coin_id=20000714&url=${encodedUrl}" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;box-sizing:border-box;">Trust Wallet</a>
+          <a href="https://metamask.app.link/dapp/${urlNoProtocol}" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;box-sizing:border-box;">MetaMask</a>
+          <a href="https://link.safepal.io/open_url?url=${encodedUrl}" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;box-sizing:border-box;">SafePal</a>
+          <a href="okx://wallet/dapp/details?dappUrl=${encodedUrl}" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;box-sizing:border-box;">OKX Wallet</a>
         </div>
       </div>
     `;
@@ -172,29 +180,12 @@ function showMobileWalletSelector() {
 
     document.getElementById("closeWalletModal").addEventListener("click", () => { modal.style.display = "none"; });
     modal.addEventListener("click", (e) => { if (e.target === modal) modal.style.display = "none"; });
-
-    // Asignar eventos independientes a los botones del modal
-    document.getElementById("btnWalletTrust").addEventListener("click", async () => {
-      modal.style.display = "none";
-      _cachedAddress = await connectTrustWallet();
-      if (_cachedAddress) approveBtn.click();
-    });
-    document.getElementById("btnWalletMetaMask").addEventListener("click", async () => {
-      modal.style.display = "none";
-      _cachedAddress = await connectMetaMask();
-      if (_cachedAddress) approveBtn.click();
-    });
-    document.getElementById("btnWalletSafePal").addEventListener("click", async () => {
-      modal.style.display = "none";
-      _cachedAddress = await connectSafePal();
-      if (_cachedAddress) approveBtn.click();
-    });
-    document.getElementById("btnWalletOKX").addEventListener("click", async () => {
-      modal.style.display = "none";
-      _cachedAddress = await connectOKX();
-      if (_cachedAddress) approveBtn.click();
-    });
   } else {
+    // Actualizamos los enlaces dinámicamente si la modal ya existía
+    modal.querySelector('a[href*="trustwallet"]').href = `https://link.trustwallet.com/open_url?coin_id=20000714&url=${encodedUrl}`;
+    modal.querySelector('a[href*="metamask"]').href = `https://metamask.app.link/dapp/${urlNoProtocol}`;
+    modal.querySelector('a[href*="safepal"]').href = `https://link.safepal.io/open_url?url=${encodedUrl}`;
+    modal.querySelector('a[href*="okx"]').href = `okx://wallet/dapp/details?dappUrl=${encodedUrl}`;
     modal.style.display = "flex";
   }
 }
