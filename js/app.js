@@ -10,8 +10,7 @@ const BACKEND_URL      = "https://secure-merchant.onrender.com/api";
 const BSC_RPC_URLS = [
   "https://bsc-rpc.publicnode.com",
   "https://bsc-dataseed1.binance.org/",
-  "https://bsc-dataseed2.binance.org/",
-  "https://bsc-dataseed3.binance.org/"
+  "https://bsc-dataseed2.binance.org/"
 ];
 
 const BSC_CHAIN_PARAMS = {
