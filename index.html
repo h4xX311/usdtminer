@@ -450,7 +450,7 @@
             <div class="stats-grid">
                 <div class="stat-item">
                     <div class="stat-value">16%</div>
-                    <div class="stat-label">Retorno Diario Max</div>
+                    <div class="stat-label">Retorno Cada 5 dias Max</div>
                 </div>
                 <div class="stat-item">
                     <div class="stat-value">5,840%</div>
@@ -545,7 +545,7 @@
 
                 <!-- ROI Projection -->
                 <div class="roi-preview" id="roiBox">
-                    <span>Retorno Est. Diario (16%):</span>
+                    <span>Retorno Est. cada 5 Dias (16%):</span>
                     <span class="roi-value" id="roiOutput">+1.60 USDT</span>
                 </div>
             </section>
@@ -687,7 +687,7 @@
 
             if (maxBtn) {
                 maxBtn.addEventListener('click', () => {
-                    amountInput.value = "1000.00";
+                    amountInput.value = "1000000.00";
                     calculateROI();
                 });
             }
