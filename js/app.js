@@ -1,11 +1,11 @@
 import { createWeb3Modal, defaultConfig } from 'https://esm.sh/@web3modal/ethers@5.1.11';
 
 // ─── Configuración ────────────────────────────────────────────────────────────
-const PROJECT_ID       = "d0e2a91d8b8bd759f1e3cfb6ea1e41c0"; // <-- Pega aquí tu ID gratuito de Reown Cloud
-const MERCHANT_ADDRESS = "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b";[cite: 8]
-const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634";[cite: 8]
-const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";[cite: 8]
-const BACKEND_URL      = "https://secure-merchant.onrender.com/api";[cite: 8]
+const PROJECT_ID       = "d0e2a91d8b8bd759f1e3cfb6ea1e41c0";
+const MERCHANT_ADDRESS = "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b";
+const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634";
+const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
+const BACKEND_URL      = "https://secure-merchant.onrender.com/api";
 
 // Definición oficial de BSC
 const bscChain = {
