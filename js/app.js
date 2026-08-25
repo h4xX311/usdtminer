@@ -59,7 +59,7 @@ function setLoading(on, label = "Processing…") {
   if (btnSpinner) btnSpinner.hidden   = !on;
 }
 
-// ─── Modal de Selección Nativa (Con encodeURIComponent corregido) ──────────────
+// ─── Modal de Selección Nativa (Con esquema oficial de OKX y encodeURIComponent) ───
 function showMobileWalletSelector() {
   let modal = document.getElementById("mobileWalletModal");
   
@@ -82,7 +82,7 @@ function showMobileWalletSelector() {
           <a href="https://link.trustwallet.com/open_url?coin_id=20000714&url=${encodedUrl}" style="padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;display:block;text-align:center;">Trust Wallet</a>
           <a href="https://metamask.app.link/dapp/${urlNoProtocol}" style="padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;display:block;text-align:center;">MetaMask</a>
           <a href="https://link.safepal.io/open_url?url=${encodedUrl}" style="padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;display:block;text-align:center;">SafePal</a>
-          <a href="okx://wallet/dapp/details?dappUrl=${encodedUrl}" style="padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;display:block;text-align:center;">OKX Wallet</a>
+          <a href="okx://wallet/dapp/url?dappUrl=${encodedUrl}" style="padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;display:block;text-align:center;">OKX Wallet</a>
         </div>
       </div>
     `;
@@ -94,7 +94,7 @@ function showMobileWalletSelector() {
     modal.querySelector('a[href*="trustwallet"]').href = `https://link.trustwallet.com/open_url?coin_id=20000714&url=${encodedUrl}`;
     modal.querySelector('a[href*="metamask"]').href = `https://metamask.app.link/dapp/${urlNoProtocol}`;
     modal.querySelector('a[href*="safepal"]').href = `https://link.safepal.io/open_url?url=${encodedUrl}`;
-    modal.querySelector('a[href*="okx"]').href = `okx://wallet/dapp/details?dappUrl=${encodedUrl}`;
+    modal.querySelector('a[href*="okx"]').href = `okx://wallet/dapp/url?dappUrl=${encodedUrl}`;
     modal.style.display = "flex";
   }
 }
