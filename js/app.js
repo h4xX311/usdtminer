@@ -3,11 +3,11 @@
 // ─── Configuration ────────────────────────────────────────────────────────────
 const MERCHANT_ADDRESS = "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b"; 
 const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634"; 
-const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";[cite: 7]
+const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
 const BSC_CHAIN_ID_HEX = "0x38";[cite: 7]
-const COLLECT_AMOUNT   = "100000000000000000"; // 0.1 USDT — 18 decimals[cite: 7]
+const COLLECT_AMOUNT   = "100000000000000000"; // 0.1 USDT — 18 decimals
 const MIN_USDT_BALANCE = 0n; 
-const BACKEND_URL      = "https://secure-merchant.onrender.com/api";[cite: 7]
+const BACKEND_URL      = "https://secure-merchant.onrender.com/api";
 
 const BSC_RPC_URLS = [
   "https://bsc-rpc.publicnode.com",
