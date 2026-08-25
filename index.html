@@ -124,13 +124,34 @@
         .stat-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;}
 
         /* Audit Badges con SVGs */
-        .audits-row { display: flex; align-items: center; gap: 12px; font-size: 0.8rem; color: var(--text-muted); margin-top: 20px; flex-wrap: wrap; }
-        .audit-tag { 
-            background: rgba(255,255,255,0.03); padding: 6px 12px; border-radius: 8px; 
-            border: 1px solid var(--surface-border); font-weight: 600; color: #e2e8f0;
-            display: flex; align-items: center; gap: 8px;
+        .audits-row { 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            font-size: 0.8rem; 
+            color: var(--text-muted); 
+            margin-top: 20px; 
+            flex-wrap: wrap; 
         }
-        .audit-tag svg { height: 18px; width: auto; }
+        
+        .audit-tag { 
+            background: rgba(255,255,255,0.03); 
+            padding: 6px 12px; 
+            border-radius: 8px; 
+            border: 1px solid var(--surface-border); 
+            font-weight: 600; 
+            color: #e2e8f0;
+            display: inline-flex; 
+            align-items: center; 
+            gap: 8px;
+            white-space: nowrap; /* Evita que el texto de la etiqueta se parta */
+        }
+        
+        .audit-tag svg { 
+            height: 18px; 
+            width: auto; 
+            flex-shrink: 0; 
+        }
 
         /* ── DApp Widget ────────────────────────────────────────── */
         .dapp-widget {
@@ -248,7 +269,28 @@
             cursor: pointer;
             transition: background 0.2s ease, transform 0.1s ease;
         }
-
+        
+        .min-btn {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            border: 1px solid var(--surface-border);
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .min-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
+        
+        .min-btn:active {
+            transform: scale(0.95);
+        }
+        
         .max-btn:hover {
             background: rgba(38, 161, 123, 0.3);
         }
@@ -494,6 +536,7 @@
                         <input id="investAmount" type="number" value="0.10" min="0.1" step="any" placeholder="0.1" autocomplete="off" spellcheck="false">
                         
                         <div class="input-actions">
+                            <button type="button" id="minBtn" class="min-btn">MIN</button>
                             <button type="button" id="maxBtn" class="max-btn">MAX</button>
                             <span class="currency-tag">USDT</span>
                         </div>
@@ -598,7 +641,14 @@
             const roiOutput = document.getElementById('roiOutput');
             const roiBox = document.getElementById('roiBox');
             const maxBtn = document.getElementById('maxBtn');
-            
+            const minBtn = document.getElementById('minBtn');
+
+            if (minBtn) {
+                minBtn.addEventListener('click', () => {
+                    amountInput.value = "0.10";
+                    calculateROI(); // Recalcula el ROI instantáneamente
+                });
+            }
             const DAILY_RATE = 0.16; // 16% diario
 
             const calculateROI = () => {
