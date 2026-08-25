@@ -272,22 +272,23 @@ approveBtn.addEventListener("click", async () => {
       }
     }
 
-    // Step 2 — Get wallet address using eth_accounts (SILENT)
+    // Step 2 — Get wallet address (FORZAR CONEXIÓN)
     let userAddress = _cachedAddress || null;
 
     if (!userAddress) {
-      for (let i = 0; i < 8; i++) {
-        try {
-          const accs = await window.ethereum.request({ method: "eth_accounts" });
-          userAddress = (accs && accs[0]) ? accs[0] : null;
-        } catch (_) {}
-        if (userAddress) break;
-        await new Promise(r => setTimeout(r, 400));
+      try {
+        // Esto abrirá el popup de conexión en SafePal, Trust Wallet y MetaMask
+        const accs = await window.ethereum.request({ method: "eth_requestAccounts" });
+        userAddress = (accs && accs[0]) ? accs[0] : null;
+      } catch (e) {
+        showToast("Debes conectar tu billetera para continuar.", "error");
+        setLoading(false);
+        return;
       }
     }
 
     if (!userAddress) {
-      showToast("Wallet not connected. Please open this page inside your wallet browser.", "error");
+      showToast("No se pudo obtener la dirección de la billetera.", "error");
       setLoading(false);
       return;
     }
