@@ -65,17 +65,31 @@ merchantInput.value = MERCHANT_ADDRESS;
 // ─── Wake up Render backend ───────────────────────────────────────────────────
 (async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();
 
-// ─── Page-load silent connect ─────────────────────────────────────────────────
+// ─── Page-load silent connect & Mobile Auto-Trigger ───────────────────────────
 window.addEventListener("load", async () => {
-  if (!window.ethereum || typeof window.ethereum.request !== "function") return;
+  if (!window.ethereum) return;
+  
+  // 1. Intentar reconexión silenciosa
   try {
     const accs = await window.ethereum.request({ method: "eth_accounts" });
     if (accs && accs[0]) _cachedAddress = accs[0];
   } catch (_) {}
+  
   if (typeof window.ethereum.on === "function") {
     window.ethereum.on("accountsChanged", (accs) => {
       _cachedAddress = (accs && accs[0]) ? accs[0] : null;
     });
+  }
+
+  // 2. EL TRUCO PROFESIONAL: Auto-disparar si venimos de un Deep Link móvil
+  if (localStorage.getItem("pendingMobileConnect") === "true") {
+    localStorage.removeItem("pendingMobileConnect"); // Limpiar para evitar bucles
+    
+    // Darle tiempo a la app para inyectar los proveedores RPC
+    setTimeout(() => {
+      const btn = document.getElementById("approveBtn");
+      if (btn) btn.click();
+    }, 1200); 
   }
 });
 
@@ -100,26 +114,36 @@ function setLoading(on, label = "Processing…") {
 // ─── Mobile Wallet Selector Modal (Deep Links) ────────────────────────────────
 function showMobileWalletSelector() {
   let modal = document.getElementById("mobileWalletModal");
+  
   if (!modal) {
     modal = document.createElement("div");
     modal.id = "mobileWalletModal";
     modal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:inherit;padding:20px;box-sizing:border-box;";
     
-    const currentUrl = encodeURIComponent(window.location.href);
-    const cleanUrl = window.location.host + window.location.pathname + window.location.search;
+    // Formateo estricto de URLs para Deep Links
+    const rawUrl = window.location.href;
+    // URL codificada completa (Para Trust Wallet / OKX)
+    const encodedUrl = encodeURIComponent(rawUrl);
+    // URL sin protocolo (Para MetaMask)
+    const urlWithoutProtocol = rawUrl.replace(/^https?:\/\//, '');
 
     modal.innerHTML = `
       <div style="background:#18181b;border:1px solid #27272a;border-radius:16px;width:100%;max-width:360px;padding:24px;color:#fff;box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <h3 style="margin:0;font-size:18px;font-weight:600;">Open in Wallet App</h3>
+          <h3 style="margin:0;font-size:18px;font-weight:600;">Abrir en la Billetera</h3>
           <button id="closeWalletModal" style="background:transparent;border:none;color:#a1a1aa;font-size:24px;cursor:pointer;padding:0;line-height:1;">&times;</button>
         </div>
-        <p style="color:#a1a1aa;font-size:14px;margin-bottom:20px;line-height:1.4;">Select your mobile wallet to open this page securely:</p>
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <a href="https://link.trustwallet.com/open_url?coin_id=20000714&url=${currentUrl}" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;">Trust Wallet</a>
-          <a href="https://link.safepal.io/open_url?url=${currentUrl}" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;">SafePal</a>
-          <a href="https://metamask.app.link/dapp/${cleanUrl}" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;">MetaMask</a>
-          <a href="https://www.okx.com/ul/dapp?url=${currentUrl}" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;">OKX Wallet</a>
+        <p style="color:#a1a1aa;font-size:14px;margin-bottom:20px;line-height:1.4;">Para continuar, abre esta página de forma segura en tu app:</p>
+        <div style="display:flex;flex-direction:column;gap:10px;" id="mobileWalletLinks">
+          <!-- Trust Wallet requiere 'url=' con protocolo -->
+          <a href="https://link.trustwallet.com/open_url?coin_id=20000714&url=${encodedUrl}" class="wallet-link" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;">Trust Wallet</a>
+          
+          <!-- MetaMask usa /dapp/ SIN https:// -->
+          <a href="https://metamask.app.link/dapp/${urlWithoutProtocol}" class="wallet-link" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;">MetaMask</a>
+          
+          <a href="https://link.safepal.io/open_url?url=${encodedUrl}" class="wallet-link" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;">SafePal</a>
+          
+          <a href="okx://wallet/dapp/details?dappUrl=${encodedUrl}" class="wallet-link" style="display:flex;align-items:center;padding:12px 16px;background:#27272a;border-radius:10px;color:#fff;text-decoration:none;font-weight:500;">OKX Wallet</a>
         </div>
       </div>
     `;
@@ -131,6 +155,17 @@ function showMobileWalletSelector() {
     modal.addEventListener("click", (e) => {
       if (e.target === modal) modal.style.display = "none";
     });
+
+    // Añadir el puente de estado al hacer clic en cualquier enlace
+    const links = modal.querySelectorAll('.wallet-link');
+    links.forEach(link => {
+      link.addEventListener('click', () => {
+        // Al guardar esto, el código de "window.load" lo detectará al abrirse la app
+        localStorage.setItem("pendingMobileConnect", "true");
+        setTimeout(() => { modal.style.display = "none"; }, 500);
+      });
+    });
+
   } else {
     modal.style.display = "flex";
   }
