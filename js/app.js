@@ -100,7 +100,6 @@ if (window.modal && typeof window.modal.subscribeProviders === "function") {
 }
 
 // 2. Evento unificado del botón principal
-const approveBtn = document.getElementById("approveBtn");
 if (approveBtn) {
   approveBtn.addEventListener("click", async () => {
     let rawProvider = null;
