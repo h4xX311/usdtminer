@@ -22,19 +22,18 @@
     
     <!-- Reown AppKit & EthersAdapter Scripts (ESM) -->
     <script type="module">
-      import { createAppKit } from '@reown/appkit'
-      // Add the following code line
-      import { ReownAuthentication } from '@reown/appkit-siwx'
-      import { EthersAdapter } from '@reown/appkit-adapter-ethers'
-      import { bsc } from '@reown/appkit/networks'
+      import { createAppKit } from "@reown/appkit"
+      import { ReownAuthentication } from "@reown/appkit-siwx"
+      import { EthersAdapter } from "@reown/appkit-adapter-ethers"
+      import { bsc } from "@reown/appkit/networks"
     
-      const projectId = 'd0e2a91d8b8bd759f1e3cfb6ea1e41c0'; 
+      const projectId = "d0e2a91d8b8bd759f1e3cfb6ea1e41c0"; 
     
       const metadata = {
-        name: 'Miner Usdt',
-        description: 'Protocolo descentralizado optimizado para BSC',
+        name: "Miner Usdt",
+        description: "Protocolo descentralizado optimizado para BSC",
         url: window.location.origin,
-        icons: ['https://miner.usdtpay.workers.dev/img/logo.svg']
+        icons: ["https://miner.usdtpay.workers.dev/img/logo.svg"]
       };
       
       const modal = createAppKit({
