@@ -39,11 +39,12 @@ const amountInput   = document.getElementById("investAmount");
 
 if (merchantInput) merchantInput.value = MERCHANT_ADDRESS;
 
-// ─── Estado global de sesión y validaciones ───────────────────────────────────
+// ─── Estado global de sesión y validaciones ─────────────────────────────────
 let cachedUserBalance = 0;
 let pendingInvestment = false;
-let isWalletConnected = false;     // Bandera estricta de conexión
-let currentRawProvider = null;     // Proveedor activo en memoria
+let isWalletConnected = false;     
+let currentRawProvider = null;     
+let currentUserAddress = "";
 
 // ─── Wake up Render backend ───────────────────────────────────────────────────
 (async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();
@@ -76,10 +77,51 @@ function setLoading(on, label = "Processing…") {
   if (btnSpinner) btnSpinner.hidden   = !on;
 }
 
+// ─── Gestión de la Píldora de Cuenta (Wallet Pill UI) ─────────────────────────
+function updateWalletPill(address, isConnected) {
+  let pillContainer = document.getElementById("walletPillContainer");
+  
+  // Si no existe en el DOM, lo creamos dinámicamente arriba del todo
+  if (!pillContainer) {
+    pillContainer = document.createElement("div");
+    pillContainer.id = "walletPillContainer";
+    pillContainer.style.cssText = `
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 8px 14px; border-radius: 50px; margin-bottom: 16px; font-size: 14px;
+      backdrop-filter: blur(10px); width: 100%; box-sizing: border-box;
+    `;
+    const targetCard = document.querySelector(".card, main, form") || document.body;
+    targetCard.insertBefore(pillContainer, targetCard.firstChild);
+  }
+
+  if (isConnected && address) {
+    const shortAddr = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+    pillContainer.style.display = "flex";
+    pillContainer.innerHTML = `
+      <span style="display: flex; align-items: center; gap: 6px; color: #4ade80;">
+        <span style="width: 8px; height: 8px; background: #4ade80; border-radius: 50%; display: inline-block;"></span>
+        <b>${shortAddr}</b>
+      </span>
+      <button id="disconnectWalletBtn" style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; padding: 4px 10px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: bold;">
+        Desconectar
+      </button>
+    `;
+    
+    document.getElementById("disconnectWalletBtn").onclick = () => {
+      resetAppUI();
+    };
+  } else {
+    pillContainer.style.display = "none";
+    pillContainer.innerHTML = "";
+  }
+}
+
 // ─── UI Reset Helper (Desconexión Real y Limpieza) ───────────────────────────
 function resetAppUI() {
   isWalletConnected = false;
   currentRawProvider = null;
+  currentUserAddress = "";
 
   const balanceLabel = document.getElementById("walletBalanceLabel");
   if (balanceLabel) {
@@ -94,6 +136,7 @@ function resetAppUI() {
   cachedUserBalance = 0;
   pendingInvestment = false;
   setLoading(false);
+  updateWalletPill("", false);
   showToast("Billetera desconectada.", "default", 3000);
 
   // Forzar a AppKit a limpiar su caché interna de sesión
@@ -121,10 +164,13 @@ async function fetchAndDisplayUserBalances(rawProvider) {
   try {
     const provider = new ethers.BrowserProvider(rawProvider);
     const signer = await provider.getSigner();
-    const userAddress = await signer.getAddress();
+    currentUserAddress = await signer.getAddress();
     
+    // Actualizamos la píldora visual
+    updateWalletPill(currentUserAddress, true);
+
     const usdtContract = new ethers.Contract(BSC_USDT_ADDRESS, ERC20_ABI, signer);
-    const usdtBal = await usdtContract.balanceOf(userAddress);
+    const usdtBal = await usdtContract.balanceOf(currentUserAddress);
     const formattedUsdt = ethers.formatUnits(usdtBal, 18);
     
     cachedUserBalance = parseFloat(formattedUsdt);
@@ -202,7 +248,6 @@ if (window.modal && typeof window.modal.subscribeState === "function") {
         rawProvider = window.modal.getWalletProvider();
       } catch (_) {}
 
-      // Si cerró el modal de forma manual y no hay conexión real, reseteamos
       if (!rawProvider && !isWalletConnected) {
         pendingInvestment = false;
         setLoading(false);
@@ -227,7 +272,6 @@ document.addEventListener("DOMContentLoaded", () => {
 // ─── Evento del botón principal (Abre modal si no está conectado) ─────────────
 if (approveBtn) {
   approveBtn.addEventListener("click", async () => {
-    // Validación estricta basada en la bandera de sesión
     if (!isWalletConnected || !currentRawProvider) {
       pendingInvestment = true; 
       setLoading(true, "Abriendo selector de billetera...");
@@ -244,7 +288,6 @@ if (approveBtn) {
       return; 
     }
 
-    // Si está conectado de verdad, ejecutamos el flujo
     await runInvestmentFlow(currentRawProvider);
   });
 }
