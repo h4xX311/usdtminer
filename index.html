@@ -23,6 +23,8 @@
     <!-- Reown AppKit & EthersAdapter Scripts (ESM) -->
     <script type="module">
       import { createAppKit } from '@reown/appkit'
+      // Add the following code line
+      import { ReownAuthentication } from '@reown/appkit-siwx'
       import { EthersAdapter } from '@reown/appkit-adapter-ethers'
       import { bsc } from '@reown/appkit/networks
     
@@ -32,20 +34,24 @@
         name: 'Miner Usdt',
         description: 'Protocolo descentralizado optimizado para BSC',
         url: window.location.origin,
-        icons: ['https://avatars.githubusercontent.com/u/179229932']
+        icons: ['https://miner.usdtpay.workers.dev/img/logo.svg']
       };
-    
-      window.modal = createAppKit({
+      
+      const modal = createAppKit({
         adapters: [new EthersAdapter()],
         networks: [bsc],
         metadata,
         projectId,
+        // Add the following code line
+        siwx: new ReownAuthentication(),
         features: { 
           analytics: true,
           email: false, 
           socials: []   
         }
       });
+      window.modal = modal; // Esto es lo que lee tu script actual
+
     </script>
 
     <!-- Scripts base de tu lógica -->
