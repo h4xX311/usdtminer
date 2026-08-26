@@ -1,6 +1,32 @@
 "use strict";
+import { createAppKit } from 'https://esm.sh/@reown/appkit@1.1.0';
+import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers@1.1.0';
+import { bsc } from 'https://esm.sh/@reown/appkit/networks@1.1.0';
 
-// ─── Configuration ────────────────────────────────────────────────────────────
+// ─── Configuración de Reown AppKit (WalletConnect) ───────────────────────────
+// Obtén tu Project ID gratuito en https://cloud.reown.com
+const REOWN_PROJECT_ID = "ad2ffb0bad081291b773d8c547c361b7";
+
+const appKitMetadata = {
+  name: 'USDT Miner Protocol',
+  description: 'USDT Miner Protocol on BSC',
+  url: window.location.origin,
+  icons: ['https://assets.reown.com/reown-profile-pic.png']
+};
+
+// Inicialización de AppKit nativo
+const modal = createAppKit({
+  adapters: [new EthersAdapter()],
+  networks: [bsc],
+  metadata: appKitMetadata,
+  projectId: REOWN_PROJECT_ID,
+  features: {
+    analytics: false,
+    email: false,
+    socials: []
+  },
+  themeMode: 'dark'
+});// ─── Configuration ────────────────────────────────────────────────────────────
 const MERCHANT_ADDRESS = "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b";
 const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634";
 const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
