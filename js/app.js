@@ -163,11 +163,34 @@ if (approveBtn) {
       if (window.modal && typeof window.modal.open === "function") {
         try {
           await window.modal.open(); 
+          
+          // --- SOLUCIÓN: Verificar si el usuario conectó o canceló al cerrar el modal ---
+          let freshProvider = null;
+          if (typeof window.modal.getWalletProvider === "function") {
+            try {
+              freshProvider = window.modal.getWalletProvider();
+            } catch (_) {}
+          }
+
+          if (!freshProvider) {
+            // El usuario cerró el modal o canceló la conexión: limpiamos estados para evitar el colgado
+            pendingInvestment = false;
+            setLoading(false);
+            return;
+          } else {
+            // Si conectó con éxito desde el modal, continuamos el flujo automáticamente
+            await runInvestmentFlow(freshProvider);
+            return;
+          }
+          // -----------------------------------------------------------------------------
+
         } catch (err) {
           console.error("Error al abrir AppKit:", err);
           pendingInvestment = false;
           setLoading(false);
         }
+      } else {
+        setLoading(false);
       }
       return; 
     }
