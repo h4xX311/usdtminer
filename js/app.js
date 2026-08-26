@@ -1,6 +1,6 @@
 "use strict";
 
-});// ─── Configuration ────────────────────────────────────────────────────────────
+// ─── Configuration ────────────────────────────────────────────────────────────
 const MERCHANT_ADDRESS = "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b";
 const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634";
 const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
