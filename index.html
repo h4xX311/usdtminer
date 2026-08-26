@@ -45,7 +45,6 @@
             analytics: false
           }
         });
-        windows.modal = modal;
         console.log("Reown AppKit inicializado correctamente.");
       } catch (err) {
         console.error("Error al inicializar Reown AppKit:", err);
@@ -54,7 +53,7 @@
 
     <!-- Scripts base de tu lógica -->
     <script src="js/app.js" defer></script>
-    
+    windows.modal = modal;
     <style>
         :root {
             --bg-base: #111317;
