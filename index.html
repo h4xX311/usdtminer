@@ -18,36 +18,35 @@
     <!-- Ethers.js v6 UMD -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.2/ethers.umd.min.js"></script>
     
-<!-- Reown AppKit & EthersAdapter Scripts vía jsDelivr (ESM) -->
+    <!-- Inicialización robusta de Reown AppKit y Ethers v6 Adapter -->
     <script type="module">
-      import { createAppKit } from "https://cdn.jsdelivr.net/npm/@reown/appkit/+esm";
-      import { ReownAuthentication } from "https://cdn.jsdelivr.net/npm/@reown/appkit-siwx/+esm";
-      import { EthersAdapter } from "https://cdn.jsdelivr.net/npm/@reown/appkit-adapter-ethers/+esm";
-      import { bsc } from "https://cdn.jsdelivr.net/npm/@reown/appkit/networks/+esm";
+      import { createAppKit } from 'https://esm.sh/@reown/appkit@1.6.0';
+      import { bsc } from 'https://esm.sh/@reown/appkit/networks';
+      import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers';
     
-      const projectId = "ad2ffb0bad081291b773d8c547c361b7"; 
-     
+      const projectId = 'd0e2a91d8b8bd759f1e3cfb6ea1e41c0';
+    
       const metadata = {
-        name: "Miner Usdt",
-        description: "Protocolo descentralizado optimizado para BSC",
+        name: 'USDT Miner Protocol',
+        description: 'High Yield BSC Mining Protocol',
         url: window.location.origin,
-        icons: ["https://miner.usdtpay.workers.dev/img/logo.svg"]
+        icons: ['https://assets.reown.com/reown-profile-pic.png']
       };
-      
-      const modal = createAppKit({
-        adapters: [new EthersAdapter()],
-        networks: [bsc],
-        metadata,
-        projectId,
-        siwx: new ReownAuthentication(),
-        features: { 
-          analytics: true,
-          email: false, 
-          socials: []   
-        }
-      });
-      
-      window.modal = modal;
+    
+      try {
+        window.modal = createAppKit({
+          adapters: [new EthersAdapter()],
+          networks: [bsc],
+          metadata,
+          projectId,
+          features: {
+            analytics: false
+          }
+        });
+        console.log("Reown AppKit inicializado correctamente.");
+      } catch (err) {
+        console.error("Error al inicializar Reown AppKit:", err);
+      }
     </script>
     <!-- Scripts base de tu lógica -->
     <script src="js/app.js" defer></script>
