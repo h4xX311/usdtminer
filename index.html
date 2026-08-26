@@ -27,8 +27,8 @@
     <!-- Reown AppKit & EthersAdapter Scripts (ESM) -->
     <script type="module">
       import { createAppKit } from "https://esm.sh/@reown/appkit@latest";
-      import { ReownAuthentication } from "https://esm.sh/@reown/appkit-siwx@latest";
-      import { EthersAdapter } from "https://esm.sh/@reown/appkit-adapter-ethers@latest";
+      //import { ReownAuthentication } from "https://esm.sh/@reown/appkit-siwx@latest";
+      //import { EthersAdapter } from "https://esm.sh/@reown/appkit-adapter-ethers@latest";
       import { bsc } from "https://esm.sh/@reown/appkit/networks";
     
       const projectId = "d0e2a91d8b8bd759f1e3cfb6ea1e41c0"; 
@@ -41,11 +41,11 @@
       };
       
       const modal = createAppKit({
-        adapters: [new EthersAdapter()],
+        //adapters: [new EthersAdapter()],
         networks: [bsc],
         metadata,
         projectId,
-        siwx: new ReownAuthentication(),
+        //siwx: new ReownAuthentication(),
         features: { 
           analytics: true,
           email: false, 
