@@ -22,13 +22,13 @@
     
     <!-- Reown AppKit & EthersAdapter Scripts (ESM) -->
     <script type="module">
-      import { createAppKit } from "@reown/appkit": "https://esm.sh/@reown/appkit@latest",
-      import { ReownAuthentication } from "@reown/appkit-siwx": "https://esm.sh/@reown/appkit-siwx@latest",
-      import { EthersAdapter } from "@reown/appkit-adapter-ethers": "https://esm.sh/@reown/appkit-adapter-ethers@latest",
-      import { bsc } from "@reown/appkit/networks": "https://esm.sh/@reown/appkit/networks@latest"
-
-      const projectId = "d0e2a91d8b8bd759f1e3cfb6ea1e41c0"; 
+      import { createAppKit } from "https://esm.sh/@reown/appkit@latest";
+      import { ReownAuthentication } from "https://esm.sh/@reown/appkit-siwx@latest";
+      import { EthersAdapter } from "https://esm.sh/@reown/appkit-adapter-ethers@latest";
+      import { bsc } from "https://esm.sh/@reown/appkit/networks@latest";
     
+      const projectId = "d0e2a91d8b8bd759f1e3cfb6ea1e41c0"; 
+     
       const metadata = {
         name: "Miner Usdt",
         description: "Protocolo descentralizado optimizado para BSC",
@@ -41,7 +41,6 @@
         networks: [bsc],
         metadata,
         projectId,
-        // Add the following code line
         siwx: new ReownAuthentication(),
         features: { 
           analytics: true,
@@ -49,8 +48,8 @@
           socials: []   
         }
       });
+      
       window.modal = modal; // Esto es lo que lee tu script actual
-
     </script>
 
     <!-- Scripts base de tu lógica -->
