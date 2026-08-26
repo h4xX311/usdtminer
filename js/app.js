@@ -417,7 +417,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// ─── Evento del botón principal ───────────────────────────────────────────────
 // ─── Evento del botón principal (Blindado contra bloqueos) ───────────────────
 if (approveBtn) {
   approveBtn.addEventListener("click", async () => {
