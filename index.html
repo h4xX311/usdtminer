@@ -22,7 +22,7 @@
     <script type="module">
       import { createAppKit } from 'https://cdn.jsdelivr.net/npm/@reown/appkit@1.8/+esm';
       //import { ReownAuthentication } from "https://esm.sh/@reown/appkit-siwx@latest";
-      import { EthersAdapter } from 'https://cdn.jsdelivr.net/npm/@reown/appkit@1.8.1/adapters/+esm';
+      import { ethers } from 'https://cdn.jsdelivr.net/npm/@reown/appkit@1.8.1/adapters/+esm';
       import { bsc } from 'https://cdn.jsdelivr.net/npm/@reown/appkit@1.8.1/networks/+esm';
     
       const projectId = "d0e2a91d8b8bd759f1e3cfb6ea1e41c0"; 
@@ -35,7 +35,7 @@
       };
       
       const modal = createAppKit({
-        //adapters: [new EthersAdapter()],
+        adapters: [new ethers()],
         networks: [bsc],
         metadata,
         projectId,
