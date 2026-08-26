@@ -36,7 +36,7 @@
       };
     
       try {
-        const modal = createAppKit({
+        window.modal = createAppKit({
           adapters: [new EthersAdapter()],
           networks: [bsc],
           metadata,
@@ -53,7 +53,7 @@
 
     <!-- Scripts base de tu lógica -->
     <script src="js/app.js" defer></script>
-    windows.modal = modal;
+
     <style>
         :root {
             --bg-base: #111317;
