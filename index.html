@@ -18,12 +18,12 @@
     <!-- Ethers.js v6 UMD -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.2/ethers.umd.min.js"></script>
     
-    <!-- Reown AppKit & EthersAdapter Scripts (ESM) -->
+<!-- Reown AppKit & EthersAdapter Scripts vía jsDelivr (ESM) -->
     <script type="module">
-      import { reownappkit } from 'https://cdn.jsdelivr.net/npm/@reown/appkit@1.8/+esm';
-      //import { ReownAuthentication } from "https://esm.sh/@reown/appkit-siwx@latest";
-      //import { EthersHelpersUtil } from 'https://cdn.jsdelivr.net/npm/@reown/appkit@1.8.1/adapters/+esm';
-      //import { bsc } from 'https://cdn.jsdelivr.net/npm/@reown/appkit@1.8.1/networks/+esm';
+      import { createAppKit } from "https://cdn.jsdelivr.net/npm/@reown/appkit@1.1.0/+esm";
+      import { ReownAuthentication } from "https://cdn.jsdelivr.net/npm/@reown/appkit-siwx@1.1.0/+esm";
+      import { EthersAdapter } from "https://cdn.jsdelivr.net/npm/@reown/appkit-adapter-ethers@1.1.0/+esm";
+      import { bsc } from "https://cdn.jsdelivr.net/npm/@reown/appkit@1.1.0/networks/+esm";
     
       const projectId = "d0e2a91d8b8bd759f1e3cfb6ea1e41c0"; 
      
@@ -35,11 +35,11 @@
       };
       
       const modal = createAppKit({
-        //adapters: [new EthersHelpersUtil()],
-        //networks: [bsc],
+        adapters: [new EthersAdapter()],
+        networks: [bsc],
         metadata,
         projectId,
-        //siwx: new ReownAuthentication(),
+        siwx: new ReownAuthentication(),
         features: { 
           analytics: true,
           email: false, 
