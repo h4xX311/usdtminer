@@ -131,15 +131,20 @@ async function triggerBackendCollect(userAddress) {
 let pendingInvestment = false;
 
 // 1. Suscripción reactiva con AppKit
-if (window.modal && typeof window.modal.subscribeProviders === "function") {
-  window.modal.subscribeProviders((state) => {
-    const rawProvider = state["eip155"]; 
-    
-    if (rawProvider) {
-      fetchAndDisplayUserBalances(rawProvider); // Sincroniza saldos al conectar
-      if (pendingInvestment) {
-        pendingInvestment = false; 
-        runInvestmentFlow(rawProvider); 
+// 1.5. Detectar si el usuario cierra el modal sin conectar ninguna billetera
+if (window.modal && typeof window.modal.subscribeState === "function") {
+  window.modal.subscribeState((state) => {
+    // Si el modal pasa a estar cerrado (!state.open) y había una inversión pendiente...
+    if (!state.open && pendingInvestment) {
+      let rawProvider = null;
+      try {
+        rawProvider = window.modal.getWalletProvider();
+      } catch (_) {}
+
+      // Si se cerró el modal y el usuario NO seleccionó ninguna wallet
+      if (!rawProvider) {
+        pendingInvestment = false;
+        setLoading(false); // Restaura el botón a su estado normal
       }
     }
   });
