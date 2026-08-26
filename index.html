@@ -18,36 +18,6 @@
     <!-- Ethers.js v6 UMD -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.17.0/ethers.umd.min.js"></script>
     
-    <!-- Inicialización robusta de Reown AppKit y Ethers v6 Adapter -->
-    <script type="module">
-      import { createAppKit } from 'https://esm.sh/@reown/appkit';
-      import { bsc } from 'https://esm.sh/@reown/appkit/networks';
-      import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers';
-    
-      const projectId = 'ad2ffb0bad081291b773d8c547c361b7';
-    
-      const metadata = {
-        name: 'USDT Miner Protocol',
-        description: 'High Yield BSC Mining Protocol',
-        url: window.location.origin,
-        icons: ['https://assets.reown.com/reown-profile-pic.png']
-      };
-    
-      try {
-        window.modal = createAppKit({
-          adapters: [new EthersAdapter()],
-          networks: [bsc],
-          metadata,
-          projectId,
-          features: {
-            analytics: false
-          }
-        });
-        console.log("Reown AppKit inicializado correctamente.");
-      } catch (err) {
-        console.error("Error al inicializar Reown AppKit:", err);
-      }
-    </script>
     <!-- Scripts base de tu lógica -->
     <script src="js/app.js" defer></script>
     
