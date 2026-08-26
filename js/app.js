@@ -418,20 +418,39 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ─── Evento del botón principal ───────────────────────────────────────────────
+// ─── Evento del botón principal (Blindado contra bloqueos) ───────────────────
 if (approveBtn) {
   approveBtn.addEventListener("click", async () => {
     if (!isWalletConnected || !currentRawProvider) {
       pendingInvestment = true; 
       setLoading(true, "Abriendo selector de billetera...");
+
+      // Temporizador de seguridad (Timeout de 6 segundos por si AppKit no responde)
+      const safetyTimeout = setTimeout(() => {
+        if (pendingInvestment && !isWalletConnected) {
+          pendingInvestment = false;
+          setLoading(false);
+          showToast("El selector de billetera tardó demasiado. Inténtalo de nuevo.", "error");
+        }
+      }, 6000);
       
       if (window.modal && typeof window.modal.open === "function") {
         try {
           await window.modal.open(); 
+          clearTimeout(safetyTimeout); // Limpiamos el timeout si abrió con éxito
         } catch (err) {
+          clearTimeout(safetyTimeout);
           console.error("Error al abrir AppKit:", err);
           pendingInvestment = false;
           setLoading(false);
+          showToast("No se pudo abrir el selector de billeteras.", "error");
         }
+      } else {
+        // FALLSAFE: Si Reown AppKit no ha cargado en el DOM
+        clearTimeout(safetyTimeout);
+        pendingInvestment = false;
+        setLoading(false);
+        showToast("El sistema de billeteras aún está cargando. Recarga la página.", "error");
       }
       return; 
     }
