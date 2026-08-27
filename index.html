@@ -15,8 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.2/ethers.umd.min.js"></script>
     
-    <!-- Configuración Adaptada a Web3Modal Ethers (Drop-in compatible sin romper app.js) -->
-    <script type="module">
+<script type="module">
       import { createWeb3Modal, defaultConfig } from 'https://esm.sh/@web3modal/ethers'
 
       const projectId = 'ad2ffb0bad081291b773d8c547c361b7';
@@ -33,16 +32,19 @@
         name: 'BNB Smart Chain',
         currency: 'BNB',
         explorerUrl: 'https://bscscan.com',
-        rpcUrl: 'https://bsc-dataseed1.binance.org/'
+        rpcUrl: 'https://bsc-dataseed3.binance.org/'
       };
 
-      // Inicialización unificada compatible con los métodos que consume app.js
+      // Inicialización limpia solo para Web3 nativo
       window.modal = createWeb3Modal({
         ethersConfig: defaultConfig({ metadata }),
         chains: [bsc],
         projectId,
-        email: false,
-        socials: false
+        enableAnalytics: false,
+        features: {
+          email: false,    // Desactiva el acceso por correo electrónico
+          socials: false   // Desactiva redes sociales (Google, Apple, etc.)
+        }
       });
     </script>
 
