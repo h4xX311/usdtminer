@@ -15,60 +15,35 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.17.0/ethers.umd.min.js"></script>
 
-    <!-- Carga de Web3Modal Clásico (v1.9.12) desde CDN libre de bloqueos de infraestructura -->
-    <script src="https://unpkg.com/web3modal@1.9.12/dist/index.js"></script>
-    <script>
-      window.addEventListener('DOMContentLoaded', () => {
-        const Web3Modal = window.Web3Modal.default;
+    <script type="module">
+      import { createWeb3Modal, defaultConfig } from 'https://esm.sh/@web3modal/ethers'
 
-        const web3ModalInstance = new Web3Modal({
-          network: "binance", // Red por defecto BSC
-          cacheProvider: false,
-          providerOptions: {} // Sin dependencias de cloud relays externos
-        });
+      const projectId = 'ad2ffb0bad081291b773d8c547c361b7';
 
-        let currentProvider = null;
-        let subscriptionCallback = null;
+      const metadata = {
+        name: 'Miner Usdt - Web3Modal Connection',
+        description: 'Protocolo descentralizado optimizado para BSC',
+        url: window.location.origin,
+        icons: ['https://miner.usdtpay.workers.dev/img/ico.png']
+      };
 
-        // Capa adaptadora para mantener compatibilidad exacta con los métodos que app.js espera
-        window.modal = {
-          open: async function() {
-            try {
-              currentProvider = await web3ModalInstance.connect();
-              
-              // Escuchar cambios de cuenta o red estándar (EIP-1193)
-              if (currentProvider.on) {
-                currentProvider.on("accountsChanged", (accounts) => {
-                  if (subscriptionCallback) {
-                    subscriptionCallback({ eip155: { provider: currentProvider } });
-                  }
-                });
-                currentProvider.on("chainChanged", (chainId) => {
-                  if (subscriptionCallback) {
-                    subscriptionCallback({ eip155: { provider: currentProvider } });
-                  }
-                });
-              }
+      const bsc = {
+        chainId: 56,
+        name: 'BNB Smart Chain',
+        currency: 'BNB',
+        explorerUrl: 'https://bscscan.com',
+        rpcUrl: 'https://bsc-dataseed3.binance.org/'
+      };
 
-              // Notificar conexión exitosa a app.js
-              if (subscriptionCallback) {
-                subscriptionCallback({ eip155: { provider: currentProvider } });
-              }
-            } catch (error) {
-              console.error("El usuario canceló la conexión o hubo un error:", error);
-            }
-          },
-          close: async function() {
-            await web3ModalInstance.clearCachedProvider();
-            currentProvider = null;
-          },
-          getWalletProvider: function() {
-            return currentProvider;
-          },
-          subscribeProviders: function(callback) {
-            subscriptionCallback = callback;
-          }
-        };
+      // Inicialización limpia desactivando el correo desde defaultConfig
+      window.modal = createWeb3Modal({
+        ethersConfig: defaultConfig({ 
+          metadata,
+          enableEmail: false // <-- Esto desactiva por completo el correo y los sociales en @web3modal/ethers
+        }),
+        chains: [bsc],
+        projectId,
+        enableAnalytics: false
       });
     </script>
 
