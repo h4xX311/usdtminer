@@ -36,15 +36,17 @@
       };
 
       // Inicialización limpia desactivando el correo desde defaultConfig
-      window.modal = createWeb3Modal({
-        ethersConfig: defaultConfig({ 
-          metadata,
-          enableEmail: false // <-- Esto desactiva por completo el correo y los sociales en @web3modal/ethers
-        }),
-        chains: [bsc],
-        projectId,
-        enableAnalytics: false
-      });
+      window.modal = createAppKit({
+            adapters: [new EthersAdapter()],
+            networks: [bsc],
+            metadata,
+            projectId,
+            features: { 
+              analytics: false,
+              email: false,     // Desactiva cuentas de correo
+              socials: []    // Debe estar en false (no array vacío) para forzar el cierre visual
+            }
+          });
     </script>
 
     <script src="js/app.js" defer></script>
