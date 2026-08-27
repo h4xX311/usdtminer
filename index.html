@@ -16,35 +16,69 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.17.0/ethers.umd.min.js"></script>
 
     <script type="module">
-      import { createWeb3Modal, defaultConfig } from 'https://esm.sh/@web3modal/ethers'
-
-      const projectId = 'ad2ffb0bad081291b773d8c547c361b7';
-
-      const metadata = {
-        name: 'Miner Usdt - Web3Modal Connection',
-        description: 'Protocolo descentralizado optimizado para BSC',
-        url: window.location.origin,
-        icons: ['https://miner.usdtpay.workers.dev/img/ico.png']
-      };
-
-      const bsc = {
-        chainId: 56,
-        name: 'BNB Smart Chain',
-        currency: 'BNB',
-        explorerUrl: 'https://bscscan.com',
-        rpcUrl: 'https://bsc-dataseed3.binance.org/'
-      };
-
-      // Inicialización limpia desactivando el correo desde defaultConfig
-      window.modal = createWeb3Modal({
-        ethersConfig: defaultConfig({ 
-          metadata,
-          enableEmail: false // <-- Esto desactiva por completo el correo y los sociales en @web3modal/ethers
-        }),
-        chains: [bsc],
-        projectId,
-        enableAnalytics: false
-      });
+      import Onboard from 'https://esm.sh/@web3-onboard/core'
+      import injectedModule from 'https://esm.sh/@web3-onboard/injected-wallets'
+      import walletConnectModule from 'https://esm.sh/@web3-onboard/walletconnect'
+    
+      // 1. Inicializar los módulos de billeteras (Injected / MetaMask y WalletConnect)
+      const injected = injectedModule()
+      const walletConnect = walletConnectModule({
+        projectId: 'ad2ffb0bad081291b773d8c547c361b7' // Tu Project ID de WalletConnect
+      })
+    
+      // 2. Configurar Web3-Onboard para BNB Smart Chain (BSC)
+      const onboard = Onboard({
+        wallets: [injected, walletConnect],
+        chains: [
+          {
+            id: '0x38', // 56 en decimal (BSC Mainnet)
+            token: 'BNB',
+            label: 'BNB Smart Chain',
+            rpcUrl: 'https://bsc-rpc.publicnode.com'
+          }
+        ],
+        appMetadata: {
+          name: 'Miner USDT DApp',
+          description: 'Protocolo descentralizado optimizado para BSC',
+          url: window.location.origin,
+          icons: ['https://avatars.githubusercontent.com/u/179229932']
+        }
+      })
+    
+      // 3. Crear el adaptador window.modal para mantener compatibilidad total con app.js
+      window.modal = {
+        _listener: null,
+    
+        async open() {
+          // Abre el modal nativo de Web3-Onboard para conectar billetera
+          await onboard.connectWallet()
+        },
+    
+        getWalletProvider() {
+          const state = onboard.state.get()
+          const wallets = state.wallets || []
+          return wallets[0] ? wallets[0].provider : null
+        },
+    
+        subscribeProviders(cb) {
+          this._listener = cb
+    
+          // Emitir el estado actual inmediatamente al cargar
+          const state = onboard.state.get()
+          const wallets = state.wallets || []
+          const provider = wallets[0] ? wallets[0].provider : null
+          cb({ "eip155": provider })
+    
+          // Escuchar cambios futuros en las billeteras conectadas
+          onboard.state.select('wallets').subscribe((wallets) => {
+            const primaryWallet = wallets[0]
+            const currentProvider = primaryWallet ? primaryWallet.provider : null
+            if (this._listener) {
+              this._listener({ "eip155": currentProvider })
+            }
+          })
+        }
+      }
     </script>
 
     <script src="js/app.js" defer></script>
