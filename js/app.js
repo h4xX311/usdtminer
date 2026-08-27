@@ -61,7 +61,7 @@ function showToast(msg, type = "default", ms = 4500) {
   _toastTimer = setTimeout(() => { toastEl.hidden = true; }, ms);
 }
 
-function setLoading(on, label = "Processing…") {
+function setLoading(on, label = "Procesando…") {
   if (!approveBtn) return;
   approveBtn.disabled = on;
   approveBtn.style.opacity = on ? "0.8" : "1";
@@ -154,9 +154,9 @@ if (approveBtn) {
       
       if (window.modal && typeof window.modal.open === "function") {
         try {
-          window.modal.open(); // Abre el modal y detiene la ejecución para que el usuario elija
+          window.modal.open();
         } catch (err) {
-          console.error("Error al abrir el selector:", err);
+          console.error("Error al desplegar el selector de billeteras:", err);
           pendingInvestment = false;
         }
       }
