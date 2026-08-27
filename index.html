@@ -15,138 +15,62 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.17.0/ethers.umd.min.js"></script>
 
-    <script>
-      let currentProvider = null;
-      let providerListener = null;
-      let discoveredWallets = [];
+    <script type="module">
+      import { createWeb3Modal, defaultConfig } from 'https://esm.sh/@web3modal/ethers@4.2.3'
     
-      // 1. Detección automática mediante estándar EIP-6963 (PC y Móvil)
-      window.addEventListener("eip6963:announceProvider", (event) => {
-        const { info, provider } = event.detail;
-        if (!discoveredWallets.some(w => w.info.uuid === info.uuid)) {
-          discoveredWallets.push({ info, provider });
-          renderWalletOptions();
-        }
-      });
-      window.dispatchEvent(new Event("eip6963:requestProvider"));
+      const projectId = 'ad2ffb0bad081291b773d8c547c361b7' // Tu Project ID de WalletConnect / Reown
     
-      // 2. Fallback para billeteras tradicionales (window.ethereum)
-      setTimeout(() => {
-        if (discoveredWallets.length === 0 && typeof window.ethereum !== "undefined") {
-          discoveredWallets.push({
-            info: { 
-              name: "Billetera Web3 (MetaMask / Inyectada)", 
-              icon: "https://avatars.githubusercontent.com/u/3277001", 
-              rdns: "injected" 
-            },
-            provider: window.ethereum
-          });
-          renderWalletOptions();
-        }
-      }, 400);
-    
-      // 3. Renderizar dinámicamente las opciones detectadas en el modal
-      function renderWalletOptions() {
-        const container = document.getElementById("walletListContainer");
-        if (!container) return;
-        
-        if (discoveredWallets.length === 0) {
-          container.innerHTML = `
-            <div style="text-align:center; padding:20px;">
-              <p style="color:#a0aec0; font-size:0.9rem; margin-bottom:8px; font-family:'Montserrat',sans-serif;">No se detectaron extensiones de billetera.</p>
-              <p style="color:#718096; font-size:0.8rem; font-family:'Montserrat',sans-serif;">Si estás en el móvil, abre este enlace directamente desde el navegador interno de tu App de Trust Wallet o MetaMask.</p>
-            </div>
-          `;
-          return;
-        }
-    
-        container.innerHTML = discoveredWallets.map((wallet, index) => `
-          <button onclick="window.selectWalletByIndex(${index})" style="width:100%; padding:14px 16px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:14px; font-weight:600; font-size:0.95rem; cursor:pointer; display:flex; align-items:center; gap:14px; margin-bottom:12px; transition:all 0.2s; font-family:'Montserrat',sans-serif;">
-            <img src="${wallet.info.icon}" width="32" height="32" style="border-radius:8px; object-fit:contain;" onerror="this.src='https://avatars.githubusercontent.com/u/179229932'"/>
-            <span style="flex:1; text-align:left; color:#fff;">${wallet.info.name}</span>
-            <span style="font-size:0.75rem; color:#26a17b; background:rgba(38,161,123,0.15); padding:4px 8px; border-radius:6px; font-weight:500;">Detectada</span>
-          </button>
-        `).join('');
+      const bsc = {
+        chainId: 56,
+        name: 'BNB Smart Chain',
+        currency: 'BNB',
+        explorerUrl: 'https://bscscan.com',
+        rpcUrl: 'https://bsc-rpc.publicnode.com'
       }
     
-      window.selectWalletByIndex = async function(index) {
-        const selected = discoveredWallets[index];
-        if (selected) {
-          try {
-            await selected.provider.request({ method: "eth_requestAccounts" });
-            currentProvider = selected.provider;
-            document.getElementById("nativeWeb3Modal").style.display = "none";
-            if (providerListener) {
-              providerListener({ "eip155": currentProvider });
-            }
-          } catch (err) {
-            console.error("Error al conectar con la billetera seleccionada:", err);
-          }
+      const metadata = {
+        name: 'USDT Miner Protocol',
+        description: 'Protocolo descentralizado optimizado para BSC',
+        url: window.location.origin,
+        icons: ['https://avatars.githubusercontent.com/u/179229932']
+      }
+    
+      // 1. Inicializar Web3Modal v3 (El núcleo visual oficial de Reown con QR y lista de wallets)
+      const web3ModalInstance = createWeb3Modal({
+        ethersConfig: defaultConfig({ metadata }),
+        chains: [bsc],
+        projectId,
+        enableAnalytics: true,
+        themeMode: 'dark',
+        themeVariables: {
+          '--w3m-accent': '#26a17b'
         }
-      };
+      })
     
-      // 4. Construcción visual del modal flotante
-      document.addEventListener("DOMContentLoaded", () => {
-        if (!document.getElementById("nativeWeb3Modal")) {
-          const modalHTML = `
-            <div id="nativeWeb3Modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:99999; justify-content:center; align-items:center; padding:16px;">
-              <div style="background:#14161c; border:1px solid rgba(255,255,255,0.1); border-radius:24px; padding:28px; width:100%; max-width:420px; box-shadow:0 20px 40px rgba(0,0,0,0.6);">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                  <h3 style="color:#fff; margin:0; font-size:1.3rem; font-family:'Montserrat',sans-serif;">Conectar Billetera</h3>
-                  <button onclick="document.getElementById('nativeWeb3Modal').style.display='none'" style="background:none; border:none; color:#a0aec0; font-size:1.5rem; cursor:pointer; padding:0;">&times;</button>
-                </div>
-                <p style="color:#a0aec0; font-size:0.85rem; margin-bottom:20px; font-family:'Montserrat',sans-serif;">Elige una billetera instalada para interactuar con la DApp:</p>
-                
-                <div id="walletListContainer" style="max-height:280px; overflow-y:auto; margin-bottom:12px;">
-                  <p style="color:#a0aec0; font-size:0.9rem; text-align:center; padding:20px;">Buscando billeteras...</p>
-                </div>
-    
-                <div style="border-top:1px solid rgba(255,255,255,0.08); padding-top:14px; text-align:center;">
-                  <p style="color:#718096; font-size:0.75rem; margin:0; font-family:'Montserrat',sans-serif;">Red compatible: BNB Smart Chain (BSC)</p>
-                </div>
-              </div>
-            </div>
-          `;
-          document.body.insertAdjacentHTML('beforeend', modalHTML);
-          renderWalletOptions();
-        }
-      });
-    
-      // 5. Interfaz requerida por app.js
+      // 2. Puente exacto para app.js
       window.modal = {
         open() {
-          const modal = document.getElementById("nativeWeb3Modal");
-          if (modal) {
-            modal.style.display = "flex";
-            renderWalletOptions();
-          }
+          web3ModalInstance.open()
         },
         getWalletProvider() {
-          return currentProvider || window.ethereum || null;
+          try {
+            return web3ModalInstance.getWalletProvider()
+          } catch (e) {
+            return null
+          }
         },
         subscribeProviders(cb) {
-          providerListener = cb;
-          if (typeof window.ethereum !== "undefined") {
-            window.ethereum.request({ method: "eth_accounts" }).then(accounts => {
-              if (accounts && accounts.length > 0) {
-                currentProvider = window.ethereum;
-                cb({ "eip155": currentProvider });
-              } else {
-                cb({ "eip155": null });
-              }
-            }).catch(() => {
-              cb({ "eip155": null });
-            });
+          // Enviar estado inicial
+          const provider = web3ModalInstance.getWalletProvider()
+          cb({ "eip155": provider })
     
-            window.ethereum.on("accountsChanged", (accounts) => {
-              currentProvider = accounts.length > 0 ? window.ethereum : null;
-              if (providerListener) providerListener({ "eip155": currentProvider });
-            });
-          } else {
-            cb({ "eip155": null });
-          }
+          // Escuchar eventos de conexión/desconexión del modal oficial
+          web3ModalInstance.subscribeProvider((state) => {
+            const currentProvider = state.isConnected ? web3ModalInstance.getWalletProvider() : null
+            cb({ "eip155": currentProvider })
+          })
         }
-      };
+      }
     </script>
 
     <script src="js/app.js" defer></script>
