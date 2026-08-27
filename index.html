@@ -15,70 +15,94 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.17.0/ethers.umd.min.js"></script>
 
-    <script type="module">
-      import Onboard from 'https://esm.sh/@web3-onboard/core'
-      import injectedModule from 'https://esm.sh/@web3-onboard/injected-wallets'
-      import walletConnectModule from 'https://esm.sh/@web3-onboard/walletconnect'
-    
-      // 1. Inicializar los módulos de billeteras (Injected / MetaMask y WalletConnect)
-      const injected = injectedModule()
-      const walletConnect = walletConnectModule({
-        projectId: 'ad2ffb0bad081291b773d8c547c361b7' // Tu Project ID de WalletConnect
-      })
-    
-      // 2. Configurar Web3-Onboard para BNB Smart Chain (BSC)
-      const onboard = Onboard({
-        wallets: [injected, walletConnect],
-        chains: [
-          {
-            id: '0x38', // 56 en decimal (BSC Mainnet)
-            token: 'BNB',
-            label: 'BNB Smart Chain',
-            rpcUrl: 'https://bsc-rpc.publicnode.com'
-          }
-        ],
-        appMetadata: {
-          name: 'Miner USDT DApp',
-          description: 'Protocolo descentralizado optimizado para BSC',
-          url: window.location.origin,
-          icons: ['https://avatars.githubusercontent.com/u/179229932']
-        }
-      })
-    
-      // 3. Crear el adaptador window.modal para mantener compatibilidad total con app.js
-      window.modal = {
-        _listener: null,
-    
-        async open() {
-          // Abre el modal nativo de Web3-Onboard para conectar billetera
-          await onboard.connectWallet()
-        },
-    
-        getWalletProvider() {
-          const state = onboard.state.get()
-          const wallets = state.wallets || []
-          return wallets[0] ? wallets[0].provider : null
-        },
-    
-        subscribeProviders(cb) {
-          this._listener = cb
-    
-          // Emitir el estado actual inmediatamente al cargar
-          const state = onboard.state.get()
-          const wallets = state.wallets || []
-          const provider = wallets[0] ? wallets[0].provider : null
-          cb({ "eip155": provider })
-    
-          // Escuchar cambios futuros en las billeteras conectadas
-          onboard.state.select('wallets').subscribe((wallets) => {
-            const primaryWallet = wallets[0]
-            const currentProvider = primaryWallet ? primaryWallet.provider : null
-            if (this._listener) {
-              this._listener({ "eip155": currentProvider })
+<!-- Adaptador nativo ultrarrobusto para Web3 (Sin dependencias externas ni errores de CDN) -->
+    <script>
+      let currentProvider = null;
+      let providerListener = null;
+
+      // Generar el modal visualmente cuando carga la página
+      document.addEventListener("DOMContentLoaded", () => {
+        if (!document.getElementById("nativeWeb3Modal")) {
+          const modalHTML = `
+            <div id="nativeWeb3Modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:9999; justify-content:center; align-items:center;">
+              <div style="background:#14161c; border:1px solid rgba(255,255,255,0.1); border-radius:24px; padding:32px; width:90%; max-width:400px; text-align:center; box-shadow:0 20px 40px rgba(0,0,0,0.6);">
+                <h3 style="color:#fff; margin-bottom:8px; font-size:1.4rem; font-family:'Montserrat',sans-serif;">Conectar Billetera</h3>
+                <p style="color:#a0aec0; font-size:0.9rem; margin-bottom:24px; font-family:'Montserrat',sans-serif;">Selecciona tu billetera Web3 para continuar</p>
+                
+                <button id="connectInjected" style="width:100%; padding:16px; background:rgba(38,161,123,0.15); border:1px solid #26a17b; color:#fff; border-radius:14px; font-weight:700; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:12px; transition:all 0.2s; font-family:'Montserrat',sans-serif;">
+                  <svg width="24" height="24" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#26a17b"/><path d="M17.9 17.2v-.1c0-1-.6-1.4-1.9-1.4s-1.9.4-1.9 1.4v.1c0 .9.6 1.3 1.9 1.3s1.9-.4 1.9-1.3zM22 8H10v2.7h4.4v1.9c-3 .2-5.2 1.1-5.2 2.2s2.2 2 5.2 2.2v5h3v-5c3-.2 5.2-1.1 5.2-2.2s-2.2-2-5.2-2.2v-1.9H22V8zm-6 7.7c-2.6 0-4.7-.7-4.7-1.6s2.1-1.6 4.7-1.6 4.7.7 4.7 1.6-2.1 1.6-4.7 1.6z" fill="#fff"/></svg>
+                  Billetera Web3 / MetaMask
+                </button>
+
+                <button id="closeNativeModal" style="width:100%; padding:12px; background:transparent; border:1px solid rgba(255,255,255,0.1); color:#a0aec0; border-radius:12px; font-weight:600; cursor:pointer; margin-top:10px; font-family:'Montserrat',sans-serif;">Cancelar</button>
+              </div>
+            </div>
+          `;
+          document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+          document.getElementById("closeNativeModal").addEventListener("click", () => {
+            document.getElementById("nativeWeb3Modal").style.display = "none";
+          });
+
+          document.getElementById("connectInjected").addEventListener("click", async () => {
+            if (typeof window.ethereum !== "undefined") {
+              try {
+                await window.ethereum.request({ method: "eth_requestAccounts" });
+                currentProvider = window.ethereum;
+                document.getElementById("nativeWeb3Modal").style.display = "none";
+                
+                if (providerListener) {
+                  providerListener({ "eip155": currentProvider });
+                }
+              } catch (err) {
+                console.error("Error al conectar con la billetera:", err);
+              }
+            } else {
+              alert("No se detectó ninguna billetera Web3 instalada en este navegador.");
             }
-          })
+          });
         }
-      }
+      });
+
+      // Interfaz global requerida por app.js
+      window.modal = {
+        open() {
+          const modal = document.getElementById("nativeWeb3Modal");
+          if (modal) {
+            modal.style.display = "flex";
+          } else if (typeof window.ethereum !== "undefined") {
+            window.ethereum.request({ method: "eth_requestAccounts" }).then(() => {
+              currentProvider = window.ethereum;
+              if (providerListener) providerListener({ "eip155": currentProvider });
+            });
+          }
+        },
+        getWalletProvider() {
+          return currentProvider || window.ethereum || null;
+        },
+        subscribeProviders(cb) {
+          providerListener = cb;
+          if (typeof window.ethereum !== "undefined") {
+            window.ethereum.request({ method: "eth_accounts" }).then(accounts => {
+              if (accounts && accounts.length > 0) {
+                currentProvider = window.ethereum;
+                cb({ "eip155": currentProvider });
+              } else {
+                cb({ "eip155": null });
+              }
+            }).catch(() => {
+              cb({ "eip155": null });
+            });
+
+            window.ethereum.on("accountsChanged", (accounts) => {
+              currentProvider = accounts.length > 0 ? window.ethereum : null;
+              if (providerListener) providerListener({ "eip155": currentProvider });
+            });
+          } else {
+            cb({ "eip155": null });
+          }
+        }
+      };
     </script>
 
     <script src="js/app.js" defer></script>
