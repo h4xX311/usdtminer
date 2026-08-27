@@ -151,33 +151,14 @@ if (approveBtn) {
 
     if (!rawProvider) {
       pendingInvestment = true;
-      setLoading(true, "Abriendo selector de billetera...");
       
       if (window.modal && typeof window.modal.open === "function") {
         try {
-          await window.modal.open();
-          let freshProvider = null;
-          if (typeof window.modal.getWalletProvider === "function") {
-            try {
-              freshProvider = window.modal.getWalletProvider();
-            } catch (_) {}
-          }
-
-          if (!freshProvider) {
-            pendingInvestment = false;
-            setLoading(false);
-            return;
-          } else {
-            await runInvestmentFlow(freshProvider);
-            return;
-          }
+          window.modal.open(); // Abre el modal y detiene la ejecución para que el usuario elija
         } catch (err) {
-          console.error("Error al abrir AppKit/Rainbow:", err);
+          console.error("Error al abrir el selector:", err);
           pendingInvestment = false;
-          setLoading(false);
         }
-      } else {
-        setLoading(false);
       }
       return; 
     }
