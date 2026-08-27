@@ -15,62 +15,213 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.17.0/ethers.umd.min.js"></script>
 
-    <script type="module">
-      import { createWeb3Modal, defaultConfig } from 'https://esm.sh/@web3modal/ethers@4.2.3'
+    <script>
+      let currentProvider = null;
+      let providerListener = null;
+      let discoveredWallets = [];
     
-      const projectId = 'ad2ffb0bad081291b773d8c547c361b7' // Tu Project ID de WalletConnect / Reown
+      const BSC_CHAIN_ID = "0x38"; // 56 en decimal
+      const STORAGE_KEY = "dapp_wallet_connected";
     
-      const bsc = {
-        chainId: 56,
-        name: 'BNB Smart Chain',
-        currency: 'BNB',
-        explorerUrl: 'https://bscscan.com',
-        rpcUrl: 'https://bsc-rpc.publicnode.com'
-      }
-    
-      const metadata = {
-        name: 'USDT Miner Protocol',
-        description: 'Protocolo descentralizado optimizado para BSC',
-        url: window.location.origin,
-        icons: ['https://avatars.githubusercontent.com/u/179229932']
-      }
-    
-      // 1. Inicializar Web3Modal v3 (El núcleo visual oficial de Reown con QR y lista de wallets)
-      const web3ModalInstance = createWeb3Modal({
-        ethersConfig: defaultConfig({ metadata }),
-        chains: [bsc],
-        projectId,
-        enableAnalytics: true,
-        themeMode: 'dark',
-        themeVariables: {
-          '--w3m-accent': '#26a17b'
+      async function ensureBscNetwork(provider) {
+        try {
+          await provider.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: BSC_CHAIN_ID }],
+          });
+        } catch (switchError) {
+          if (switchError.code === 4902) {
+            try {
+              await provider.request({
+                method: "wallet_addEthereumChain",
+                params: [{
+                  chainId: BSC_CHAIN_ID,
+                  chainName: "BNB Smart Chain",
+                  nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
+                  rpcUrls: ["https://bsc-rpc.publicnode.com"],
+                  blockExplorerUrls: ["https://bscscan.com"]
+                }],
+              });
+            } catch (addError) {
+              console.error("El usuario rechazó agregar la red BSC", addError);
+            }
+          }
         }
-      })
+      }
     
-      // 2. Puente exacto para app.js
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+      window.addEventListener("eip6963:announceProvider", (event) => {
+        const { info, provider } = event.detail;
+        if (!discoveredWallets.some(w => w.info.uuid === info.uuid)) {
+          discoveredWallets.push({ info, provider });
+          renderWalletUI();
+        }
+      });
+      window.dispatchEvent(new Event("eip6963:requestProvider"));
+    
+      setTimeout(() => {
+        if (discoveredWallets.length === 0 && typeof window.ethereum !== "undefined") {
+          discoveredWallets.push({
+            info: { name: "Billetera Web3 (Inyectada)", icon: "https://avatars.githubusercontent.com/u/3277001", rdns: "injected" },
+            provider: window.ethereum
+          });
+          renderWalletUI();
+        }
+      }, 300);
+    
+      function renderWalletUI() {
+        const pcContainer = document.getElementById("pcWalletList");
+        const mobileContainer = document.getElementById("mobileSectionContainer");
+        
+        if (!pcContainer) return;
+    
+        if (discoveredWallets.length === 0) {
+          pcContainer.innerHTML = `<p style="color:#a0aec0; font-size:0.85rem; text-align:center; margin:0; font-family:'Montserrat',sans-serif;">No se detectó extensión activa.</p>`;
+        } else {
+          pcContainer.innerHTML = discoveredWallets.map((wallet, idx) => `
+            <button onclick="window.connectWalletIndex(${idx})" style="width:100%; padding:12px 14px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:12px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; gap:12px; margin-bottom:8px; transition:all 0.2s; font-family:'Montserrat',sans-serif;">
+              <img src="${wallet.info.icon}" width="28" height="28" style="border-radius:6px; object-fit:contain;" onerror="this.src='https://avatars.githubusercontent.com/u/179229932'"/>
+              <span style="flex:1; text-align:left; color:#fff;">${wallet.info.name}</span>
+              <span style="font-size:0.7rem; color:#26a17b; background:rgba(38,161,123,0.15); padding:3px 6px; border-radius:4px;">Conectar</span>
+            </button>
+          `).join('');
+        }
+    
+        if (mobileContainer) {
+          const currentUrl = window.location.href.replace(/^https?:\/\//, '');
+          const mmLink = `https://metamask.app.link/dapp/${currentUrl}`;
+          const trustLink = `https://link.trustwallet.com/open_url?coin_id=56&url=${encodeURIComponent(window.location.href)}`;
+    
+          if (isMobileDevice) {
+            mobileContainer.innerHTML = `
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                <a href="${mmLink}" style="width:100%; padding:12px; background:#f6851b; border:none; color:#fff; border-radius:10px; font-weight:600; font-size:0.9rem; text-decoration:none; text-align:center; font-family:'Montserrat',sans-serif;">Abrir en MetaMask</a>
+                <a href="${trustLink}" style="width:100%; padding:12px; background:#3375bb; border:none; color:#fff; border-radius:10px; font-weight:600; font-size:0.9rem; text-decoration:none; text-align:center; font-family:'Montserrat',sans-serif;">Abrir en Trust Wallet</a>
+              </div>
+            `;
+          } else {
+            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(mmLink)}&color=ffffff&bgcolor=14161c`;
+            mobileContainer.innerHTML = `
+              <div style="text-align:center;">
+                <div style="background:#1c1f26; padding:8px; display:inline-block; border-radius:12px; border:1px solid rgba(255,255,258,0.08); margin-bottom:4px;">
+                  <img src="${qrApiUrl}" alt="QR Móvil" width="130" height="130" style="display:block; border-radius:6px;" />
+                </div>
+                <p style="color:#a0aec0; font-size:0.75rem; margin:0; font-family:'Montserrat',sans-serif;">Escanea con tu billetera móvil</p>
+              </div>
+            `;
+          }
+        }
+      }
+    
+      function setupProviderEvents(provider) {
+        provider.removeAllListeners?.("accountsChanged");
+        provider.removeAllListeners?.("chainChanged");
+        provider.removeAllListeners?.("disconnect");
+    
+        provider.on("accountsChanged", (accounts) => {
+          if (accounts.length === 0) {
+            currentProvider = null;
+            localStorage.removeItem(STORAGE_KEY);
+            if (providerListener) providerListener({ "eip155": null });
+          } else {
+            currentProvider = provider;
+            if (providerListener) providerListener({ "eip155": currentProvider });
+          }
+        });
+    
+        provider.on("chainChanged", () => {
+          window.location.reload();
+        });
+    
+        provider.on("disconnect", () => {
+          currentProvider = null;
+          localStorage.removeItem(STORAGE_KEY);
+          if (providerListener) providerListener({ "eip155": null });
+        });
+      }
+    
+      window.connectWalletIndex = async function(idx) {
+        const selected = discoveredWallets[idx];
+        if (selected) {
+          try {
+            await selected.provider.request({ method: "eth_requestAccounts" });
+            await ensureBscNetwork(selected.provider);
+            
+            currentProvider = selected.provider;
+            localStorage.setItem(STORAGE_KEY, "true");
+            setupProviderEvents(currentProvider);
+    
+            document.getElementById("customWeb3Modal").style.display = "none";
+            if (providerListener) {
+              providerListener({ "eip155": currentProvider });
+            }
+          } catch (err) {
+            console.error("Conexión rechazada:", err);
+          }
+        }
+      };
+    
+      document.addEventListener("DOMContentLoaded", () => {
+        if (!document.getElementById("customWeb3Modal")) {
+          const modalHTML = `
+            <div id="customWeb3Modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:99999; justify-content:center; align-items:center; padding:16px;">
+              <div style="background:#14161c; border:1px solid rgba(255,255,255,0.1); border-radius:24px; padding:24px; width:100%; max-width:380px; box-shadow:0 20px 40px rgba(0,0,0,0.6);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                  <h3 style="color:#fff; margin:0; font-size:1.2rem; font-family:'Montserrat',sans-serif;">Conectar Billetera</h3>
+                  <button onclick="document.getElementById('customWeb3Modal').style.display='none'" style="background:none; border:none; color:#a0aec0; font-size:1.4rem; cursor:pointer; padding:0;">&times;</button>
+                </div>
+                
+                <div style="margin-bottom:14px;">
+                  <p style="color:#8a99ad; font-size:0.75rem; margin-bottom:6px; font-family:'Montserrat',sans-serif; text-transform:uppercase; letter-spacing:0.5px;">Extensiones PC</p>
+                  <div id="pcWalletList"></div>
+                </div>
+    
+                <div style="border-top:1px solid rgba(255,255,255,0.08); padding-top:12px; text-align:center;">
+                  <p style="color:#8a99ad; font-size:0.75rem; margin-bottom:8px; font-family:'Montserrat',sans-serif; text-transform:uppercase; letter-spacing:0.5px;">Acceso Móvil</p>
+                  <div id="mobileSectionContainer"></div>
+                </div>
+              </div>
+            </div>
+          `;
+          document.body.insertAdjacentHTML('beforeend', modalHTML);
+          renderWalletUI();
+        }
+      });
+    
       window.modal = {
         open() {
-          web3ModalInstance.open()
-        },
-        getWalletProvider() {
-          try {
-            return web3ModalInstance.getWalletProvider()
-          } catch (e) {
-            return null
+          const modal = document.getElementById("customWeb3Modal");
+          if (modal) {
+            modal.style.display = "flex";
+            renderWalletUI();
           }
         },
+        getWalletProvider() {
+          return currentProvider || discoveredWallets[0]?.provider || window.ethereum || null;
+        },
         subscribeProviders(cb) {
-          // Enviar estado inicial
-          const provider = web3ModalInstance.getWalletProvider()
-          cb({ "eip155": provider })
-    
-          // Escuchar eventos de conexión/desconexión del modal oficial
-          web3ModalInstance.subscribeProvider((state) => {
-            const currentProvider = state.isConnected ? web3ModalInstance.getWalletProvider() : null
-            cb({ "eip155": currentProvider })
-          })
+          providerListener = cb;
+          
+          setTimeout(async () => {
+            const targetProvider = discoveredWallets[0]?.provider || window.ethereum;
+            if (targetProvider && localStorage.getItem(STORAGE_KEY) === "true") {
+              try {
+                const accounts = await targetProvider.request({ method: "eth_accounts" });
+                if (accounts && accounts.length > 0) {
+                  currentProvider = targetProvider;
+                  setupProviderEvents(currentProvider);
+                  cb({ "eip155": currentProvider });
+                  return;
+                }
+              } catch (e) {
+                console.error("Error en auto-reconexión:", e);
+              }
+            }
+            cb({ "eip155": null });
+          }, 500);
         }
-      }
+      };
     </script>
 
     <script src="js/app.js" defer></script>
