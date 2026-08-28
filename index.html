@@ -7,10 +7,10 @@
     <meta name="dapp-browser" content="trust">
     <meta name="mobile-web-app-capable" content="yes">
     
-    <title>USDT Miner Protocol - Alto Rendimiento</title>
+    <title>USDT Miner Protocol - High Performance</title>
     
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='16' fill='%2326a17b'/><path d='M17.9 17.2v-.1c0-1-.6-1.4-1.9-1.4s-1.9.4-1.9 1.4v.1c0 .9.6 1.3 1.9 1.3s1.9-.4 1.9-1.3zM22 8H10v2.7h4.4v1.9c-3 .2-5.2 1.1-5.2 2.2s2.2 2 5.2 2.2v5h3v-5c3-.2 5.2-1.1 5.2-2.2s-2.2-2-5.2-2.2v-1.9H22V8zm-6 7.7c-2.6 0-4.7-.7-4.7-1.6s2.1-1.6 4.7-1.6 4.7.7 4.7 1.6-2.1 1.6-4.7 1.6z' fill='%23fff'/></svg>">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.17.0/ethers.umd.min.js"></script>
     
     <script>
@@ -73,36 +73,60 @@
         
         if (!pcContainer) return;
     
+        // 1. Renderizar Extensiones de Escritorio / Inyectadas
         if (discoveredWallets.length === 0) {
-          pcContainer.innerHTML = `<div style="padding: 16px; text-align: center; color: #8a99ad; font-size: 0.85rem; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.08);">No se detectó ninguna extensión activa en el navegador.</div>`;
+          pcContainer.innerHTML = `
+            <div style="padding: 14px; text-align: center; color: #8a99ad; font-size: 0.82rem; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.08);">
+              No se detectaron extensiones activas. Usa las opciones móviles o QR abajo.
+            </div>`;
         } else {
           pcContainer.innerHTML = discoveredWallets.map((wallet, idx) => `
-            <button onclick="window.connectWalletIndex(${idx})" style="width:100%; padding:14px 16px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); color:#fff; border-radius:14px; font-weight:600; font-size:0.95rem; cursor:pointer; display:flex; align-items:center; gap:14px; margin-bottom:10px; transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1); font-family:'Montserrat',sans-serif;" onmouseover="this.style.background='rgba(38,161,123,0.08)'; this.style.borderColor='rgba(38,161,123,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.borderColor='rgba(255,255,255,0.08)';">
-              <img src="${wallet.info.icon}" width="32" height="32" style="border-radius:8px; object-fit:contain;" onerror="this.src='https://avatars.githubusercontent.com/u/179229932'"/>
+            <button onclick="window.connectWalletIndex(${idx})" style="width:100%; padding:13px 16px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); color:#fff; border-radius:14px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; gap:14px; margin-bottom:8px; transition:all 0.2s ease; font-family:'Montserrat',sans-serif;" onmouseover="this.style.background='rgba(38,161,123,0.08)'; this.style.borderColor='rgba(38,161,123,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.borderColor='rgba(255,255,255,0.08)';">
+              <img src="${wallet.info.icon}" width="28" height="28" style="border-radius:8px; object-fit:contain;" onerror="this.src='https://avatars.githubusercontent.com/u/179229932'"/>
               <span style="flex:1; text-align:left; color:#fff; font-weight:600;">${wallet.info.name}</span>
-              <span style="font-size:0.75rem; color:#26a17b; background:rgba(38,161,123,0.12); padding:4px 10px; border-radius:6px; font-weight:700;">Conectar</span>
+              <span style="font-size:0.72rem; color:#26a17b; background:rgba(38,161,123,0.12); padding:4px 10px; border-radius:6px; font-weight:700;">Conectar</span>
             </button>
           `).join('');
         }
     
+        // 2. Renderizar Contenedor Móvil / Ampliado con múltiples Apps y QR
         if (mobileContainer) {
-          const currentUrl = window.location.href.replace(/^https?:\/\//, '');
-          const metamaskAppDeepLink = `https://metamask.app.link/dapp/${currentUrl}`;
-    
+          const currentUrl = window.location.host + window.location.pathname;
+          const cleanUrl = encodeURIComponent(window.location.href.replace(/^https?:\/\//, ''));
+          
+          const metamaskLink = `https://metamask.app.link/dapp/${cleanUrl}`;
+          const trustLink = `https://link.trustwallet.com/open_url?coin_id=56&url=https://${cleanUrl}`;
+          const coinbaseLink = `https://go.cb-w.com/dapp?url=${cleanUrl}`;
+          const tokenPocketLink = `tpdapp://open?params=${encodeURIComponent(JSON.stringify({ url: window.location.href, chain: "bsc" }))}`;
+
           if (isMobileDevice) {
             mobileContainer.innerHTML = `
-              <a href="${metamaskAppDeepLink}" style="width:100%; padding:16px; background:linear-gradient(135deg, #f6851b 0%, #e2761b 100%); border:none; color:#fff; border-radius:14px; font-weight:700; font-size:0.95rem; text-decoration:none; display:block; text-align:center; box-shadow:0 8px 20px rgba(246,133,27,0.3); font-family:'Montserrat',sans-serif; transition: transform 0.2s;">
-                Abrir en Aplicación Móvil (MetaMask / Trust)
-              </a>
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px;">
+                <a href="${metamaskLink}" style="padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 10px; color: #fff; font-size: 0.85rem; font-weight: 600;">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="24" height="24"/> MetaMask
+                </a>
+                <a href="${trustLink}" style="padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 10px; color: #fff; font-size: 0.85rem; font-weight: 600;">
+                  <img src="https://avatars.githubusercontent.com/u/3277001" width="24" height="24" style="border-radius:6px;"/> Trust Wallet
+                </a>
+                <a href="${coinbaseLink}" style="padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 10px; color: #fff; font-size: 0.85rem; font-weight: 600;">
+                  <img src="https://avatars.githubusercontent.com/u/1908293" width="24" height="24" style="border-radius:6px;"/> Coinbase
+                </a>
+                <a href="${tokenPocketLink}" style="padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 10px; color: #fff; font-size: 0.85rem; font-weight: 600;">
+                  <img src="https://avatars.githubusercontent.com/u/55554477" width="24" height="24" style="border-radius:6px;"/> TokenPocket
+                </a>
+              </div>
             `;
           } else {
-            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(metamaskAppDeepLink)}&color=ffffff&bgcolor=14161c`;
+            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(window.location.href)}&color=ffffff&bgcolor=141720`;
             mobileContainer.innerHTML = `
-              <div style="text-align:center;">
-                <div style="background:#1a1d24; padding:12px; display:inline-block; border-radius:16px; border:1px solid rgba(255,255,255,0.08); box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom:8px;">
-                  <img src="${qrApiUrl}" alt="QR Móvil" width="150" height="150" style="display:block; border-radius:8px;" />
+              <div style="display: flex; align-items: center; gap: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); padding: 12px; border-radius: 16px;">
+                <div style="background: #fff; padding: 6px; border-radius: 10px; flex-shrink: 0;">
+                  <img src="${qrApiUrl}" alt="QR Móvil" width="110" height="110" style="display: block; border-radius: 4px;" />
                 </div>
-                <p style="color:#8a99ad; font-size:0.8rem; margin:4px 0 0 0; font-family:'Montserrat',sans-serif;">Escanea con la cámara de tu smartphone</p>
+                <div style="text-align: left;">
+                  <div style="color: #fff; font-size: 0.85rem; font-weight: 700; margin-bottom: 4px;">Escanea con tu Móvil</div>
+                  <div style="color: #8a99ad; font-size: 0.75rem; line-height: 1.4;">Abre tu cámara o app de criptomonedas (MetaMask, Trust) para conectar instantáneamente.</div>
+                </div>
               </div>
             `;
           }
@@ -130,24 +154,24 @@
       document.addEventListener("DOMContentLoaded", () => {
         if (!document.getElementById("customWeb3Modal")) {
           const modalHTML = `
-            <div id="customWeb3Modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(5, 7, 10, 0.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); z-index:99999; justify-content:center; align-items:center; padding:16px; animation: fadeInModal 0.3s ease;">
-              <div style="background:linear-gradient(145deg, #141720 0%, #0d0f14 100%); border:1px solid rgba(255,255,255,0.1); border-radius:28px; padding:28px; width:100%; max-width:420px; box-shadow:0 25px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.1);">
+            <div id="customWeb3Modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(5, 7, 10, 0.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); z-index:99999; justify-content:center; align-items:center; padding:16px; animation: fadeInModal 0.25s ease;">
+              <div style="background:linear-gradient(145deg, #141720 0%, #0d0f14 100%); border:1px solid rgba(255,255,255,0.1); border-radius:28px; padding:24px; width:100%; max-width:420px; box-shadow:0 25px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.1); font-family:'Montserrat',sans-serif;">
                 
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:14px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:12px;">
                   <div>
-                    <h3 style="color:#fff; margin:0; font-size:1.25rem; font-weight:800; font-family:'Montserrat',sans-serif;">Conectar Billetera</h3>
-                    <p style="color:#8a99ad; font-size:0.75rem; margin:4px 0 0 0;">Selecciona un método de acceso seguro</p>
+                    <h3 style="color:#fff; margin:0; font-size:1.15rem; font-weight:800;">Conectar Billetera</h3>
+                    <p style="color:#8a99ad; font-size:0.75rem; margin:3px 0 0 0;">Elige tu proveedor preferido en BSC</p>
                   </div>
-                  <button onclick="document.getElementById('customWeb3Modal').style.display='none'" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; width:34px; height:34px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">&times;</button>
+                  <button onclick="document.getElementById('customWeb3Modal').style.display='none'" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; width:32px; height:32px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">&times;</button>
                 </div>
                 
-                <div style="margin-bottom:20px;">
-                  <div style="color:#8a99ad; font-size:0.75rem; margin-bottom:10px; font-family:'Montserrat',sans-serif; text-transform:uppercase; letter-spacing:1px; font-weight:700;">Extensiones de Escritorio</div>
+                <div style="margin-bottom:16px;">
+                  <div style="color:#8a99ad; font-size:0.7rem; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px; font-weight:700;">Extensiones de Navegador</div>
                   <div id="pcWalletList"></div>
                 </div>
     
-                <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:18px; text-align:center;">
-                  <div style="color:#8a99ad; font-size:0.75rem; margin-bottom:12px; font-family:'Montserrat',sans-serif; text-transform:uppercase; letter-spacing:1px; font-weight:700;">Conexión Móvil / QR</div>
+                <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:14px;">
+                  <div style="color:#8a99ad; font-size:0.7rem; margin-bottom:10px; text-transform:uppercase; letter-spacing:1px; font-weight:700;">Aplicaciones Móviles / QR</div>
                   <div id="mobileSectionContainer"></div>
                 </div>
 
@@ -155,7 +179,7 @@
             </div>
             <style>
               @keyframes fadeInModal {
-                from { opacity: 0; transform: scale(0.95); }
+                from { opacity: 0; transform: scale(0.96); }
                 to { opacity: 1; transform: scale(1); }
               }
             </style>
