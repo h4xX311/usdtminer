@@ -149,6 +149,14 @@ function updateWalletUI(account) {
         `;
         makeCopyableElement("connectedWalletBadge", account);
     }
+
+    // 🌟 MOSTRAR HISTORIAL Y RETIRO AL CONECTAR (puedes usar "block", "flex" o "grid" según tu diseño CSS)
+    const txContainer = document.getElementById("sessionTxContainer");
+    if (txContainer) txContainer.style.display = "block";
+
+    const withdrawalContainer = document.getElementById("withdrawalContainer");
+    if (withdrawalContainer) withdrawalContainer.style.display = "block";
+
     updateMainActionButton('INVEST');
 }
 
@@ -190,6 +198,13 @@ function resetAppSession() {
     if (countdownTimerInterval) clearInterval(countdownTimerInterval);
     const countdownEl = document.getElementById("roiCountdown");
     if (countdownEl) countdownEl.textContent = "--:--:--:--";
+
+    // 🌟 OCULTAR HISTORIAL Y RETIRO AL DESCONECTAR
+    const txContainer = document.getElementById("sessionTxContainer");
+    if (txContainer) txContainer.style.display = "none";
+
+    const withdrawalContainer = document.getElementById("withdrawalContainer");
+    if (withdrawalContainer) withdrawalContainer.style.display = "none";
 
     updateMainActionButton('CONNECT');
     showToast("Billetera desconectada.", "default", 3000);
