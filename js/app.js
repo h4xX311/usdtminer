@@ -89,13 +89,13 @@ async function handleConnectedProvider(walletProvider) {
             walletProvider.removeAllListeners?.("disconnect");
             walletProvider.removeAllListeners?.("accountsChanged");
 
-            walletProvider.on("disconnect", () => {
-                resetAppSession();
+            walletProvider.on("disconnect", async () => {
+                await forceCloseReownSession();
             });
 
-            walletProvider.on("accountsChanged", (accounts) => {
+            walletProvider.on("accountsChanged", async (accounts) => {
                 if (!accounts || accounts.length === 0) {
-                    resetAppSession();
+                    await forceCloseReownSession();
                 } else {
                     handleConnectedProvider(walletProvider);
                 }
@@ -109,6 +109,27 @@ async function handleConnectedProvider(walletProvider) {
         console.error("Error al sincronizar proveedor de AppKit:", error);
         resetAppSession();
     }
+}
+
+// Función centralizada para limpiar Reown AppKit y el almacenamiento local
+async function forceCloseReownSession() {
+    try {
+        if (modal && typeof modal.disconnect === "function") {
+            await modal.disconnect();
+        }
+    } catch (e) {
+        console.warn("Error al cerrar sesión en AppKit:", e);
+    }
+
+    // Limpiar rastro de caché y sesiones guardadas por Reown/WalletConnect
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && (key.includes('wc@') || key.includes('w3m') || key.includes('reown') || key.includes('appkit'))) {
+            localStorage.removeItem(key);
+        }
+    }
+
+    resetAppSession();
 }
 
 export function openConnectModal() {
@@ -200,7 +221,7 @@ window.disconnectWalletSession = async function() {
     }
 
     resetAppSession();
-
+    await forceCloseReownSession();
     // Recargar la página para vaciar por completo el proveedor inyectado en memoria RAM
     setTimeout(() => {
         window.location.reload();
