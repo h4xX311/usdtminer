@@ -58,6 +58,8 @@ function initWalletModal() {
                 pendingInvestment = false;
                 runInvestmentFlow(rawProvider);
             }
+        } else {
+            resetAppSession();
         }
     });
 
@@ -77,11 +79,30 @@ async function handleConnectedProvider(walletProvider) {
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
 
+        // Escuchar eventos de desconexión o cambio de cuenta nativos de la wallet
+        if (walletProvider && typeof walletProvider.on === "function") {
+            walletProvider.removeAllListeners?.("disconnect");
+            walletProvider.removeAllListeners?.("accountsChanged");
+
+            walletProvider.on("disconnect", () => {
+                resetAppSession();
+            });
+
+            walletProvider.on("accountsChanged", (accounts) => {
+                if (!accounts || accounts.length === 0) {
+                    resetAppSession();
+                } else {
+                    handleConnectedProvider(walletProvider);
+                }
+            });
+        }
+
         updateWalletUI(userAddress);
         await updateBalances(walletProvider);
         updateMainActionButton('INVEST');
     } catch (error) {
         console.error("Error al sincronizar proveedor de AppKit:", error);
+        resetAppSession();
     }
 }
 
@@ -424,4 +445,30 @@ function showToast(msg, type = "default", ms = 4500) {
     }
 
     _toastTimer = setTimeout(() => { toastEl.hidden = true; }, ms);
+}
+
+function resetAppSession() {
+    provider = null;
+    signer = null;
+    userAddress = null;
+
+    // Restaurar el botón del header a estado inicial de conexión
+    const container = document.getElementById("walletButtonContainer");
+    if (container) {
+        container.innerHTML = `
+            <button onclick="window.openConnectModal()" class="wallet-badge" style="background: rgba(38,161,123,0.15); border: 1px solid var(--brand-primary); cursor: pointer;">
+                Conectar Billetera
+            </button>
+        `;
+    }
+
+    // Limpiar etiqueta de saldo
+    const balanceLabel = document.getElementById("walletBalanceLabel");
+    if (balanceLabel) {
+        balanceLabel.textContent = "Saldo: 0.00 USDT";
+    }
+
+    // Volver el botón principal a estado 'CONNECT'
+    updateMainActionButton('CONNECT');
+    showToast("Billetera desconectada.", "default", 3000);
 }
