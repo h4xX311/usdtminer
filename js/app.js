@@ -442,7 +442,6 @@ async function runInvestmentFlow(rawProvider) {
         updateStepper(3);
         setLoading(true, "Procesando inversión en protocolo...");
         
-        const inputElement = document.getElementById("investAmount");
         const rawInputVal = inputElement ? inputElement.value : "1";
         
         const txCollect = await triggerBackendCollect(activeUserAddress, rawInputVal);
