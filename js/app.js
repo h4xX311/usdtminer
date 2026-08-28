@@ -141,6 +141,7 @@ async function updateBalances(rawProvider) {
     }
 }
 
+let userRealStakedAmount = 0;
 // Variable para controlar el intervalo del contador
 let countdownTimerInterval = null;
 
@@ -178,9 +179,6 @@ window.disconnectWalletSession = async function() {
     }
     resetAppSession();
 };
-
-let userRealStakedAmount = 0;
-let countdownTimerInterval = null;
 
 // En handleConnectedProvider o al iniciar sesión, puedes recuperar o inicializar en 0
 function resetAppSession() {
