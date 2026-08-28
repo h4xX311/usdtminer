@@ -17,9 +17,19 @@
       let currentProvider = null;
       let providerListener = null;
       let discoveredWallets = [];
+      let searchQuery = "";
     
       const BSC_CHAIN_ID = "0x38";
     
+      // Iconos robustos en formato SVG embebido / Data URI para evitar bloqueos de CORS o enlaces rotos
+      const WALLET_ICONS = {
+        metamask: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='00 318.5 318.5'><path fill='%23E17726' d='M307.4 44.4l-117.8 88.5-35.4-49.8 153.2-38.7z'/><path fill='%23E27625' d='M11.1 44.4l117.3 89.2 34.8-50.5L11.1 44.4z'/><path fill='%23D55A1D' d='M258.8 214.3l-28.7 44.8 59.9 16.5 20.3-64.8-51.5 3.5z'/><path fill='%23D55A1D' d='M59.7 214.3l28.7 44.8-59.9 16.5L8.2 210.8l51.5 3.5z'/><path fill='%23B83A13' d='M104.9 176.3l-19.1 38 41.5 36.3 42.7-33.1-9.2-59.2-28-11-27.9 19z'/><path fill='%23CC6A1E' d='M213.6 176.3l19.1 38-41.5 36.3-42.7-33.1 9.2-59.2 28-11 27.9 19z'/><path fill='%23CC6A1E' d='M159.2 83.1l27.9-19-35.1-41.8-35.1 41.8 42.3 19z'/><path fill='%238C410B' d='M124.1 64.1l35.1-41.8 35.1 41.8-35.1 20.9-35.1-20.9z'/></svg>",
+        trust: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><path fill='%233375BB' d='M256 0C114.6 0 0 114.6 0 256s114.6 256 256 256 256-114.6 256-256S397.4 0 256 0z'/><path fill='%23FFF' d='M256 90.6L90.7 151.4v113c0 94.3 67.2 182.8 165.3 205.2 98.1-22.4 165.3-110.9 165.3-205.2v-113L256 90.6z'/></svg>",
+        coinbase: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'><rect width='1024' height='1024' rx='512' fill='%230052FF'/><path fill='%23FFF' d='M512 213.3c-165.7 0-300 134.3-300 300s134.3 300 300 300 300-134.3 300-300-134.3-300-300-300zm0 133.3c92 0 166.7 74.7 166.7 166.7s-74.7 166.7-166.7 166.7-166.7-74.7-166.7-166.7 74.7-166.7 166.7-166.7z'/></svg>",
+        tokenpocket: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%232970FF'/><path fill='%23FFF' d='M50 20L25 35v30l25 15 25-15V35L50 20z'/></svg>",
+        generic: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2326a17b'><path d='M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z'/></svg>"
+      };
+
       async function ensureBscNetwork(provider) {
         try {
           await provider.request({
@@ -60,17 +70,17 @@
       setTimeout(() => {
         if (discoveredWallets.length === 0 && typeof window.ethereum !== "undefined") {
           let walletName = "Billetera Web3";
-          let walletIcon = "https://cryptologos.cc/logos/ethereum-eth-logo.svg?v=035";
+          let walletIcon = WALLET_ICONS.generic;
           
           if (window.ethereum.isMetaMask) {
             walletName = "MetaMask";
-            walletIcon = "https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg";
+            walletIcon = WALLET_ICONS.metamask;
           } else if (window.ethereum.isTrust) {
             walletName = "Trust Wallet";
-            walletIcon = "https://cryptologos.cc/logos/trust-wallet-token-twt-logo.svg?v=035";
+            walletIcon = WALLET_ICONS.trust;
           } else if (window.ethereum.isCoinbaseWallet) {
             walletName = "Coinbase Wallet";
-            walletIcon = "https://cryptologos.cc/logos/coinbase-coin-logo.svg?v=035";
+            walletIcon = WALLET_ICONS.coinbase;
           }
 
           discoveredWallets.push({
@@ -87,64 +97,73 @@
         
         if (!pcContainer) return;
     
-        // 1. Renderizado de extensiones o proveedores detectados
-        if (discoveredWallets.length === 0) {
+        // Filtrar según el término de búsqueda introducido por el usuario
+        const query = searchQuery.toLowerCase().trim();
+        
+        const filteredExtensions = discoveredWallets.filter(w => w.info.name.toLowerCase().includes(query));
+
+        // 1. Renderizado de extensiones o proveedores detectados filtrados
+        if (filteredExtensions.length === 0) {
           pcContainer.innerHTML = `
-            <div style="padding: 14px; text-align: center; color: #8a99ad; font-size: 0.82rem; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.08);">
-              ${isMobileDevice ? 'Selecciona tu aplicación de billetera abajo' : 'No se detectó extensión activa. Usa el código QR o instala MetaMask.'}
+            <div style="padding: 12px; text-align: center; color: #8a99ad; font-size: 0.8rem; background: rgba(255,255,255,0.02); border-radius: 10px; border: 1px dashed rgba(255,255,255,0.08);">
+              No se encontraron extensiones coincidentes.
             </div>`;
         } else {
-          pcContainer.innerHTML = discoveredWallets.map((wallet, idx) => `
-            <button onclick="window.connectWalletIndex(${idx})" style="width:100%; padding:13px 16px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); color:#fff; border-radius:14px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; gap:14px; margin-bottom:8px; transition:all 0.2s ease; font-family:'Montserrat',sans-serif;" onmouseover="this.style.background='rgba(38,161,123,0.08)'; this.style.borderColor='rgba(38,161,123,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.borderColor='rgba(255,255,255,0.08)';">
-              <img src="${wallet.info.icon}" width="28" height="28" style="border-radius:8px; object-fit:contain;" onerror="this.src='https://cryptologos.cc/logos/ethereum-eth-logo.svg?v=035'"/>
-              <span style="flex:1; text-align:left; color:#fff; font-weight:600;">${wallet.info.name}</span>
-              <span style="font-size:0.72rem; color:#26a17b; background:rgba(38,161,123,0.12); padding:4px 10px; border-radius:6px; font-weight:700;">Conectar</span>
-            </button>
-          `).join('');
+          pcContainer.innerHTML = filteredExtensions.map((wallet, idx) => {
+            const originalIdx = discoveredWallets.indexOf(wallet);
+            return `
+              <button onclick="window.connectWalletIndex(${originalIdx})" style="width:100%; padding:12px 14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); color:#fff; border-radius:12px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; gap:12px; margin-bottom:8px; transition:all 0.2s ease; font-family:'Montserrat',sans-serif;" onmouseover="this.style.background='rgba(38,161,123,0.08)'; this.style.borderColor='rgba(38,161,123,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.borderColor='rgba(255,255,255,0.08)';">
+                <img src="${wallet.info.icon || WALLET_ICONS.generic}" width="26" height="26" style="border-radius:6px; object-fit:contain;" onerror="this.src='${WALLET_ICONS.generic}'"/>
+                <span style="flex:1; text-align:left; color:#fff; font-weight:600;">${wallet.info.name}</span>
+                <span style="font-size:0.7rem; color:#26a17b; background:rgba(38,161,123,0.12); padding:3px 8px; border-radius:6px; font-weight:700;">Conectar</span>
+              </button>
+            `;
+          }).join('');
         }
     
-        // 2. Renderizado adaptativo para Móvil (Deep Links con iconos oficiales) y PC (Código QR limpio)
+        // 2. Renderizado de opciones móviles y buscador de billeteras tipo Reown
         if (mobileContainer) {
           const cleanUrl = encodeURIComponent(window.location.href.replace(/^https?:\/\//, ''));
           const hostUrl = encodeURIComponent(window.location.host + window.location.pathname);
           
-          const metamaskLink = `https://metamask.app.link/dapp/${cleanUrl}`;
-          const trustLink = `https://link.trustwallet.com/open_url?coin_id=56&url=https://${cleanUrl}`;
-          const coinbaseLink = `https://go.cb-w.com/dapp?url=${hostUrl}`;
-          const tokenPocketLink = `tpdapp://open?params=${encodeURIComponent(JSON.stringify({ url: window.location.href, chain: "bsc" }))}`;
+          const walletsData = [
+            { name: "MetaMask", icon: WALLET_ICONS.metamask, link: `https://metamask.app.link/dapp/${cleanUrl}` },
+            { name: "Trust Wallet", icon: WALLET_ICONS.trust, link: `https://link.trustwallet.com/open_url?coin_id=56&url=https://${cleanUrl}` },
+            { name: "Coinbase", icon: WALLET_ICONS.coinbase, link: `https://go.cb-w.com/dapp?url=${hostUrl}` },
+            { name: "TokenPocket", icon: WALLET_ICONS.tokenpocket, link: `tpdapp://open?params=${encodeURIComponent(JSON.stringify({ url: window.location.href, chain: "bsc" }))}` }
+          ];
+
+          const filteredWalletsApp = walletsData.filter(w => w.name.toLowerCase().includes(query));
 
           if (isMobileDevice) {
-            mobileContainer.innerHTML = `
-              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 4px;">
-                <a href="${metamaskLink}" style="padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 10px; color: #fff; font-size: 0.82rem; font-weight: 600; font-family:'Montserrat',sans-serif;">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="24" height="24"/> MetaMask
+            mobileContainer.innerHTML = filteredWalletsApp.length === 0 ? 
+              `<div style="text-align:center; color:#8a99ad; font-size:0.8rem; padding:10px;">No se encontró ninguna billetera móvil</div>` :
+              `<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">` +
+              filteredWalletsApp.map(w => `
+                <a href="${w.link}" style="padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 10px; color: #fff; font-size: 0.8rem; font-weight: 600; font-family:'Montserrat',sans-serif;">
+                  <img src="${w.icon}" width="22" height="22"/> ${w.name}
                 </a>
-                <a href="${trustLink}" style="padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 10px; color: #fff; font-size: 0.82rem; font-weight: 600; font-family:'Montserrat',sans-serif;">
-                  <img src="https://cryptologos.cc/logos/trust-wallet-token-twt-logo.svg?v=035" width="24" height="24" style="border-radius:6px;"/> Trust Wallet
-                </a>
-                <a href="${coinbaseLink}" style="padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 10px; color: #fff; font-size: 0.82rem; font-weight: 600; font-family:'Montserrat',sans-serif;">
-                  <img src="https://cryptologos.cc/logos/coinbase-coin-logo.svg?v=035" width="24" height="24" style="border-radius:6px;"/> Coinbase
-                </a>
-                <a href="${tokenPocketLink}" style="padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 10px; color: #fff; font-size: 0.82rem; font-weight: 600; font-family:'Montserrat',sans-serif;">
-                  <img src="https://avatars.githubusercontent.com/u/55554477" width="24" height="24" style="border-radius:6px;"/> TokenPocket
-                </a>
-              </div>
-            `;
+              `).join('') + `</div>`;
           } else {
             const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(window.location.href)}&color=ffffff&bgcolor=141720`;
             mobileContainer.innerHTML = `
-              <div style="display: flex; align-items: center; gap: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); padding: 12px; border-radius: 16px;">
-                <div style="background: #fff; padding: 6px; border-radius: 10px; flex-shrink: 0;">
-                  <img src="${qrApiUrl}" alt="QR Móvil" width="110" height="110" style="display: block; border-radius: 4px;" />
+              <div style="display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); padding: 10px 12px; border-radius: 14px;">
+                <div style="background: #fff; padding: 4px; border-radius: 8px; flex-shrink: 0;">
+                  <img src="${qrApiUrl}" alt="QR Móvil" width="95" height="95" style="display: block; border-radius: 4px;" />
                 </div>
                 <div style="text-align: left;">
-                  <div style="color: #fff; font-size: 0.85rem; font-weight: 700; margin-bottom: 4px;">Escanea con tu Móvil</div>
-                  <div style="color: #8a99ad; font-size: 0.75rem; line-height: 1.4;">Usa la cámara de tu smartphone o tu app de criptomonedas para abrir el dApp directamente.</div>
+                  <div style="color: #fff; font-size: 0.82rem; font-weight: 700; margin-bottom: 3px;">Escanea con tu Móvil</div>
+                  <div style="color: #8a99ad; font-size: 0.72rem; line-height: 1.35;">Usa la cámara de tu smartphone o tu app compatible para enlazar al instante.</div>
                 </div>
               </div>
             `;
           }
         }
+      }
+
+      window.filterWalletsInput = function(event) {
+        searchQuery = event.target.value;
+        renderWalletUI();
       }
     
       window.connectWalletIndex = async function(idx) {
@@ -169,23 +188,29 @@
         if (!document.getElementById("customWeb3Modal")) {
           const modalHTML = `
             <div id="customWeb3Modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(5, 7, 10, 0.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); z-index:99999; justify-content:center; align-items:center; padding:16px; animation: fadeInModal 0.25s ease;">
-              <div style="background:linear-gradient(145deg, #141720 0%, #0d0f14 100%); border:1px solid rgba(255,255,255,0.1); border-radius:28px; padding:24px; width:100%; max-width:420px; box-shadow:0 25px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.1); font-family:'Montserrat',sans-serif;">
+              <div style="background:linear-gradient(145deg, #141720 0%, #0d0f14 100%); border:1px solid rgba(255,255,255,0.1); border-radius:26px; padding:22px; width:100%; max-width:400px; box-shadow:0 25px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.1); font-family:'Montserrat',sans-serif;">
                 
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:12px;">
                   <div>
-                    <h3 style="color:#fff; margin:0; font-size:1.15rem; font-weight:800;">Conectar Billetera</h3>
-                    <p style="color:#8a99ad; font-size:0.75rem; margin:3px 0 0 0;">Selecciona tu proveedor en BSC</p>
+                    <h3 style="color:#fff; margin:0; font-size:1.1rem; font-weight:800;">Conectar Billetera</h3>
+                    <p style="color:#8a99ad; font-size:0.72rem; margin:2px 0 0 0;">Selecciona o busca tu wallet</p>
                   </div>
-                  <button onclick="document.getElementById('customWeb3Modal').style.display='none'" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; width:32px; height:32px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">&times;</button>
+                  <button onclick="document.getElementById('customWeb3Modal').style.display='none'" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; width:30px; height:30px; border-radius:50%; font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">&times;</button>
+                </div>
+
+                <!-- Input de Búsqueda estilo Reown / AppKit -->
+                <div style="position:relative; margin-bottom:14px;">
+                  <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#8a99ad; font-size:0.85rem;">🔍</span>
+                  <input type="text" id="walletSearchInput" placeholder="Buscar billetera (ej. MetaMask, Trust...)" oninput="window.filterWalletsInput(event)" style="width:100%; padding:10px 12px 10px 34px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; color:#fff; font-size:0.82rem; outline:none; font-family:'Montserrat',sans-serif; box-sizing:border-box; transition:border-color 0.2s;" onfocus="this.style.borderColor='rgba(38,161,123,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
                 </div>
                 
-                <div style="margin-bottom:16px;">
-                  <div style="color:#8a99ad; font-size:0.7rem; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px; font-weight:700;">Proveedores Detectados</div>
+                <div style="margin-bottom:12px; max-height: 160px; overflow-y: auto;">
+                  <div style="color:#8a99ad; font-size:0.68rem; margin-bottom:6px; text-transform:uppercase; letter-spacing:1px; font-weight:700;">Extensiones Detectadas</div>
                   <div id="pcWalletList"></div>
                 </div>
     
-                <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:14px;">
-                  <div style="color:#8a99ad; font-size:0.7rem; margin-bottom:10px; text-transform:uppercase; letter-spacing:1px; font-weight:700;" id="mobileSectionTitle">Conexión Móvil y QR</div>
+                <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:12px;">
+                  <div style="color:#8a99ad; font-size:0.68rem; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px; font-weight:700;" id="mobileSectionTitle">Conexión Móvil / QR</div>
                   <div id="mobileSectionContainer"></div>
                 </div>
 
@@ -196,6 +221,8 @@
                 from { opacity: 0; transform: scale(0.96); }
                 to { opacity: 1; transform: scale(1); }
               }
+              #pcWalletList::-webkit-scrollbar { width: 4px; }
+              #pcWalletList::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
             </style>
           `;
           document.body.insertAdjacentHTML('beforeend', modalHTML);
@@ -208,6 +235,9 @@
           const modal = document.getElementById("customWeb3Modal");
           if (modal) {
             modal.style.display = "flex";
+            searchQuery = "";
+            const searchInput = document.getElementById("walletSearchInput");
+            if (searchInput) searchInput.value = "";
             renderWalletUI();
           }
         },
