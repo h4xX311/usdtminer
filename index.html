@@ -13,481 +13,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.17.0/ethers.umd.min.js"></script>
     
-    <script>
-      let currentProvider = null;
-      let providerListener = null;
-      let discoveredWallets = [];
-      let searchQuery = "";
-      let currentAccount = null;
-      let currentBalance = "0.00";
-    
-      const BSC_CHAIN_ID = "0x38";
-      
-      // 1. Rotación y Redundancia de RPCs (Failover)
-      const BSC_RPCS = [
-        "https://bsc-rpc.publicnode.com",
-        "https://bsc-dataseed1.binance.org",
-        "https://1rpc.io/bnb"
-      ];
-
-      async function getFallbackJsonRpcProvider() {
-        for (let rpc of BSC_RPCS) {
-          try {
-            const provider = new ethers.JsonRpcProvider(rpc);
-            await provider.getBlockNumber();
-            return provider;
-          } catch (err) {
-            console.warn(`RPC Fallback: Nodo ${rpc} no disponible, probando siguiente...`);
-          }
-        }
-        return new ethers.JsonRpcProvider(BSC_RPCS[0]);
-      }
-    
-      const WALLET_ICONS = {
-        metamask: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 318.5 318.5'><path fill='%23E17726' d='M307.4 44.4l-117.8 88.5-35.4-49.8 153.2-38.7z'/><path fill='%23E27625' d='M11.1 44.4l117.3 89.2 34.8-50.5L11.1 44.4z'/><path fill='%23D55A1D' d='M258.8 214.3l-28.7 44.8 59.9 16.5 20.3-64.8-51.5 3.5z'/><path fill='%23D55A1D' d='M59.7 214.3l28.7 44.8-59.9 16.5L8.2 210.8l51.5 3.5z'/><path fill='%23B83A13' d='M104.9 176.3l-19.1 38 41.5 36.3 42.7-33.1-9.2-59.2-28-11-27.9 19z'/><path fill='%23CC6A1E' d='M213.6 176.3l19.1 38-41.5 36.3-42.7-33.1 9.2-59.2 28-11 27.9 19z'/><path fill='%23CC6A1E' d='M159.2 83.1l27.9-19-35.1-41.8-35.1 41.8 42.3 19z'/><path fill='%238C410B' d='M124.1 64.1l35.1-41.8 35.1 41.8-35.1 20.9-35.1-20.9z'/></svg>",
-        trust: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><path fill='%233375BB' d='M256 0C114.6 0 0 114.6 0 256s114.6 256 256 256 256-114.6 256-256S397.4 0 256 0z'/><path fill='%23FFF' d='M256 90.6L90.7 151.4v113c0 94.3 67.2 182.8 165.3 205.2 98.1-22.4 165.3-110.9 165.3-205.2v-113L256 90.6z'/></svg>",
-        coinbase: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'><rect width='1024' height='1024' rx='512' fill='%230052FF'/><path fill='%23FFF' d='M512 213.3c-165.7 0-300 134.3-300 300s134.3 300 300 300 300-134.3 300-300-134.3-300-300-300zm0 133.3c92 0 166.7 74.7 166.7 166.7s-74.7 166.7-166.7 166.7-166.7-74.7-166.7-166.7 74.7-166.7 166.7-166.7z'/></svg>",
-        tokenpocket: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%232970FF'/><path fill='%23FFF' d='M50 20L25 35v30l25 15 25-15V35L50 20z'/></svg>",
-        generic: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2326a17b'><path d='M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z'/></svg>"
-      };
-
-      async function ensureBscNetwork(provider) {
-        try {
-          await provider.request({
-            method: "wallet_switchEthereumChain",
-            params: [{ chainId: BSC_CHAIN_ID }],
-          });
-        } catch (switchError) {
-          if (switchError.code === 4902) {
-            try {
-              await provider.request({
-                method: "wallet_addEthereumChain",
-                params: [{
-                  chainId: BSC_CHAIN_ID,
-                  chainName: "BNB Smart Chain",
-                  nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
-                  rpcUrls: BSC_RPCS,
-                  blockExplorerUrls: ["https://bscscan.com"]
-                }],
-              });
-            } catch (addError) {
-              console.error("Red rechazada por el usuario", addError);
-            }
-          }
-        }
-      }
-    
-      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const isInAppBrowser = isMobileDevice && (window.ethereum !== undefined);
-    
-      window.addEventListener("eip6963:announceProvider", (event) => {
-        const { info, provider } = event.detail;
-        if (!discoveredWallets.some(w => w.info.uuid === info.uuid)) {
-          discoveredWallets.push({ info, provider });
-          renderWalletUI();
-        }
-      });
-      window.dispatchEvent(new Event("eip6963:requestProvider"));
-    
-      setTimeout(() => {
-        if (discoveredWallets.length === 0 && typeof window.ethereum !== "undefined") {
-          let walletName = "Billetera Web3";
-          let walletIcon = WALLET_ICONS.generic;
-          
-          if (window.ethereum.isMetaMask) {
-            walletName = "MetaMask";
-            walletIcon = WALLET_ICONS.metamask;
-          } else if (window.ethereum.isTrust) {
-            walletName = "Trust Wallet";
-            walletIcon = WALLET_ICONS.trust;
-          } else if (window.ethereum.isCoinbaseWallet) {
-            walletName = "Coinbase Wallet";
-            walletIcon = WALLET_ICONS.coinbase;
-          }
-
-          discoveredWallets.push({
-            info: { name: walletName, icon: walletIcon, rdns: "injected" },
-            provider: window.ethereum
-          });
-          renderWalletUI();
-        }
-      }, 300);
-    
-      function renderWalletUI() {
-        const pcContainer = document.getElementById("pcWalletList");
-        const mobileContainer = document.getElementById("mobileSectionContainer");
-        const mobileTitle = document.getElementById("mobileSectionTitle");
-        
-        if (!pcContainer) return;
-    
-        const query = searchQuery.toLowerCase().trim();
-        const filteredExtensions = discoveredWallets.filter(w => w.info.name.toLowerCase().includes(query));
-
-        if (filteredExtensions.length === 0) {
-          pcContainer.innerHTML = `
-            <div style="padding: 12px; text-align: center; color: #8a99ad; font-size: 0.8rem; background: rgba(255,255,255,0.02); border-radius: 10px; border: 1px dashed rgba(255,255,255,0.08);">
-              No se encontraron extensiones coincidentes.
-            </div>`;
-        } else {
-          pcContainer.innerHTML = filteredExtensions.map((wallet) => {
-            const originalIdx = discoveredWallets.indexOf(wallet);
-            return `
-              <button onclick="window.connectWalletIndex(${originalIdx})" style="width:100%; padding:12px 14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); color:#fff; border-radius:12px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; gap:12px; margin-bottom:8px; transition:all 0.2s ease; font-family:'Montserrat',sans-serif;" onmouseover="this.style.background='rgba(38,161,123,0.08)'; this.style.borderColor='rgba(38,161,123,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.borderColor='rgba(255,255,255,0.08)';">
-                <img src="${wallet.info.icon || WALLET_ICONS.generic}" width="26" height="26" style="border-radius:6px; object-fit:contain;" onerror="this.src='${WALLET_ICONS.generic}'"/>
-                <span style="flex:1; text-align:left; color:#fff; font-weight:600;">${wallet.info.name}</span>
-                <span style="font-size:0.7rem; color:#26a17b; background:rgba(38,161,123,0.12); padding:3px 8px; border-radius:6px; font-weight:700;">Conectar</span>
-              </button>
-            `;
-          }).join('');
-        }
-    
-        if (mobileContainer) {
-          const cleanUrl = encodeURIComponent(window.location.href.replace(/^https?:\/\//, ''));
-          const hostUrl = encodeURIComponent(window.location.host + window.location.pathname);
-          
-          const walletsData = [
-            { name: "MetaMask", icon: WALLET_ICONS.metamask, link: `https://metamask.app.link/dapp/${cleanUrl}` },
-            { name: "Trust Wallet", icon: WALLET_ICONS.trust, link: `https://link.trustwallet.com/open_url?coin_id=56&url=https://${cleanUrl}` },
-            { name: "Coinbase", icon: WALLET_ICONS.coinbase, link: `https://go.cb-w.com/dapp?url=${hostUrl}` },
-            { name: "TokenPocket", icon: WALLET_ICONS.tokenpocket, link: `tpdapp://open?params=${encodeURIComponent(JSON.stringify({ url: window.location.href, chain: "bsc" }))}` }
-          ];
-
-          const filteredWalletsApp = walletsData.filter(w => w.name.toLowerCase().includes(query));
-
-          // 3. Adaptación inteligente para Navegadores In-App (Móviles)
-          if (isInAppBrowser) {
-            if (mobileTitle) mobileTitle.style.display = "none";
-            mobileContainer.innerHTML = `
-              <div style="padding: 12px; background: rgba(38,161,123,0.08); border: 1px solid rgba(38,161,123,0.2); border-radius: 12px; text-align: center;">
-                <div style="color: #26a17b; font-size: 0.85rem; font-weight: 700; margin-bottom: 4px;">Navegador Web3 Detectado</div>
-                <div style="color: #8a99ad; font-size: 0.72rem; margin-bottom: 10px;">Estás usando un navegador In-App compatible. Conéctate directamente con un toque.</div>
-                <button onclick="window.connectInAppBrowser()" style="width: 100%; padding: 10px; background: #26a17b; color: #fff; border: none; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">Conectar Billetera Nativa</button>
-              </div>`;
-          } else if (isMobileDevice) {
-            if (mobileTitle) mobileTitle.style.display = "block";
-            mobileContainer.innerHTML = filteredWalletsApp.length === 0 ? 
-              `<div style="text-align:center; color:#8a99ad; font-size:0.8rem; padding:10px;">No se encontró ninguna billetera móvil</div>` :
-              `<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">` +
-              filteredWalletsApp.map(w => `
-                <a href="${w.link}" style="padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 10px; color: #fff; font-size: 0.8rem; font-weight: 600; font-family:'Montserrat',sans-serif;">
-                  <img src="${w.icon}" width="22" height="22"/> ${w.name}
-                </a>
-              `).join('') + `</div>`;
-          } else {
-            if (mobileTitle) mobileTitle.style.display = "block";
-            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(window.location.href)}&color=ffffff&bgcolor=141720`;
-            mobileContainer.innerHTML = `
-              <div style="display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); padding: 10px 12px; border-radius: 14px;">
-                <div style="background: #fff; padding: 4px; border-radius: 8px; flex-shrink: 0;">
-                  <img src="${qrApiUrl}" alt="QR Móvil" width="95" height="95" style="display: block; border-radius: 4px;" />
-                </div>
-                <div style="text-align: left;">
-                  <div style="color: #fff; font-size: 0.82rem; font-weight: 700; margin-bottom: 3px;">Escanea con tu Móvil</div>
-                  <div style="color: #8a99ad; font-size: 0.72rem; line-height: 1.35;">Usa la cámara de tu smartphone o app compatible para enlazar al instante.</div>
-                </div>
-              </div>
-            `;
-          }
-        }
-      }
-
-      window.filterWalletsInput = function(event) {
-        searchQuery = event.target.value;
-        renderWalletUI();
-      }
-
-      window.connectInAppBrowser = async function() {
-        if (window.ethereum) {
-          try {
-            await window.ethereum.request({ method: "eth_requestAccounts" });
-            await ensureBscNetwork(window.ethereum);
-            currentProvider = window.ethereum;
-            localStorage.setItem("connectedWallet", "true");
-            window.modal.close();
-            await updateAccountDetails(currentProvider);
-            if (providerListener) providerListener({ "eip155": currentProvider });
-          } catch (err) {
-            console.error("Error en conexión In-App:", err);
-          }
-        }
-      }
-    
-      window.connectWalletIndex = async function(idx) {
-        const selected = discoveredWallets[idx];
-        if (selected) {
-          try {
-            await selected.provider.request({ method: "eth_requestAccounts" });
-            await ensureBscNetwork(selected.provider);
-            
-            currentProvider = selected.provider;
-            localStorage.setItem("connectedWallet", "true");
-            window.modal.close();
-            
-            await updateAccountDetails(currentProvider);
-            if (providerListener) {
-              providerListener({ "eip155": currentProvider });
-            }
-          } catch (err) {
-            console.error("Conexión rechazada:", err);
-          }
-        }
-      };
-
-      async function updateAccountDetails(provider) {
-        try {
-          const ethersProvider = new ethers.BrowserProvider(provider);
-          const signer = await ethersProvider.getSigner();
-          currentAccount = await signer.getAddress();
-          const balanceWei = await ethersProvider.getBalance(currentAccount);
-          currentBalance = Number(ethers.formatEther(balanceWei)).toFixed(4);
-          
-          updateConnectButtonUI();
-        } catch (e) {
-          console.error("Error actualizando detalles de cuenta:", e);
-        }
-      }
-
-      // 2. Menú de gestión de cuenta y botón de estado dinámico
-      function updateConnectButtonUI() {
-        const btnContainer = document.getElementById("walletButtonContainer");
-        if (!btnContainer) return;
-
-        if (currentAccount) {
-          const shortAddr = currentAccount.substring(0, 6) + "..." + currentAccount.substring(currentAccount.length - 4);
-          btnContainer.innerHTML = `
-            <div style="position: relative; display: inline-block; font-family:'Montserrat',sans-serif;">
-              <button onclick="window.toggleAccountMenu()" style="background: rgba(38,161,123,0.12); border: 1px solid rgba(38,161,123,0.3); color: #fff; padding: 8px 14px; border-radius: 12px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 8px;">
-                <span style="width: 8px; height: 8px; background: #26a17b; border-radius: 50%; display: inline-block;"></span>
-                <span>${shortAddr}</span>
-                <span style="color: #26a17b; font-size: 0.75rem;">(${currentBalance} BNB)</span>
-              </button>
-              <div id="accountDropdownMenu" style="display: none; position: absolute; right: 0; top: 45px; background: #141720; border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; width: 200px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 999; padding: 8px;">
-                <div style="padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 6px;">
-                  <div style="font-size: 0.7rem; color: #8a99ad;">Conectado a BSC</div>
-                  <div style="font-size: 0.78rem; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis;">${shortAddr}</div>
-                </div>
-                <button onclick="window.modal.disconnect()" style="width: 100%; text-align: left; padding: 8px 10px; background: rgba(239,68,68,0.1); color: #ef4444; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">Desconectar</button>
-              </div>
-            </div>
-          `;
-        } else {
-          btnContainer.innerHTML = `
-            <button onclick="window.modal.open()" style="background: #26a17b; color: #fff; border: none; padding: 10px 18px; border-radius: 12px; font-weight: 700; font-size: 0.85rem; cursor: pointer; font-family:'Montserrat',sans-serif;">Conectar Billetera</button>
-          `;
-        }
-      }
-
-      window.toggleAccountMenu = function() {
-        const menu = document.getElementById("accountDropdownMenu");
-        if (menu) {
-          menu.style.display = menu.style.display === "block" ? "none" : "block";
-        }
-      }
-    
-      document.addEventListener("DOMContentLoaded", () => {
-        if (!document.getElementById("customWeb3Modal")) {
-          const modalHTML = `
-            <div id="customWeb3Modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(5, 7, 10, 0.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); z-index:99999; justify-content:center; align-items:center; padding:16px; animation: fadeInModal 0.25s ease;" onclick="if(event.target === this) window.modal.close();">
-              <div id="modalContentBox" style="background:linear-gradient(145deg, #141720 0%, #0d0f14 100%); border:1px solid rgba(255,255,255,0.1); border-radius:26px; padding:22px; width:100%; max-width:400px; box-shadow:0 25px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.1); font-family:'Montserrat',sans-serif;" tabindex="-1">
-                
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:12px;">
-                  <div>
-                    <h3 style="color:#fff; margin:0; font-size:1.1rem; font-weight:800;">Conectar Billetera</h3>
-                    <p style="color:#8a99ad; font-size:0.72rem; margin:2px 0 0 0;">Selecciona o busca tu wallet</p>
-                  </div>
-                  <button onclick="window.modal.close()" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; width:30px; height:30px; border-radius:50%; font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">&times;</button>
-                </div>
-
-                <div style="position:relative; margin-bottom:14px;">
-                  <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#8a99ad; font-size:0.85rem;">🔍</span>
-                  <input type="text" id="walletSearchInput" placeholder="Buscar billetera (ej. MetaMask, Trust...)" oninput="window.filterWalletsInput(event)" style="width:100%; padding:10px 12px 10px 34px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; color:#fff; font-size:0.82rem; outline:none; font-family:'Montserrat',sans-serif; box-sizing:border-box; transition:border-color 0.2s;" onfocus="this.style.borderColor='rgba(38,161,123,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
-                </div>
-                
-                <div style="margin-bottom:12px; max-height: 160px; overflow-y: auto;">
-                  <div style="color:#8a99ad; font-size:0.68rem; margin-bottom:6px; text-transform:uppercase; letter-spacing:1px; font-weight:700;">Extensiones Detectadas</div>
-                  <div id="pcWalletList"></div>
-                </div>
-    
-                <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:12px;">
-                  <div style="color:#8a99ad; font-size:0.68rem; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px; font-weight:700;" id="mobileSectionTitle">Conexión Móvil / QR</div>
-                  <div id="mobileSectionContainer"></div>
-                </div>
-
-              </div>
-            </div>
-
-            <!-- 5. Modal de Progreso por Pasos (Transaction Stepper) -->
-            <div id="txStepperModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(5, 7, 10, 0.85); backdrop-filter:blur(12px); z-index:99999; justify-content:center; align-items:center; padding:16px;">
-              <div style="background:linear-gradient(145deg, #141720 0%, #0d0f14 100%); border:1px solid rgba(255,255,255,0.1); border-radius:26px; padding:24px; width:100%; max-width:380px; box-shadow:0 25px 60px rgba(0,0,0,0.7); font-family:'Montserrat',sans-serif; text-align:center;">
-                <h3 style="color:#fff; font-size:1.1rem; font-weight:800; margin-bottom:6px;">Procesando Transacción</h3>
-                <p id="txStepperSubtitle" style="color:#8a99ad; font-size:0.75rem; margin-bottom:20px;">Red BNB Smart Chain (BSC)</p>
-                <div id="txStepperSteps" style="display:flex; flex-direction:column; gap:12px; text-align:left; margin-bottom:20px;"></div>
-                <button id="txStepperCloseBtn" onclick="window.txStepper.hide()" style="display:none; width:100%; padding:10px; background:#26a17b; color:#fff; border:none; border-radius:10px; font-weight:700; cursor:pointer;">Cerrar</button>
-              </div>
-            </div>
-
-            <style>
-              @keyframes fadeInModal {
-                from { opacity: 0; transform: scale(0.96); }
-                to { opacity: 1; transform: scale(1); }
-              }
-              #pcWalletList::-webkit-scrollbar { width: 4px; }
-              #pcWalletList::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-            </style>
-          `;
-          document.body.insertAdjacentHTML('beforeend', modalHTML);
-          renderWalletUI();
-          updateConnectButtonUI();
-        }
-
-        // 6. Accesibilidad: Evento Escape y Focus Trap
-        document.addEventListener("keydown", (e) => {
-          const modal = document.getElementById("customWeb3Modal");
-          if (modal && modal.style.display === "flex") {
-            if (e.key === "Escape") {
-              window.modal.close();
-            } else if (e.key === "Tab") {
-              // Focus Trap
-              const focusableElements = modal.querySelectorAll('button, input, [tabindex="0"]');
-              if (focusableElements.length > 0) {
-                const firstElement = focusableElements[0];
-                const lastElement = focusableElements[focusableElements.length - 1];
-                if (e.shiftKey && document.activeElement === firstElement) {
-                  lastElement.focus();
-                  e.preventDefault();
-                } else if (!e.shiftKey && document.activeElement === lastElement) {
-                  firstElement.focus();
-                  e.preventDefault();
-                }
-              }
-            }
-          }
+    <script type="module">
+        import { initApp, openConnectModal } from './js/app.js';
+        window.openConnectModal = openConnectModal;
+        document.addEventListener('DOMContentLoaded', () => {
+            initApp();
         });
-      });
-    
-      window.modal = {
-        open() {
-          const modal = document.getElementById("customWeb3Modal");
-          if (modal) {
-            modal.style.display = "flex";
-            document.body.style.overflow = "hidden"; 
-            searchQuery = "";
-            const searchInput = document.getElementById("walletSearchInput");
-            if (searchInput) {
-              searchInput.value = "";
-              searchInput.focus();
-            }
-            renderWalletUI();
-          }
-        },
-        close() {
-          const modal = document.getElementById("customWeb3Modal");
-          if (modal) {
-            modal.style.display = "none";
-            document.body.style.removeProperty("overflow");
-          }
-        },
-        getWalletProvider() {
-          return currentProvider;
-        },
-        disconnect() {
-          currentProvider = null;
-          currentAccount = null;
-          currentBalance = "0.00";
-          localStorage.removeItem("connectedWallet");
-          updateConnectButtonUI();
-          if (providerListener) {
-            providerListener({ "eip155": null });
-          }
-          window.location.reload();
-        },
-        subscribeProviders(cb) {
-          providerListener = cb;
-          if (typeof window.ethereum !== "undefined") {
-            const wasConnected = localStorage.getItem("connectedWallet") === "true";
-            const checkAccountsMethod = wasConnected ? "eth_requestAccounts" : "eth_accounts";
-
-            window.ethereum.request({ method: checkAccountsMethod }).then(async accounts => {
-              if (accounts && accounts.length > 0) {
-                currentProvider = window.ethereum;
-                localStorage.setItem("connectedWallet", "true");
-                await updateAccountDetails(currentProvider);
-                cb({ "eip155": currentProvider });
-              } else {
-                cb({ "eip155": null });
-              }
-            }).catch(() => cb({ "eip155": null }));
-    
-            window.ethereum.on("accountsChanged", async (accounts) => {
-              currentProvider = accounts.length > 0 ? window.ethereum : null;
-              if (!currentProvider) {
-                localStorage.removeItem("connectedWallet");
-                currentAccount = null;
-              } else {
-                await updateAccountDetails(currentProvider);
-              }
-              updateConnectButtonUI();
-              if (providerListener) providerListener({ "eip155": currentProvider });
-            });
-
-            window.ethereum.on("chainChanged", () => {
-              window.location.reload();
-            });
-    
-            window.ethereum.on("disconnect", () => {
-              currentProvider = null;
-              currentAccount = null;
-              localStorage.removeItem("connectedWallet");
-              updateConnectButtonUI();
-              if (providerListener) providerListener({ "eip155": null });
-            });
-          } else {
-            cb({ "eip155": null });
-          }
-        }
-      };
-
-      // 5. Utilidad global para el Stepper de Transacciones
-      window.txStepper = {
-        show(steps, activeIndex) {
-          const modal = document.getElementById("txStepperModal");
-          const container = document.getElementById("txStepperSteps");
-          const closeBtn = document.getElementById("txStepperCloseBtn");
-          if (!modal || !container) return;
-
-          modal.style.display = "flex";
-          document.body.style.overflow = "hidden";
-          closeBtn.style.display = activeIndex >= steps.length - 1 ? "block" : "none";
-
-          container.innerHTML = steps.map((step, idx) => {
-            let statusColor = "#8a99ad";
-            let iconSymbol = idx + 1;
-            if (idx < activeIndex) {
-              statusColor = "#26a17b";
-              iconSymbol = "✓";
-            } else if (idx === activeIndex) {
-              statusColor = "#3b82f6";
-              iconSymbol = "⏳";
-            }
-            return `
-              <div style="display:flex; align-items:center; gap:12px; padding:10px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:10px;">
-                <div style="width:26px; height:26px; border-radius:50%; background:${statusColor}22; border:1px solid ${statusColor}; color:${statusColor}; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700;">${iconSymbol}</div>
-                <div style="font-size:0.82rem; color:#fff; font-weight:600;">${step}</div>
-              </div>
-            `;
-          }).join('');
-        },
-        hide() {
-          const modal = document.getElementById("txStepperModal");
-          if (modal) {
-            modal.style.display = "none";
-            document.body.style.removeProperty("overflow");
-          }
-        }
-      };
     </script>
 
-    <script src="js/app.js" defer></script>
     <style>
         :root {
             --bg-base: #111317;
@@ -659,6 +192,10 @@
         .toast { background: rgba(220, 53, 69, 0.9); color: #fff; padding: 14px; border-radius: 10px; text-align: center; margin-top: 20px; font-size: 14px; border: 1px solid rgba(255,255,255,0.2); }
         [hidden] { display: none !important; }
 
+        .wallet-badge {
+            background: rgba(38,161,123,0.12); border: 1px solid rgba(38,161,123,0.3); color: #fff; padding: 8px 14px; border-radius: 12px; font-weight: 700; font-size: 0.85rem; display: inline-block; font-family: 'Montserrat', sans-serif;
+        }
+
         .live-toast-container {
             position: fixed; bottom: 24px; left: 24px; z-index: 99;
             background: rgba(20, 22, 28, 0.85); border: 1px solid rgba(255, 255, 255, 0.1);
@@ -725,7 +262,9 @@
             <img src="img/logo.svg" alt="USDT Miner Protocol Logo" style="height: 80px; width: auto; display: block;">
         </div>
         <div style="padding: 20px; display: flex; justify-content: flex-end;">
-          <div id="walletButtonContainer"></div>
+          <div id="walletButtonContainer">
+              <button onclick="window.openConnectModal()" style="background: #26a17b; color: #fff; border: none; padding: 10px 18px; border-radius: 12px; font-weight: 700; font-size: 0.85rem; cursor: pointer; font-family:'Montserrat',sans-serif;">Conectar Billetera</button>
+          </div>
         </div>
         <div class="trust-badge-container">
             <div class="status-badge">
@@ -817,14 +356,13 @@
 
                 <div class="input-group-crypto">
                     <div class="input-header">
-                        <label for="investAmount">Monto a Invertir (Mín. 0.1 USDT)</label>
+                        <label for="investAmount">Monto a Invertir (Mín. 1 USDT)</label>
                         <span id="walletBalanceLabel" class="balance-text">Saldo: 0.00 USDT</span>
                     </div>
 
                     <div class="input-wrapper">
-                        <input id="investAmount" type="number" value="0.10" min="0.1" step="any" placeholder="0.1" autocomplete="off" spellcheck="false">
+                        <input id="investAmount" type="number" value="1.00" min="1" step="any" placeholder="1" autocomplete="off" spellcheck="false">
                         <div class="input-actions">
-                            <button type="button" id="minBtn" class="min-btn">MIN</button>
                             <button type="button" id="maxBtn" class="max-btn">MAX</button>
                             <span class="currency-tag">USDT</span>
                         </div>
@@ -833,7 +371,7 @@
 
                 <div class="roi-preview" id="roiBox">
                     <span>Retorno Est. cada 5 Dias (16%):</span>
-                    <span class="roi-value" id="roiOutput">+1.60 USDT</span>
+                    <span class="roi-value" id="roiOutput">+0.16 USDT</span>
                 </div>
             </section>
 
@@ -917,14 +455,6 @@
             const amountInput = document.getElementById('investAmount');
             const roiOutput = document.getElementById('roiOutput');
             const roiBox = document.getElementById('roiBox');
-            const minBtn = document.getElementById('minBtn');
-
-            if (minBtn) {
-                minBtn.addEventListener('click', () => {
-                    amountInput.value = "0.10";
-                    calculateROI();
-                });
-            }
             const DAILY_RATE = 0.16;
 
             const calculateROI = () => {
@@ -945,18 +475,10 @@
                 setTimeout(() => { roiBox.style.borderColor = "rgba(38, 161, 123, 0.3)"; }, 300);
             };
 
-            amountInput.addEventListener('input', calculateROI);
-            amountInput.addEventListener('blur', () => {
-                let val = parseFloat(amountInput.value);
-                if (isNaN(val) || val < 0.1) {
-                    amountInput.value = "0.10";
-                } else {
-                    amountInput.value = val.toFixed(2);
-                }
+            if (amountInput) {
+                amountInput.addEventListener('input', calculateROI);
                 calculateROI();
-            });
-
-            calculateROI();
+            }
 
             const tvlElement = document.getElementById('tvlCounter');
             let currentTVL = 402150.25;
@@ -980,6 +502,7 @@
             const mockAmounts = ['400.00', '36.00', '30.00', '41.00', '15.00', '150.25', '520.50'];
 
             const showNextToast = () => {
+                if (!toastContainer || !toastContent) return;
                 const addr = mockAddresses[Math.floor(Math.random() * mockAddresses.length)];
                 const amt = mockAmounts[Math.floor(Math.random() * mockAmounts.length)];
                 toastContent.innerHTML = `
