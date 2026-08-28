@@ -33,7 +33,9 @@ export async function initApp() {
 }
 
 export function openAccountModal() {
-    if (modal) modal.open({ view: 'Account' });
+    if (modal) {
+        modal.open({ view: 'Account' });
+    }
 }
 
 function setupWakeUpBackend() {
@@ -42,7 +44,7 @@ function setupWakeUpBackend() {
 
 function initWalletModal() {
     const metadata = {
-        name: 'Syal Store',
+        name: 'Miner USDT Protocol',
         description: 'Plataforma de pagos y finanzas descentralizadas',
         url: window.location.origin,
         icons: [`${window.location.origin}/img/logo.svg`]
@@ -68,6 +70,13 @@ function initWalletModal() {
             resetAppSession();
         }
     });
+    if (modal && typeof modal.subscribeEvents === "function") {
+        modal.subscribeEvents((event) => {
+            if (event.data && event.data.event === 'DISCONNECT') {
+                resetAppSession();
+            }
+        });
+    }
 }
 
 async function handleConnectedProvider(walletProvider) {
@@ -142,18 +151,17 @@ function updateWalletUI(account) {
     if (container) {
         container.innerHTML = `
             <div style="display: flex; align-items: center; gap: 8px;">
-                <span class="wallet-badge" id="connectedWalletBadge" title="Hacer clic para copiar dirección">
-                    <span style="width: 6px; height: 6px; background-color: var(--brand-primary); border-radius: 50%; display: inline-block; margin-right: 6px;"></span>
+                <span class="wallet-badge" id="connectedWalletBadge">
                     ${account.substring(0, 6)}...${account.substring(38)}
                 </span>
-                <button onclick="window.openAccountModal()" title="Gestionar Billetera" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--surface-border); color: #fff; padding: 8px 12px; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 0.85rem; transition: background 0.2s;">
-                    ⚙️
+                <button onclick="window.openAccountModal()" title="Configuración de cuenta" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--surface-border); color: #fff; padding: 8px 12px; border-radius: 12px; cursor: pointer; font-weight: 700;">
+                    ⚙️ Cuenta
                 </button>
             </div>
         `;
-        makeCopyableElement("connectedWalletBadge", account);
     }
 
+    // Mostrar las secciones que ocultas cuando no hay wallet
     const txContainer = document.getElementById("sessionTxContainer");
     if (txContainer) txContainer.style.display = "block";
 
