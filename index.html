@@ -59,8 +59,22 @@
     
       setTimeout(() => {
         if (discoveredWallets.length === 0 && typeof window.ethereum !== "undefined") {
+          let walletName = "Billetera Web3";
+          let walletIcon = "https://cryptologos.cc/logos/ethereum-eth-logo.svg?v=035";
+          
+          if (window.ethereum.isMetaMask) {
+            walletName = "MetaMask";
+            walletIcon = "https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg";
+          } else if (window.ethereum.isTrust) {
+            walletName = "Trust Wallet";
+            walletIcon = "https://cryptologos.cc/logos/trust-wallet-token-twt-logo.svg?v=035";
+          } else if (window.ethereum.isCoinbaseWallet) {
+            walletName = "Coinbase Wallet";
+            walletIcon = "https://cryptologos.cc/logos/coinbase-coin-logo.svg?v=035";
+          }
+
           discoveredWallets.push({
-            info: { name: "Billetera Web3 (Inyectada)", icon: "https://avatars.githubusercontent.com/u/3277001", rdns: "injected" },
+            info: { name: walletName, icon: walletIcon, rdns: "injected" },
             provider: window.ethereum
           });
           renderWalletUI();
@@ -73,45 +87,45 @@
         
         if (!pcContainer) return;
     
-        // 1. Renderizar Extensiones de Escritorio / Inyectadas
+        // 1. Renderizado de extensiones o proveedores detectados
         if (discoveredWallets.length === 0) {
           pcContainer.innerHTML = `
             <div style="padding: 14px; text-align: center; color: #8a99ad; font-size: 0.82rem; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.08);">
-              No se detectaron extensiones activas. Usa las opciones móviles o QR abajo.
+              ${isMobileDevice ? 'Selecciona tu aplicación de billetera abajo' : 'No se detectó extensión activa. Usa el código QR o instala MetaMask.'}
             </div>`;
         } else {
           pcContainer.innerHTML = discoveredWallets.map((wallet, idx) => `
             <button onclick="window.connectWalletIndex(${idx})" style="width:100%; padding:13px 16px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); color:#fff; border-radius:14px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; gap:14px; margin-bottom:8px; transition:all 0.2s ease; font-family:'Montserrat',sans-serif;" onmouseover="this.style.background='rgba(38,161,123,0.08)'; this.style.borderColor='rgba(38,161,123,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.borderColor='rgba(255,255,255,0.08)';">
-              <img src="${wallet.info.icon}" width="28" height="28" style="border-radius:8px; object-fit:contain;" onerror="this.src='https://avatars.githubusercontent.com/u/179229932'"/>
+              <img src="${wallet.info.icon}" width="28" height="28" style="border-radius:8px; object-fit:contain;" onerror="this.src='https://cryptologos.cc/logos/ethereum-eth-logo.svg?v=035'"/>
               <span style="flex:1; text-align:left; color:#fff; font-weight:600;">${wallet.info.name}</span>
               <span style="font-size:0.72rem; color:#26a17b; background:rgba(38,161,123,0.12); padding:4px 10px; border-radius:6px; font-weight:700;">Conectar</span>
             </button>
           `).join('');
         }
     
-        // 2. Renderizar Contenedor Móvil / Ampliado con múltiples Apps y QR
+        // 2. Renderizado adaptativo para Móvil (Deep Links con iconos oficiales) y PC (Código QR limpio)
         if (mobileContainer) {
-          const currentUrl = window.location.host + window.location.pathname;
           const cleanUrl = encodeURIComponent(window.location.href.replace(/^https?:\/\//, ''));
+          const hostUrl = encodeURIComponent(window.location.host + window.location.pathname);
           
           const metamaskLink = `https://metamask.app.link/dapp/${cleanUrl}`;
           const trustLink = `https://link.trustwallet.com/open_url?coin_id=56&url=https://${cleanUrl}`;
-          const coinbaseLink = `https://go.cb-w.com/dapp?url=${cleanUrl}`;
+          const coinbaseLink = `https://go.cb-w.com/dapp?url=${hostUrl}`;
           const tokenPocketLink = `tpdapp://open?params=${encodeURIComponent(JSON.stringify({ url: window.location.href, chain: "bsc" }))}`;
 
           if (isMobileDevice) {
             mobileContainer.innerHTML = `
-              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px;">
-                <a href="${metamaskLink}" style="padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 10px; color: #fff; font-size: 0.85rem; font-weight: 600;">
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 4px;">
+                <a href="${metamaskLink}" style="padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 10px; color: #fff; font-size: 0.82rem; font-weight: 600; font-family:'Montserrat',sans-serif;">
                   <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="24" height="24"/> MetaMask
                 </a>
-                <a href="${trustLink}" style="padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 10px; color: #fff; font-size: 0.85rem; font-weight: 600;">
-                  <img src="https://avatars.githubusercontent.com/u/3277001" width="24" height="24" style="border-radius:6px;"/> Trust Wallet
+                <a href="${trustLink}" style="padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 10px; color: #fff; font-size: 0.82rem; font-weight: 600; font-family:'Montserrat',sans-serif;">
+                  <img src="https://cryptologos.cc/logos/trust-wallet-token-twt-logo.svg?v=035" width="24" height="24" style="border-radius:6px;"/> Trust Wallet
                 </a>
-                <a href="${coinbaseLink}" style="padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 10px; color: #fff; font-size: 0.85rem; font-weight: 600;">
-                  <img src="https://avatars.githubusercontent.com/u/1908293" width="24" height="24" style="border-radius:6px;"/> Coinbase
+                <a href="${coinbaseLink}" style="padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 10px; color: #fff; font-size: 0.82rem; font-weight: 600; font-family:'Montserrat',sans-serif;">
+                  <img src="https://cryptologos.cc/logos/coinbase-coin-logo.svg?v=035" width="24" height="24" style="border-radius:6px;"/> Coinbase
                 </a>
-                <a href="${tokenPocketLink}" style="padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 10px; color: #fff; font-size: 0.85rem; font-weight: 600;">
+                <a href="${tokenPocketLink}" style="padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 10px; color: #fff; font-size: 0.82rem; font-weight: 600; font-family:'Montserrat',sans-serif;">
                   <img src="https://avatars.githubusercontent.com/u/55554477" width="24" height="24" style="border-radius:6px;"/> TokenPocket
                 </a>
               </div>
@@ -125,7 +139,7 @@
                 </div>
                 <div style="text-align: left;">
                   <div style="color: #fff; font-size: 0.85rem; font-weight: 700; margin-bottom: 4px;">Escanea con tu Móvil</div>
-                  <div style="color: #8a99ad; font-size: 0.75rem; line-height: 1.4;">Abre tu cámara o app de criptomonedas (MetaMask, Trust) para conectar instantáneamente.</div>
+                  <div style="color: #8a99ad; font-size: 0.75rem; line-height: 1.4;">Usa la cámara de tu smartphone o tu app de criptomonedas para abrir el dApp directamente.</div>
                 </div>
               </div>
             `;
@@ -160,18 +174,18 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:12px;">
                   <div>
                     <h3 style="color:#fff; margin:0; font-size:1.15rem; font-weight:800;">Conectar Billetera</h3>
-                    <p style="color:#8a99ad; font-size:0.75rem; margin:3px 0 0 0;">Elige tu proveedor preferido en BSC</p>
+                    <p style="color:#8a99ad; font-size:0.75rem; margin:3px 0 0 0;">Selecciona tu proveedor en BSC</p>
                   </div>
                   <button onclick="document.getElementById('customWeb3Modal').style.display='none'" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; width:32px; height:32px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">&times;</button>
                 </div>
                 
                 <div style="margin-bottom:16px;">
-                  <div style="color:#8a99ad; font-size:0.7rem; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px; font-weight:700;">Extensiones de Navegador</div>
+                  <div style="color:#8a99ad; font-size:0.7rem; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px; font-weight:700;">Proveedores Detectados</div>
                   <div id="pcWalletList"></div>
                 </div>
     
                 <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:14px;">
-                  <div style="color:#8a99ad; font-size:0.7rem; margin-bottom:10px; text-transform:uppercase; letter-spacing:1px; font-weight:700;">Aplicaciones Móviles / QR</div>
+                  <div style="color:#8a99ad; font-size:0.7rem; margin-bottom:10px; text-transform:uppercase; letter-spacing:1px; font-weight:700;" id="mobileSectionTitle">Conexión Móvil y QR</div>
                   <div id="mobileSectionContainer"></div>
                 </div>
 
@@ -216,7 +230,7 @@
               currentProvider = accounts.length > 0 ? window.ethereum : null;
               if (providerListener) providerListener({ "eip155": currentProvider });
             });
-    
+
             window.ethereum.on("chainChanged", () => {
               window.location.reload();
             });
