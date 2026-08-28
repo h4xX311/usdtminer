@@ -165,20 +165,21 @@ function updateWalletUI(account) {
 
 window.disconnectWalletSession = async function() {
     try {
-        // 1. Intentar desconectar el proveedor activo de la billetera si soporta el método
-        if (modal && typeof modal.getWalletProvider === "function") {
-            const rawProv = modal.getWalletProvider();
-            if (rawProv && typeof rawProv.disconnect === "function") {
-                await rawProv.disconnect();
-            }
-        }
-        // 2. Desconectar la sesión principal de AppKit
         if (modal && typeof modal.disconnect === "function") {
             await modal.disconnect();
         }
     } catch (e) {
         console.warn("Error al desconectar desde AppKit:", e);
     }
+
+    // Limpiar rastro de caché y sesiones guardadas por AppKit y WalletConnect en el navegador
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && (key.includes('wc@') || key.includes('w3m') || key.includes('reown') || key.includes('appkit'))) {
+            localStorage.removeItem(key);
+        }
+    }
+
     resetAppSession();
 };
 
