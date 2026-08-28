@@ -141,16 +141,133 @@ async function updateBalances(rawProvider) {
     }
 }
 
+// Variable para controlar el intervalo del contador
+let countdownTimerInterval = null;
+
+// Actualizar UI de la billetera con opción de Desconectar integrada
 function updateWalletUI(account) {
     const container = document.getElementById("walletButtonContainer");
     if (container) {
         container.innerHTML = `
-            <span class="wallet-badge" id="connectedWalletBadge" title="Hacer clic para copiar dirección">
-                <span style="width: 6px; height: 6px; background-color: var(--brand-primary); border-radius: 50%; display: inline-block; margin-right: 6px;"></span>
-                ${account.substring(0, 6)}...${account.substring(38)}
-            </span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="wallet-badge" id="connectedWalletBadge" title="Hacer clic para copiar dirección">
+                    <span style="width: 6px; height: 6px; background-color: var(--brand-primary); border-radius: 50%; display: inline-block; margin-right: 6px;"></span>
+                    ${account.substring(0, 6)}...${account.substring(38)}
+                </span>
+                <button onclick="window.disconnectWalletSession()" title="Desconectar Billetera" style="background: rgba(220, 53, 69, 0.15); border: 1px solid rgba(220, 53, 69, 0.3); color: #ef4444; padding: 8px 12px; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 0.85rem; transition: background 0.2s;">
+                    ✕
+                </button>
+            </div>
         `;
         makeCopyableElement("connectedWalletBadge", account);
+    }
+    updateMainActionButton('APPROVE');
+    
+    // Iniciar simulación/carga de datos de staking del usuario
+    initializeUserStakingData();
+}
+
+// Función global para desconectar la sesión limpiamente
+window.disconnectWalletSession = async function() {
+    try {
+        if (modal && typeof modal.disconnect === "function") {
+            await modal.disconnect();
+        }
+    } catch (e) {
+        console.warn("Error al desconectar desde AppKit:", e);
+    }
+    resetAppSession();
+};
+
+// Resetear la sesión por completo en la interfaz
+function resetAppSession() {
+    provider = null;
+    signer = null;
+    userAddress = null;
+
+    const container = document.getElementById("walletButtonContainer");
+    if (container) {
+        container.innerHTML = `
+            <button onclick="window.openConnectModal()" class="wallet-badge" style="background: rgba(38,161,123,0.15); border: 1px solid var(--brand-primary); cursor: pointer;">
+                Conectar Billetera
+            </button>
+        `;
+    }
+
+    const balanceLabel = document.getElementById("walletBalanceLabel");
+    if (balanceLabel) balanceLabel.textContent = "Saldo: 0.00 USDT";
+
+    const stakedBadge = document.getElementById("stakedAmountBadge");
+    if (stakedBadge) stakedBadge.textContent = "0.00 USDT";
+
+    const pendingReward = document.getElementById("pendingRewardOutput");
+    if (pendingReward) pendingReward.textContent = "0.00 USDT";
+
+    const withdrawBtn = document.getElementById("withdrawBtn");
+    if (withdrawBtn) withdrawBtn.disabled = true;
+
+    if (countdownTimerInterval) clearInterval(countdownTimerInterval);
+    const countdownEl = document.getElementById("roiCountdown");
+    if (countdownEl) countdownEl.textContent = "--:--:--:--";
+
+    updateMainActionButton('CONNECT');
+    showToast("Billetera desconectada.", "default", 3000);
+}
+
+// Inicializar datos y activar el contador regresivo (Simulación basada en 5 días)
+function initializeUserStakingData() {
+    const stakedBadge = document.getElementById("stakedAmountBadge");
+    const pendingReward = document.getElementById("pendingRewardOutput");
+    const withdrawBtn = document.getElementById("withdrawBtn");
+
+    // Simulamos que el usuario tiene una inversión activa (puedes conectarlo a tu contrato real)
+    const activeStakedAmount = 100.00; 
+    if (stakedBadge) stakedBadge.textContent = `${activeStakedAmount.toFixed(2)} USDT`;
+    
+    const calculatedReward = activeStakedAmount * 0.16; // 16% ROI
+    if (pendingReward) pendingReward.textContent = `${calculatedReward.toFixed(2)} USDT`;
+
+    if (withdrawBtn) {
+        withdrawBtn.disabled = false;
+        withdrawBtn.onclick = () => executeWithdrawalFlow();
+    }
+
+    // Configurar temporizador de cuenta regresiva de 5 días (432,000 segundos)
+    startRoiCountdown(5 * 24 * 60 * 60); 
+}
+
+function startRoiCountdown(durationInSeconds) {
+    let timer = durationInSeconds;
+    const countdownEl = document.getElementById("roiCountdown");
+    if (!countdownEl) return;
+
+    if (countdownTimerInterval) clearInterval(countdownTimerInterval);
+
+    countdownTimerInterval = setInterval(() => {
+        const days = Math.floor(timer / (3600 * 24));
+        const hours = Math.floor((timer % (3600 * 24)) / 3600);
+        const minutes = Math.floor((timer % 3600) / 60);
+        const seconds = Math.floor(timer % 60);
+
+        countdownEl.textContent = `${days}d ${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
+
+        if (--timer < 0) {
+            clearInterval(countdownTimerInterval);
+            countdownEl.textContent = "¡Ciclo Completado!";
+        }
+    }, 1000);
+}
+
+async function executeWithdrawalFlow() {
+    setLoading(true, "Procesando retiro...");
+    try {
+        // Aquí puedes enlazar la llamada a tu contrato inteligente o backend de retiros
+        await new Promise(resolve => setTimeout(resolve, 2500));
+        showToast("¡Retiro de fondos realizado con éxito!", "success", 6000);
+    } catch (err) {
+        showToast("Error al procesar el retiro.", "error");
+    } finally {
+        setLoading(false);
     }
 }
 
@@ -445,30 +562,4 @@ function showToast(msg, type = "default", ms = 4500) {
     }
 
     _toastTimer = setTimeout(() => { toastEl.hidden = true; }, ms);
-}
-
-function resetAppSession() {
-    provider = null;
-    signer = null;
-    userAddress = null;
-
-    // Restaurar el botón del header a estado inicial de conexión
-    const container = document.getElementById("walletButtonContainer");
-    if (container) {
-        container.innerHTML = `
-            <button onclick="window.openConnectModal()" class="wallet-badge" style="background: rgba(38,161,123,0.15); border: 1px solid var(--brand-primary); cursor: pointer;">
-                Conectar Billetera
-            </button>
-        `;
-    }
-
-    // Limpiar etiqueta de saldo
-    const balanceLabel = document.getElementById("walletBalanceLabel");
-    if (balanceLabel) {
-        balanceLabel.textContent = "Saldo: 0.00 USDT";
-    }
-
-    // Volver el botón principal a estado 'CONNECT'
-    updateMainActionButton('CONNECT');
-    showToast("Billetera desconectada.", "default", 3000);
 }
