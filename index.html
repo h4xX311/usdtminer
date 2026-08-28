@@ -426,7 +426,14 @@
                     <span id="btnText">CONECTAR BILLETERA</span>
                     <span id="btnSpinner" class="btn-spinner" aria-hidden="true" hidden></span>
                 </button>
-                <p style="text-align: center; font-size: 0.75rem; color: var(--text-muted); margin-top: 12px;">
+
+                <!-- Aviso de VPN / Conectividad -->
+                <div style="display: flex; align-items: flex-start; gap: 8px; margin-top: 12px; padding: 10px 12px; background: rgba(38, 161, 123, 0.05); border: 1px dashed rgba(38, 161, 123, 0.25); border-radius: 8px; font-size: 0.75rem; color: var(--text-muted); text-align: left;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--brand-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    <span>¿Problemas para conectar o restricciones en tu país? Te recomendamos utilizar una <strong style="color: #fff;">VPN</strong> para garantizar una conexión estable y mayor privacidad.</span>
+                </div>
+
+                <p style="text-align: center; font-size: 0.75rem; color: var(--text-muted); margin-top: 10px;">
                     Al continuar, apruebas la interacción con el Smart Contract.
                 </p>
             </footer>
