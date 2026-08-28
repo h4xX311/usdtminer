@@ -32,6 +32,10 @@ export async function initApp() {
     updateMainActionButton('CONNECT');
 }
 
+export function openAccountModal() {
+    if (modal) modal.open({ view: 'Account' });
+}
+
 function setupWakeUpBackend() {
     fetch(`${CONFIG.BACKEND_URL}/health`, { method: 'GET' }).catch(() => {});
 }
@@ -142,15 +146,14 @@ function updateWalletUI(account) {
                     <span style="width: 6px; height: 6px; background-color: var(--brand-primary); border-radius: 50%; display: inline-block; margin-right: 6px;"></span>
                     ${account.substring(0, 6)}...${account.substring(38)}
                 </span>
-                <button onclick="window.disconnectWalletSession()" title="Desconectar Billetera" style="background: rgba(220, 53, 69, 0.15); border: 1px solid rgba(220, 53, 69, 0.3); color: #ef4444; padding: 8px 12px; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 0.85rem; transition: background 0.2s;">
-                    ✕
+                <button onclick="window.openAccountModal()" title="Gestionar Billetera" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--surface-border); color: #fff; padding: 8px 12px; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 0.85rem; transition: background 0.2s;">
+                    ⚙️
                 </button>
             </div>
         `;
         makeCopyableElement("connectedWalletBadge", account);
     }
 
-    // 🌟 MOSTRAR HISTORIAL Y RETIRO AL CONECTAR (puedes usar "block", "flex" o "grid" según tu diseño CSS)
     const txContainer = document.getElementById("sessionTxContainer");
     if (txContainer) txContainer.style.display = "block";
 
