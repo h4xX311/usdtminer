@@ -15,8 +15,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.17.0/ethers.umd.min.js"></script>
     
     <script type="module">
-        import { initApp, openConnectModal } from './js/app.js';
+        import { initApp, openConnectModal, openAccountModal } from './js/app.js';
         window.openConnectModal = openConnectModal;
+        window.openAccountModal = openAccountModal;
         document.addEventListener('DOMContentLoaded', () => {
             initApp();
         });
