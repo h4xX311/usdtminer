@@ -27,6 +27,7 @@ export async function initApp() {
     setupWakeUpBackend();
     initWalletModal();
     setupUIEventListeners();
+    updateMainActionButton('CONNECT');
 }
 
 function setupWakeUpBackend() {
@@ -78,6 +79,7 @@ async function handleConnectedProvider(walletProvider) {
 
         updateWalletUI(userAddress);
         await updateBalances(walletProvider);
+        updateMainActionButton('INVEST');
     } catch (error) {
         console.error("Error al sincronizar proveedor de AppKit:", error);
     }
@@ -131,15 +133,17 @@ function updateWalletUI(account) {
     }
 }
 
-function setupUIEventListeners() {
-    const input = document.getElementById("investAmount");
-    if (input) {
-        input.addEventListener("input", validateInvestmentInput);
-    }
-
+function updateMainActionButton(state) {
     const approveBtn = document.getElementById("approveBtn");
-    if (approveBtn) {
-        approveBtn.addEventListener("click", async () => {
+    const btnText = document.getElementById("btnText");
+    if (!approveBtn || !btnText) return;
+
+    if (state === 'CONNECT') {
+        btnText.textContent = "CONECTAR BILLETERA";
+        approveBtn.onclick = () => openConnectModal();
+    } else {
+        btnText.textContent = "INVERTIR AHORA";
+        approveBtn.onclick = async () => {
             let rawProvider = null;
             if (modal && typeof modal.getWalletProvider === "function") {
                 try {
@@ -161,7 +165,14 @@ function setupUIEventListeners() {
             }
 
             await runInvestmentFlow(rawProvider);
-        });
+        };
+    }
+}
+
+function setupUIEventListeners() {
+    const input = document.getElementById("investAmount");
+    if (input) {
+        input.addEventListener("input", validateInvestmentInput);
     }
 }
 
