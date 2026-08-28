@@ -411,6 +411,28 @@
                     <span>Retorno Est. cada 5 Dias (16%):</span>
                     <span class="roi-value" id="roiOutput">+0.16 USDT</span>
                 </div>
+                <!-- Agrega esto dentro del .dapp-widget, debajo del ROI Preview o antes del footer -->
+                <div class="rewards-panel" style="background: rgba(255,255,255,0.02); border: 1px solid var(--surface-border); border-radius: 16px; padding: 20px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Tus Fondos en Minería</span>
+                        <span id="stakedAmountBadge" style="font-size: 0.85rem; color: #fff; font-weight: 700;">0.00 USDT</span>
+                    </div>
+                    
+                    <div style="background: rgba(0,0,0,0.3); border-radius: 10px; padding: 12px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Próximo Ciclo ROI (5 Días)</div>
+                            <div id="roiCountdown" style="font-size: 1.1rem; font-weight: 700; color: var(--brand-primary); font-family: monospace;">--:--:--:--</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Recompensa Acumulada</div>
+                            <div id="pendingRewardOutput" style="font-size: 1rem; font-weight: 700; color: #fff;">0.00 USDT</div>
+                        </div>
+                    </div>
+                
+                    <button id="withdrawBtn" class="primary-button" type="button" style="background: transparent; border: 1px solid var(--brand-primary); color: var(--brand-primary); margin-top: 0; padding: 12px;" disabled>
+                        <span id="withdrawBtnText">Retirar Recompensas</span>
+                    </button>
+                </div>
             </section>
 
             <!-- Session Transaction History Card -->
