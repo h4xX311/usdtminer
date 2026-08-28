@@ -162,6 +162,14 @@ function updateWalletUI(account) {
 
 window.disconnectWalletSession = async function() {
     try {
+        // 1. Intentar desconectar el proveedor activo de la billetera si soporta el método
+        if (modal && typeof modal.getWalletProvider === "function") {
+            const rawProv = modal.getWalletProvider();
+            if (rawProv && typeof rawProv.disconnect === "function") {
+                await rawProv.disconnect();
+            }
+        }
+        // 2. Desconectar la sesión principal de AppKit
         if (modal && typeof modal.disconnect === "function") {
             await modal.disconnect();
         }
