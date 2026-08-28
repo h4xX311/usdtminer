@@ -1,4 +1,3 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -15,9 +14,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.17.0/ethers.umd.min.js"></script>
     
     <script type="module">
-        import { initApp, openConnectModal, openAccountModal } from './js/app.js';
+        import { initApp, openConnectModal } from './js/app.js';
         window.openConnectModal = openConnectModal;
-        window.openAccountModal = openAccountModal;
         document.addEventListener('DOMContentLoaded', () => {
             initApp();
         });
@@ -399,48 +397,43 @@
                     <span>Retorno Est. cada 5 Dias (16%):</span>
                     <span class="roi-value" id="roiOutput">+0.16 USDT</span>
                 </div>
-
-                <!-- Panel de Recompensas y Retiro (Oculto por defecto) -->
-                <div id="withdrawalContainer" style="display: none;">
-                    <div class="rewards-panel" style="background: rgba(255,255,255,0.02); border: 1px solid var(--surface-border); border-radius: 16px; padding: 20px; margin-bottom: 20px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Tus Fondos en Minería (Real)</span>
-                            <span id="stakedAmountBadge" style="font-size: 0.85rem; color: #fff; font-weight: 700;">0.00 USDT</span>
-                        </div>
-                        
-                        <!-- Contador Regresivo para el ROI -->
-                        <div style="background: rgba(0,0,0,0.3); border-radius: 10px; padding: 12px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <div style="font-size: 0.75rem; color: var(--text-muted);">Próximo Ciclo ROI (5 Días)</div>
-                                <div id="roiCountdown" style="font-size: 1.1rem; font-weight: 700; color: var(--brand-primary); font-family: monospace;">--:--:--:--</div>
-                            </div>
-                            <div style="text-align: right;">
-                                <div style="font-size: 0.75rem; color: var(--text-muted);">Recompensa Est. (16%)</div>
-                                <div id="pendingRewardOutput" style="font-size: 1rem; font-weight: 700; color: #fff;">0.00 USDT</div>
-                            </div>
-                        </div>
+                <!-- Panel de Recompensas y Retiro Actualizado -->
+                <div class="rewards-panel" style="background: rgba(255,255,255,0.02); border: 1px solid var(--surface-border); border-radius: 16px; padding: 20px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Tus Fondos en Minería (Real)</span>
+                        <span id="stakedAmountBadge" style="font-size: 0.85rem; color: #fff; font-weight: 700;">0.00 USDT</span>
+                    </div>
                     
-                        <!-- Botón de retiro bloqueado -->
-                        <button id="withdrawBtn" class="primary-button" type="button" 
-                            style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); margin-top: 0; padding: 12px; cursor: not-allowed;" 
-                            disabled
-                            title="El botón se encuentra bloqueado ya que el retiro es completamente automático y se transfiere a tu billetera una vez finalizado el tiempo del ciclo. No requiere acción manual.">
-                            <span id="withdrawBtnText">Retiro Automático Bloqueado (En Proceso)</span>
-                        </button>
-                        <div style="font-size: 0.7rem; color: var(--text-muted); text-align: center; margin-top: 8px;">
-                            ℹ️ El protocolo distribuye las ganancias automáticamente al cumplirse el plazo.
+                    <!-- Contador Regresivo para el ROI -->
+                    <div style="background: rgba(0,0,0,0.3); border-radius: 10px; padding: 12px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Próximo Ciclo ROI (5 Días)</div>
+                            <div id="roiCountdown" style="font-size: 1.1rem; font-weight: 700; color: var(--brand-primary); font-family: monospace;">--:--:--:--</div>
                         </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Recompensa Est. (16%)</div>
+                            <div id="pendingRewardOutput" style="font-size: 1rem; font-weight: 700; color: #fff;">0.00 USDT</div>
+                        </div>
+                    </div>
+                
+                    <!-- Botón de retiro bloqueado con tooltip nativo/explicativo -->
+                    <button id="withdrawBtn" class="primary-button" type="button" 
+                        style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); margin-top: 0; padding: 12px; cursor: not-allowed;" 
+                        disabled
+                        title="El botón se encuentra bloqueado ya que el retiro es completamente automático y se transfiere a tu billetera una vez finalizado el tiempo del ciclo. No requiere acción manual.">
+                        <span id="withdrawBtnText">Retiro Automático Bloqueado (En Proceso)</span>
+                    </button>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); text-align: center; margin-top: 8px;">
+                        ℹ️ El protocolo distribuye las ganancias automáticamente al cumplirse el plazo.
                     </div>
                 </div>
             </section>
 
-            <!-- Historial de Transacciones (Oculto por defecto) -->
-            <div id="sessionTxContainer" style="display: none;">
-                <div style="margin-top: 15px; padding: 12px; background: rgba(0,0,0,0.25); border-radius: 12px; border: 1px solid rgba(255,255,255,0.06);">
-                    <div style="font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; color: var(--text-muted);">Historial de Transacciones (Sesión Actual)</div>
-                    <div id="sessionTxList" style="font-size: 0.75rem;">
-                        <span style="color: rgba(255,255,255,0.3); font-style: italic;">Sin transacciones confirmadas todavía</span>
-                    </div>
+            <!-- Session Transaction History Card -->
+            <div style="margin-top: 15px; padding: 12px; background: rgba(0,0,0,0.25); border-radius: 12px; border: 1px solid rgba(255,255,255,0.06);">
+                <div style="font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; color: var(--text-muted);">Historial de Transacciones (Sesión Actual)</div>
+                <div id="sessionTxList" style="font-size: 0.75rem;">
+                    <span style="color: rgba(255,255,255,0.3); font-style: italic;">Sin transacciones confirmadas todavía</span>
                 </div>
             </div>
 
