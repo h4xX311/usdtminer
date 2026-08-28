@@ -281,10 +281,10 @@
         <div class="logo">
             <img src="img/logo.svg" alt="USDT Miner Protocol Logo" style="height: 80px; width: auto; display: block;">
         </div>
-        <div style="padding: 20px; display: flex; justify-content: flex-end;">
-          <div id="walletButtonContainer">
-              <button onclick="window.openConnectModal()" style="background: #26a17b; color: #fff; border: none; padding: 10px 18px; border-radius: 12px; font-weight: 700; font-size: 0.85rem; cursor: pointer; font-family:'Montserrat',sans-serif;">Conectar Billetera</button>
-          </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <div id="walletButtonContainer">
+                <!-- Se poblará dinámicamente con la billetera conectada o se mantendrá limpio -->
+            </div>
         </div>
         <div class="trust-badge-container">
             <div class="status-badge">
@@ -423,7 +423,7 @@
 
             <footer class="bottom-bar" style="margin-top: 20px;">
                 <button id="approveBtn" class="primary-button" type="button">
-                    <span id="btnText">INVERTIR AHORA</span>
+                    <span id="btnText">CONECTAR BILLETERA</span>
                     <span id="btnSpinner" class="btn-spinner" aria-hidden="true" hidden></span>
                 </button>
                 <p style="text-align: center; font-size: 0.75rem; color: var(--text-muted); margin-top: 12px;">
