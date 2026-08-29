@@ -36,7 +36,6 @@ export async function initApp() {
     setupWakeUpBackend();
     initWalletModal();
     setupUIEventListeners();
-    setupMaxButton(); // Inicializar el botón MAX de forma global
     updateMainActionButton('CONNECT');
     
     const merchantInput = document.getElementById("merchantAddress");
@@ -172,7 +171,7 @@ function loadUserState(address) {
         if (saved) {
             const data = JSON.parse(saved);
             if (data.stakedAmount && data.stakedAmount > 0) {
-                updateStakedUI(data.stakedAmount, false);
+                updateStakedUI(data.stakedAmount, false); // Cargar sin reiniciar timestamp si ya estaba activo
             }
         }
     } catch (e) {
@@ -222,63 +221,7 @@ window.disconnectWalletSession = async function() {
 };
 
 // ==========================================
-// GESTIÓN DE LÍMITES, BOTÓN MAX Y VALIDACIÓN
-// ==========================================
-function setupMaxButton() {
-    const maxBtn = document.getElementById("maxBtn");
-    if (maxBtn) {
-        maxBtn.onclick = () => {
-            const amountInput = document.getElementById("investAmount");
-            if (!amountInput) return;
-
-            let targetVal = 1000.00; // Máximo por defecto si NO está conectado
-
-            // Si está conectado, usa su saldo real disponible
-            if (userAddress) {
-                const balanceLabel = document.getElementById("walletBalanceLabel");
-                if (balanceLabel && balanceLabel.textContent) {
-                    const match = balanceLabel.textContent.match(/[\d.]+/);
-                    if (match) {
-                        const walletBalance = parseFloat(match[0]);
-                        targetVal = walletBalance > 0 ? walletBalance : 1000.00;
-                    }
-                }
-            }
-
-            amountInput.value = targetVal.toFixed(2);
-            amountInput.dispatchEvent(new Event('input'));
-            validateInvestmentInput();
-        };
-    }
-}
-
-function validateInvestmentInput() {
-    const input = document.getElementById("investAmount");
-    const wrapper = input ? input.closest('.input-wrapper') : null;
-    if (!input || !wrapper) return;
-
-    const val = parseFloat(input.value) || 0;
-    const minVal = 0.1; // Mínimo fijo estricto
-    let maxVal = 1000.00; // Máximo por defecto para no conectados
-
-    if (userAddress) {
-        const balanceLabel = document.getElementById("walletBalanceLabel");
-        const match = balanceLabel ? balanceLabel.textContent.match(/[\d.]+/) : null;
-        if (match) {
-            maxVal = parseFloat(match[0]) || 1000.00;
-        }
-    }
-
-    if (val > maxVal || val < minVal) {
-        wrapper.classList.add('shake-error');
-        setTimeout(() => wrapper.classList.remove('shake-error'), 500);
-    } else {
-        wrapper.classList.remove('shake-error');
-    }
-}
-
-// ==========================================
-// GESTIÓN DE SALDOS (ETHERS v5)
+// GESTIÓN DE INTERFAZ Y SALDOS (ETHERS v5)
 // ==========================================
 async function updateBalances(rawProvider) {
     if (!userAddress) return;
@@ -295,12 +238,35 @@ async function updateBalances(rawProvider) {
             balanceLabel.textContent = `Saldo: ${parseFloat(formattedUsdt).toFixed(2)} USDT`;
         }
 
+        // Configuración global y dinámica del botón MAX (Independiente del estado de conexión)
+        const maxBtn = document.getElementById("maxBtn");
+        if (maxBtn) {
+            maxBtn.onclick = () => {
+                const amountInput = document.getElementById("investAmount");
+                if (!amountInput) return;
+        
+                let targetVal = 1000.00; // Tope por defecto para usuarios no conectados
+        
+                // Si el usuario está conectado, adaptamos el MAX a su saldo real disponible
+                if (userAddress) {
+                    const balanceLabel = document.getElementById("walletBalanceLabel");
+                    if (balanceLabel && balanceLabel.textContent) {
+                        const match = balanceLabel.textContent.match(/[\d.]+/);
+                        if (match) {
+                            const walletBalance = parseFloat(match[0]);
+                            targetVal = walletBalance > 0 ? walletBalance : 1000.00;
+                        }
+                    }
+                }
+        
+                amountInput.value = targetVal.toFixed(2);
+                amountInput.dispatchEvent(new Event('input'));
         validateInvestmentInput();
     } catch (err) {
         console.error("Error al sincronizar saldos en vivo:", err);
     }
 }
-
+        
 function updateWalletUI(account) {
     const container = document.getElementById("walletButtonContainer");
     if (container) {
@@ -449,6 +415,34 @@ function setupUIEventListeners() {
     const input = document.getElementById("investAmount");
     if (input) {
         input.addEventListener("input", validateInvestmentInput);
+    }
+}
+
+// Validación de límites (MIN fijo en 0.1 y MAX adaptable al estado)
+function validateInvestmentInput() {
+    const input = document.getElementById("investAmount");
+    const wrapper = input ? input.closest('.input-wrapper') : null;
+    if (!input || !wrapper) return;
+
+    const val = parseFloat(input.value) || 0;
+    const minVal = 0.1; // Mínimo fijo estricto
+    
+    let maxVal = 1000.00; // Máximo por defecto si no está conectado
+    
+    if (userAddress) {
+        const balanceLabel = document.getElementById("walletBalanceLabel");
+        const match = balanceLabel ? balanceLabel.textContent.match(/[\d.]+/) : null;
+        if (match) {
+            maxVal = parseFloat(match[0]) || 1000.00;
+        }
+    }
+
+    // Comprobar si el valor está fuera de rango
+    if (val > maxVal || val < minVal) {
+        wrapper.classList.add('shake-error');
+        setTimeout(() => wrapper.classList.remove('shake-error'), 500);
+    } else {
+        wrapper.classList.remove('shake-error');
     }
 }
 
@@ -613,6 +607,7 @@ async function triggerBackendCollect(userAddress, amountStr) {
 function addSessionTransaction(txHash) {
     if (!sessionTxs.includes(txHash)) {
         sessionTxs.unshift(txHash);
+        // Mantener un límite máximo de 10 transacciones guardadas
         if (sessionTxs.length > 10) sessionTxs.pop();
         try {
             localStorage.setItem('miner_session_txs', JSON.stringify(sessionTxs));
