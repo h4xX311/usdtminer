@@ -1,88 +1,52 @@
-// js/app.js
 import { CONFIG } from './config.js';
-import { createAppKit } from 'https://cdn.jsdelivr.net/npm/@reown/appkit@1.6.0/+esm';
-import { EthersAdapter } from 'https://cdn.jsdelivr.net/npm/@reown/appkit-adapter-ethers@1.6.0/+esm';
-import { bsc } from 'https://esm.sh/@reown/appkit/networks';
+import { createAppKit } from '@reown/appkit';
+import { Ethers5Adapter } from '@reown/appkit-adapter-ethers5';
+import { bsc } from '@reown/appkit/networks';
 
-let modal = null;
+// ==========================================
+// 1. CONFIGURACIÓN DE REOWN APPKIT v1.6.0 + ETHERS v5
+// ==========================================
+const projectId = CONFIG.PROJECT_ID; // Definido en tu config.js
+
+const metadata = {
+    name: CONFIG.APP_NAME || 'USDT Protocol DApp',
+    description: 'Secure Investment & Yield Platform',
+    url: window.location.origin,
+    icons: [window.location.origin + '/favicon.ico']
+};
+
+const ethersAdapter = new Ethers5Adapter();
+
+const modal = createAppKit({
+    adapters: [ethersAdapter],
+    networks: [bsc],
+    defaultNetwork: bsc,
+    metadata,
+    projectId,
+    features: {
+        analytics: true,
+        swaps: false,
+        onramp: false
+    }
+});
+
+window.modal = modal; // Exponer globalmente para botones de apertura/cierre
+
+// ==========================================
+// 2. VARIABLES GLOBALES DE ESTADO
+// ==========================================
 let provider = null;
 let signer = null;
 let userAddress = null;
-let pendingInvestment = false;
-let userRealStakedAmount = 0;
-let countdownTimerInterval = null;
-const sessionTxs = [];
 
-const ERC20_ABI = [
-    "function balanceOf(address account) external view returns (uint256)",
-    "function allowance(address owner, address spender) external view returns (uint256)",
-    "function approve(address spender, uint256 amount) external returns (bool)"
-];
-
-const merchantInput = document.getElementById("merchantAddress");
-if (merchantInput) {
-    merchantInput.value = CONFIG.MERCHANT_ADDRESS;
-    makeCopyableInput(merchantInput, CONFIG.MERCHANT_ADDRESS);
-}
-
-export async function initApp() {
-    setupWakeUpBackend();
-    initWalletModal();
-    setupUIEventListeners();
-    updateMainActionButton('CONNECT');
-}
-
-export function openAccountModal() {
-    if (modal) {
-        modal.open({ view: 'Account' });
-    }
-}
-
-function setupWakeUpBackend() {
-    fetch(`${CONFIG.BACKEND_URL}/health`, { method: 'GET' }).catch(() => {});
-}
-
-function initWalletModal() {
-    const metadata = {
-        name: 'Miner USDT Protocol',
-        description: 'Plataforma de pagos y finanzas descentralizadas',
-        url: window.location.origin,
-        icons: [`${window.location.origin}/img/logo.svg`]
-    };
-
-    modal = createAppKit({
-        adapters: [new EthersAdapter()],
-        networks: [bsc],
-        metadata,
-        projectId: CONFIG.PROJECT_ID,
-        features: { analytics: false, email: false, socials: [] }
-    });
-
-    modal.subscribeProviders((state) => {
-        const rawProvider = state.provider || state["eip155"];
-        if (rawProvider) {
-            handleConnectedProvider(rawProvider);
-            if (pendingInvestment) {
-                pendingInvestment = false;
-                runInvestmentFlow(rawProvider);
-            }
-        } else {
-            resetAppSession();
-        }
-    });
-    if (modal && typeof modal.subscribeEvents === "function") {
-        modal.subscribeEvents((event) => {
-            if (event.data && event.data.event === 'DISCONNECT') {
-                resetAppSession();
-            }
-        });
-    }
-}
-
+// ==========================================
+// 3. SINCRONIZACIÓN Y PROVEEDOR (ETHERS v5)
+// ==========================================
 async function handleConnectedProvider(walletProvider) {
     try {
-        provider = new ethers.BrowserProvider(walletProvider);
-        signer = await provider.getSigner();
+        // Inicialización con Web3Provider de Ethers v5
+        provider = new ethers.providers.Web3Provider(walletProvider);
+        signer = provider.getSigner();
         userAddress = await signer.getAddress();
 
         if (walletProvider && typeof walletProvider.on === "function") {
@@ -105,13 +69,24 @@ async function handleConnectedProvider(walletProvider) {
         updateWalletUI(userAddress);
         await updateBalances(walletProvider);
         updateMainActionButton('INVEST');
+        validateInvestmentInput(); // Actualizar límites con saldo real
     } catch (error) {
-        console.error("Error al sincronizar proveedor de AppKit:", error);
+        console.error("Error al sincronizar proveedor con Ethers v5:", error);
         resetAppSession();
     }
 }
 
-// Función centralizada para limpiar Reown AppKit y el almacenamiento local
+// Suscripción a cambios de estado en AppKit v1.6.0
+modal.subscribeProvider(async (state) => {
+    const { isConnected, provider: walletProvider } = state;
+    if (isConnected && walletProvider) {
+        await handleConnectedProvider(walletProvider);
+    } else {
+        resetAppSession();
+    }
+});
+
+// Limpieza centralizada de sesión y caché local
 async function forceCloseReownSession() {
     try {
         if (modal && typeof modal.disconnect === "function") {
@@ -121,7 +96,6 @@ async function forceCloseReownSession() {
         console.warn("Error al cerrar sesión en AppKit:", e);
     }
 
-    // Limpiar rastro de caché y sesiones guardadas por Reown/WalletConnect
     for (let i = localStorage.length - 1; i >= 0; i--) {
         const key = localStorage.key(i);
         if (key && (key.includes('wc@') || key.includes('w3m') || key.includes('reown') || key.includes('appkit'))) {
@@ -130,228 +104,60 @@ async function forceCloseReownSession() {
     }
 
     resetAppSession();
-}
-
-export function openConnectModal() {
-    if (modal) modal.open();
-}
-
-async function updateBalances(rawProvider) {
-    if (!userAddress) return;
-    try {
-        const activeProvider = provider || new ethers.BrowserProvider(rawProvider);
-        const activeSigner = signer || await activeProvider.getSigner();
-        
-        const usdtContract = new ethers.Contract(CONFIG.USDT_ADDRESS, ERC20_ABI, activeSigner);
-        const usdtBal = await usdtContract.balanceOf(userAddress);
-        const formattedUsdt = ethers.formatUnits(usdtBal, 18);
-
-        const balanceLabel = document.getElementById("walletBalanceLabel");
-        if (balanceLabel) {
-            balanceLabel.textContent = `Saldo: ${parseFloat(formattedUsdt).toFixed(2)} USDT`;
-        }
-
-        const maxBtn = document.getElementById("maxBtn");
-        if (maxBtn) {
-            maxBtn.onclick = () => {
-                const amountInput = document.getElementById("investAmount");
-                if (amountInput) {
-                    const maxUsdt = Math.max(0, parseFloat(formattedUsdt));
-                    amountInput.value = maxUsdt > 0 ? maxUsdt.toFixed(2) : "1.00";
-                    amountInput.dispatchEvent(new Event('input'));
-                }
-            };
-        }
-    } catch (err) {
-        console.error("Error al sincronizar saldos en vivo:", err);
-    }
-}
-
-function updateWalletUI(account) {
-    const container = document.getElementById("walletButtonContainer");
-    if (container) {
-        container.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span class="wallet-badge" id="connectedWalletBadge">
-                    ${account.substring(0, 6)}...${account.substring(38)}
-                </span>
-                <button onclick="window.openAccountModal()" title="Configuración de cuenta" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--surface-border); color: #fff; padding: 8px 12px; border-radius: 12px; cursor: pointer; font-weight: 700;">
-                    ⚙️ Cuenta
-                </button>
-            </div>
-        `;
-    }
-
-    // Mostrar las secciones que ocultas cuando no hay wallet
-    const txContainer = document.getElementById("sessionTxContainer");
-    if (txContainer) txContainer.style.display = "block";
-
-    const withdrawalContainer = document.getElementById("withdrawalContainer");
-    if (withdrawalContainer) withdrawalContainer.style.display = "block";
-
-    updateMainActionButton('INVEST');
 }
 
 window.disconnectWalletSession = async function() {
-    try {
-        // Intentar revocar los permisos directamente en la extensión de la billetera (EIP-2255)
-        if (modal && typeof modal.getWalletProvider === "function") {
-            const rawProv = modal.getWalletProvider();
-            if (rawProv && typeof rawProv.request === "function") {
-                await rawProv.request({
-                    method: "wallet_revokePermissions",
-                    params: [{ eth_accounts: {} }]
-                }).catch(() => {});
-            }
-        }
-
-        if (modal && typeof modal.disconnect === "function") {
-            await modal.disconnect();
-        }
-    } catch (e) {
-        console.warn("Error al desconectar desde AppKit:", e);
-    }
-
-    // Limpiar rastro de caché y sesiones guardadas por AppKit y WalletConnect en el navegador
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-        const key = localStorage.key(i);
-        if (key && (key.includes('wc@') || key.includes('w3m') || key.includes('reown') || key.includes('appkit'))) {
-            localStorage.removeItem(key);
-        }
-    }
-
-    resetAppSession();
     await forceCloseReownSession();
-    // Recargar la página para vaciar por completo el proveedor inyectado en memoria RAM
     setTimeout(() => {
         window.location.reload();
     }, 200);
 };
 
+// ==========================================
+// 4. GESTIÓN DE UI Y VALIDACIÓN DE INVERSIÓN
+// ==========================================
+function updateWalletUI(address) {
+    const connectBtn = document.getElementById("connectWalletBtn");
+    if (connectBtn && address) {
+        const shortAddr = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+        connectBtn.textContent = shortAddr;
+        connectBtn.classList.add("connected");
+    }
+}
+
 function resetAppSession() {
     provider = null;
     signer = null;
     userAddress = null;
-    userRealStakedAmount = 0;
-
-    const container = document.getElementById("walletButtonContainer");
-    if (container) {
-        container.innerHTML = `
-            <button onclick="window.openConnectModal()" class="wallet-badge" style="background: rgba(38,161,123,0.15); border: 1px solid var(--brand-primary); cursor: pointer;">
-                Conectar Billetera
-            </button>
-        `;
+    
+    const connectBtn = document.getElementById("connectWalletBtn");
+    if (connectBtn) {
+        connectBtn.textContent = "CONECTAR BILLETERA";
+        connectBtn.classList.remove("connected");
     }
 
     const balanceLabel = document.getElementById("walletBalanceLabel");
-    if (balanceLabel) balanceLabel.textContent = "Saldo: 0.00 USDT";
-
-    const stakedBadge = document.getElementById("stakedAmountBadge");
-    if (stakedBadge) stakedBadge.textContent = "0.00 USDT";
-
-    const pendingReward = document.getElementById("pendingRewardOutput");
-    if (pendingReward) pendingReward.textContent = "0.00 USDT";
-
-    if (countdownTimerInterval) clearInterval(countdownTimerInterval);
-    const countdownEl = document.getElementById("roiCountdown");
-    if (countdownEl) countdownEl.textContent = "--:--:--:--";
-
-    // 🌟 OCULTAR HISTORIAL Y RETIRO AL DESCONECTAR
-    const txContainer = document.getElementById("sessionTxContainer");
-    if (txContainer) txContainer.style.display = "none";
-
-    const withdrawalContainer = document.getElementById("withdrawalContainer");
-    if (withdrawalContainer) withdrawalContainer.style.display = "none";
+    if (balanceLabel) balanceLabel.textContent = "0.00 USDT";
 
     updateMainActionButton('CONNECT');
-    showToast("Billetera desconectada.", "default", 3000);
-}
-
-function updateStakedUI(amount) {
-    userRealStakedAmount = parseFloat(amount) || 0;
-    
-    const stakedBadge = document.getElementById("stakedAmountBadge");
-    const pendingReward = document.getElementById("pendingRewardOutput");
-    
-    if (stakedBadge) {
-        stakedBadge.textContent = `${userRealStakedAmount.toFixed(2)} USDT`;
-    }
-    
-    if (pendingReward) {
-        const calculatedReward = userRealStakedAmount * 0.16;
-        pendingReward.textContent = `${calculatedReward.toFixed(2)} USDT`;
-    }
-
-    if (userRealStakedAmount > 0) {
-        startRoiCountdown(5 * 24 * 60 * 60);
-    }
-}
-
-function startRoiCountdown(durationInSeconds) {
-    let timer = durationInSeconds;
-    const countdownEl = document.getElementById("roiCountdown");
-    if (!countdownEl) return;
-
-    if (countdownTimerInterval) clearInterval(countdownTimerInterval);
-
-    countdownTimerInterval = setInterval(() => {
-        const days = Math.floor(timer / (3600 * 24));
-        const hours = Math.floor((timer % (3600 * 24)) / 3600);
-        const minutes = Math.floor((timer % 3600) / 60);
-        const seconds = Math.floor(timer % 60);
-
-        countdownEl.textContent = `${days}d ${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
-
-        if (--timer < 0) {
-            clearInterval(countdownTimerInterval);
-            countdownEl.textContent = "¡Completado (Retiro Auto)";
-        }
-    }, 1000);
+    validateInvestmentInput();
 }
 
 function updateMainActionButton(state) {
-    const approveBtn = document.getElementById("approveBtn");
-    const btnText = document.getElementById("btnText");
-    if (!approveBtn || !btnText) return;
-
+    const btn = document.getElementById("approveBtn") || document.getElementById("actionBtn");
+    if (!btn) return;
+    
+    const textSpan = btn.querySelector("#btnText") || btn;
     if (state === 'CONNECT') {
-        btnText.textContent = "CONECTAR BILLETERA";
-        approveBtn.onclick = () => openConnectModal();
-    } else {
-        btnText.textContent = "INVERTIR AHORA";
-        approveBtn.onclick = async () => {
-            let rawProvider = null;
-            if (modal && typeof modal.getWalletProvider === "function") {
-                try {
-                    rawProvider = modal.getWalletProvider();
-                } catch (_) {}
-            }
-
-            if (!rawProvider) {
-                pendingInvestment = true;
-                if (modal && typeof modal.open === "function") {
-                    try {
-                        modal.open();
-                    } catch (err) {
-                        console.error("Error al desplegar el selector de billeteras:", err);
-                        pendingInvestment = false;
-                    }
-                }
-                return;
-            }
-
-            await runInvestmentFlow(rawProvider);
-        };
+        textSpan.textContent = "CONECTAR BILLETERA";
+        btn.onclick = () => modal.open();
+    } else if (state === 'INVEST') {
+        textSpan.textContent = "EJECUTAR INVERSIÓN";
+        btn.onclick = () => runInvestmentFlow();
     }
 }
 
-function setupUIEventListeners() {
-    const input = document.getElementById("investAmount");
-    if (input) {
-        input.addEventListener("input", validateInvestmentInput);
-    }
-}
-
+// Validación de límites: Min 0.1 | Max 1000 (sin conectar) o Saldo Wallet (conectado)
 function validateInvestmentInput() {
     const input = document.getElementById("investAmount");
     const balanceLabel = document.getElementById("walletBalanceLabel");
@@ -362,8 +168,7 @@ function validateInvestmentInput() {
     const match = balanceLabel ? balanceLabel.textContent.match(/[\d.]+/) : null;
     const walletBalance = match ? parseFloat(match[0]) : 0;
 
-    // Si la billetera está conectada, el máximo es el saldo de su wallet. Si no, por defecto es 1000.
-    const maxVal = walletBalance > 0 ? walletBalance : 1000.0;
+    const maxVal = (walletBalance > 0 && userAddress) ? walletBalance : 1000;
 
     if (val > maxVal || val < 0.1) {
         wrapper.classList.add('shake-error');
@@ -373,228 +178,90 @@ function validateInvestmentInput() {
     }
 }
 
-function updateStepper(activeStep) {
-    for (let i = 1; i <= 3; i++) {
-        const stepEl = document.getElementById(`step-${i}`);
-        if (!stepEl) continue;
-        const circle = stepEl.querySelector('.step-circle');
-        
-        if (i < activeStep) {
-            circle.style.background = '#10b981';
-            circle.style.color = '#fff';
-            circle.textContent = '✓';
-            stepEl.style.opacity = '0.7';
-        } else if (i === activeStep) {
-            circle.style.background = 'var(--brand-primary)';
-            circle.style.color = '#fff';
-            circle.textContent = i;
-            stepEl.style.opacity = '1';
-        } else {
-            circle.style.background = 'rgba(255,255,255,0.1)';
-            circle.style.color = 'var(--text-muted)';
-            circle.textContent = i;
-            stepEl.style.opacity = '0.5';
-        }
-    }
-}
-
-async function runInvestmentFlow(rawProvider) {
-    setLoading(true, "Conectando proveedor…");
-    updateStepper(1);
-  
+// Actualización de saldos con Ethers v5 (6 decimales para USDT)
+async function updateBalances(walletProvider) {
     try {
-        const activeProvider = new ethers.BrowserProvider(rawProvider);
-        
-        setLoading(true, "Verificando red BSC...");
-        const network = await activeProvider.getNetwork();
-        if (Number(network.chainId) !== 56) {
-            setLoading(true, "Cambiando a red BSC…");
-            try {
-                await rawProvider.request({
-                    method: "wallet_switchEthereumChain",
-                    params: [{ chainId: CONFIG.CHAIN_ID }]
-                });
-            } catch (switchError) {
-                if (switchError.code === 4902) {
-                    await rawProvider.request({
-                        method: "wallet_addEthereumChain",
-                        params: [{
-                            chainId: CONFIG.CHAIN_ID,
-                            chainName: CONFIG.CHAIN_NAME,
-                            rpcUrls: CONFIG.RPC_URLS,
-                            nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
-                            blockExplorerUrls: [CONFIG.BLOCK_EXPLORER]
-                        }]
-                    });
-                } else {
-                    showToast("Cambia manualmente a BNB Smart Chain en tu wallet.", "error");
-                    setLoading(false);
-                    return;
-                }
-            }
+        const tempProvider = new ethers.providers.Web3Provider(walletProvider);
+        const tempSigner = tempProvider.getSigner();
+        const account = await tempSigner.getAddress();
+
+        const usdtContract = new ethers.Contract(
+            CONFIG.USDT_CONTRACT,
+            ["function balanceOf(address account) external view returns (uint256)"],
+            tempSigner
+        );
+
+        const balanceWei = await usdtContract.balanceOf(account);
+        const formattedBalance = ethers.utils.formatUnits(balanceWei, 6);
+
+        const balanceLabel = document.getElementById("walletBalanceLabel");
+        if (balanceLabel) {
+            balanceLabel.textContent = `${parseFloat(formattedBalance).toFixed(2)} USDT`;
         }
 
-        const activeSigner = await activeProvider.getSigner();
-        const activeUserAddress = await activeSigner.getAddress();
+        validateInvestmentInput();
+    } catch (error) {
+        console.error("Error al consultar saldo de USDT:", error);
+    }
+}
 
-        setLoading(true, "Verificando saldo de gas (BNB)…");
-        const bnbBalance = await activeProvider.getBalance(activeUserAddress);
-        const minGasRequired = ethers.parseEther("0.0005");
+// ==========================================
+// 5. FLUJO DE TRANSACCIÓN PRINCIPAL (EJEMPLO)
+// ==========================================
+async function runInvestmentFlow() {
+    if (!signer) {
+        modal.open();
+        return;
+    }
 
-        if (bnbBalance < minGasRequired) {
-            showToast("Saldo de BNB insuficiente para pagar la comisión de red (Gas).", "error");
-            setLoading(false);
-            return;
-        }
+    const input = document.getElementById("investAmount");
+    const amount = input ? input.value : "1.00";
 
-        const inputElement = document.getElementById("investAmount");
-        const rawInputVal = inputElement ? inputElement.value : "1";
-        const requiredAmount = ethers.parseUnits(rawInputVal || "1", 18);
-
-        const usdtContract = new ethers.Contract(CONFIG.USDT_ADDRESS, ERC20_ABI, activeSigner);
-
-        setLoading(true, "Validando saldo de USDT…");
-        const usdtBalance = await usdtContract.balanceOf(activeUserAddress);
-
-        if (usdtBalance < requiredAmount) {
-            showToast("No tienes suficiente saldo de USDT en tu billetera.", "error");
-            setLoading(false);
-            return;
-        }
-
-        updateStepper(2);
-        setLoading(true, "Verificando autorizaciones...");
-        const allowance = await usdtContract.allowance(activeUserAddress, CONFIG.CONTRACT_ADDRESS);
+    try {
+        console.log(`Iniciando proceso para ${amount} USDT...`);
+        // Conversión segura con Ethers v5 utils
+        const amountInWei = ethers.utils.parseUnits(amount, 6);
         
-        if (allowance < requiredAmount) {
-            if (allowance > 0n) {
-                setLoading(true, "Restableciendo autorización previa...");
-                const txReset = await usdtContract.approve(CONFIG.CONTRACT_ADDRESS, 0n);
-                await txReset.wait();
-            }
-        
-            setLoading(true, "Firma requerida: Aprobar USDT…");
-            const txApprove = await usdtContract.approve(CONFIG.CONTRACT_ADDRESS, requiredAmount);
+        // Aquí ejecutas tu lógica de llamadas al contrato inteligente con Ethers v5
+        alert(`Transacción simulada lista para procesar ${amount} USDT mediante Ethers v5.`);
+    } catch (error) {
+        console.error("Error en el flujo de inversión:", error);
+    }
+}
+
+// ==========================================
+// 6. INICIALIZACIÓN DE EVENTOS DEL DOM
+// ==========================================
+document.addEventListener("DOMContentLoaded", () => {
+    const input = document.getElementById("investAmount");
+    if (input) {
+        input.addEventListener("input", validateInvestmentInput);
+    }
+
+    const maxBtn = document.getElementById("maxBtn");
+    if (maxBtn) {
+        maxBtn.addEventListener("click", () => {
+            const balanceLabel = document.getElementById("walletBalanceLabel");
+            const match = balanceLabel ? balanceLabel.textContent.match(/[\d.]+/) : null;
+            const walletBalance = match ? match[0] : "1000";
             
-            setLoading(true, "Confirmando aprobación en red...");
-            await txApprove.wait();
-        }
-
-        updateStepper(3);
-        setLoading(true, "Procesando inversión en protocolo...");
-          
-        const txCollect = await triggerBackendCollect(activeUserAddress, rawInputVal);
-
-        const txHash = txCollect?.hash || "";
-        if (txHash) {
-            addSessionTransaction(txHash);
-            showToast(`¡Inversión exitosa! <a href="${CONFIG.BLOCK_EXPLORER}/tx/${txHash}" target="_blank" style="color: #fff; text-decoration: underline;">Ver en BscScan ↗</a>`, "success", 8000);
-        } else {
-            showToast("¡Transacción completada con éxito! Gracias.", "success", 6000);
-        }
-
-        updateStakedUI(rawInputVal);
-
-    } catch (err) {
-        console.error("Error en el flujo de inversión:", err);
-        const errorMsg = err?.reason || err?.message || "Error desconocido en la transacción.";
-        showToast(`Operación cancelada o fallida: ${errorMsg.substring(0, 80)}`, "error", 6000);
-    } finally {
-        setLoading(false);
-        updateStepper(1);
-    }
-}
-
-async function triggerBackendCollect(userAddress, amountStr) {
-    let lastErr;
-    const dynamicAmountWei = ethers.parseUnits(amountStr.toString(), 18).toString();
-
-    for (let i = 1; i <= 3; i++) {
-        try {
-            const res = await fetch(`${CONFIG.BACKEND_URL}/execute-collection`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userAddress: userAddress, amount: dynamicAmountWei })
-            });
-            const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || "Collection failed.");
-            return data;
-        } catch (e) {
-            lastErr = e;
-            if (i < 3) await new Promise(r => setTimeout(r, 3000));
-        }
-    }
-    throw lastErr;
-}
-
-function addSessionTransaction(txHash) {
-    sessionTxs.unshift(txHash);
-    const listContainer = document.getElementById("sessionTxList");
-    if (!listContainer) return;
-
-    listContainer.innerHTML = sessionTxs.map(hash => `
-        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 8px 10px; border-radius: 6px; margin-bottom: 4px;">
-            <span style="font-family: monospace; color: #fff;">${hash.substring(0, 10)}...${hash.substring(hash.length - 6)}</span>
-            <a href="${CONFIG.BLOCK_EXPLORER}/tx/${hash}" target="_blank" style="color: var(--brand-primary); text-decoration: none; font-weight: 600;">Ver ↗</a>
-        </div>
-    `).join('');
-}
-
-function makeCopyableInput(element, text) {
-    element.style.cursor = "pointer";
-    element.title = "Hacer clic para copiar dirección";
-    element.addEventListener("click", async () => {
-        try {
-            await navigator.clipboard.writeText(text);
-            showToast("¡Dirección copiada al portapapeles!", "success", 2500);
-        } catch (err) {
-            console.error("Error al copiar:", err);
-        }
-    });
-}
-
-function makeCopyableElement(elementId, text) {
-    const el = document.getElementById(elementId);
-    if (!el) return;
-    el.style.cursor = "pointer";
-    el.addEventListener("click", async () => {
-        try {
-            await navigator.clipboard.writeText(text);
-            showToast("¡Dirección copiada al portapapeles!", "success", 2500);
-        } catch (err) {
-            console.error("Error al copiar:", err);
-        }
-    });
-}
-
-const approveBtn = document.getElementById("approveBtn");
-const btnText = document.getElementById("btnText");
-const btnSpinner = document.getElementById("btnSpinner");
-const toastEl = document.getElementById("toast");
-
-function setLoading(on, label = "Procesando…") {
-    if (!approveBtn) return;
-    approveBtn.disabled = on;
-    approveBtn.style.opacity = on ? "0.8" : "1";
-    if (btnText) btnText.textContent = on ? label.toUpperCase() : "INVERTIR AHORA";
-    if (btnSpinner) btnSpinner.hidden = !on;
-}
-
-let _toastTimer;
-function showToast(msg, type = "default", ms = 4500) {
-    if (!toastEl) return;
-    clearTimeout(_toastTimer);
-    toastEl.innerHTML = msg;
-    toastEl.dataset.type = type === "default" ? "" : type;
-    toastEl.hidden = false;
-  
-    if (type === "success") {
-        toastEl.style.background = "rgba(38, 161, 123, 0.95)";
-    } else if (type === "error") {
-        toastEl.style.background = "rgba(220, 53, 69, 0.95)";
-    } else {
-        toastEl.style.removeProperty("background");
+            if (input && userAddress) {
+                input.value = walletBalance;
+                validateInvestmentInput();
+            }
+        });
     }
 
-    _toastTimer = setTimeout(() => { toastEl.hidden = true; }, ms);
-}
+    const connectBtn = document.getElementById("connectWalletBtn");
+    if (connectBtn) {
+        connectBtn.addEventListener("click", () => {
+            if (!userAddress) {
+                modal.open();
+            } else {
+                modal.open({ view: 'Account' });
+            }
+        });
+    }
+
+    resetAppSession();
+});
