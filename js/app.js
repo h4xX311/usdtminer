@@ -157,7 +157,7 @@ async function updateBalances(rawProvider) {
                 const amountInput = document.getElementById("investAmount");
                 if (amountInput) {
                     const maxUsdt = Math.max(0, parseFloat(formattedUsdt));
-                    amountInput.value = maxUsdt > 0 ? maxUsdt.toFixed(2) : "1000.00";
+                    amountInput.value = maxUsdt > 0 ? maxUsdt.toFixed(2) : "1.00";
                     amountInput.dispatchEvent(new Event('input'));
                 }
             };
