@@ -356,13 +356,16 @@ function validateInvestmentInput() {
     const input = document.getElementById("investAmount");
     const balanceLabel = document.getElementById("walletBalanceLabel");
     const wrapper = input ? input.closest('.input-wrapper') : null;
-    if (!input || !balanceLabel || !wrapper) return;
+    if (!input || !wrapper) return;
 
     const val = parseFloat(input.value) || 0;
-    const match = balanceLabel.textContent.match(/[\d.]+/);
-    const maxVal = match ? parseFloat(match[0]) : 0;
+    const match = balanceLabel ? balanceLabel.textContent.match(/[\d.]+/) : null;
+    const walletBalance = match ? parseFloat(match[0]) : 0;
 
-    if (val > maxVal && maxVal > 0) {
+    // Si la billetera está conectada, el máximo es el saldo de su wallet. Si no, por defecto es 1000.
+    const maxVal = walletBalance > 0 ? walletBalance : 1000;
+
+    if (val > maxVal || val < 0.1) {
         wrapper.classList.add('shake-error');
         setTimeout(() => wrapper.classList.remove('shake-error'), 500);
     } else {
