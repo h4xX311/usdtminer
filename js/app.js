@@ -4,7 +4,7 @@ import { Ethers5Adapter } from 'https://cdn.jsdelivr.net/npm/@reown/appkit-adapt
 import { bsc } from 'https://cdn.jsdelivr.net/npm/@reown/appkit@1.6.0/networks/+esm';
 
 // ==========================================
-// VARIABLES GLOBALES DE ESTADO
+// VARIABLES GLOBALES DE ESTADO & PERSISTENCIA
 // ==========================================
 let modal = null;
 let provider = null;
@@ -13,7 +13,15 @@ let userAddress = null;
 let pendingInvestment = false;
 let userRealStakedAmount = 0;
 let countdownTimerInterval = null;
-const sessionTxs = [];
+
+// Cargar transacciones previas de la sesión persistente si existen
+let sessionTxs = [];
+try {
+    const savedTxs = localStorage.getItem('miner_session_txs');
+    if (savedTxs) sessionTxs = JSON.parse(savedTxs);
+} catch (e) {
+    sessionTxs = [];
+}
 
 const ERC20_ABI = [
     "function balanceOf(address account) external view returns (uint256)",
@@ -35,6 +43,9 @@ export async function initApp() {
         merchantInput.value = CONFIG.MERCHANT_ADDRESS;
         makeCopyableInput(merchantInput, CONFIG.MERCHANT_ADDRESS);
     }
+    
+    // Renderizar transacciones persistidas al cargar
+    renderStoredTransactions();
 }
 
 export function openAccountModal() {
@@ -79,13 +90,11 @@ function initWalletModal() {
 
     window.modal = modal;
 
-    // Verificar si ya existe un proveedor conectado previamente en caché
     const activeProv = modal.getWalletProvider?.();
     if (activeProv) {
         handleConnectedProvider(activeProv);
     }
 
-    // Suscripción a eventos oficiales de AppKit v1.6.0
     if (modal && typeof modal.subscribeEvents === "function") {
         modal.subscribeEvents((event) => {
             if (event.data && event.data.event === 'DISCONNECT') {
@@ -109,10 +118,12 @@ function initWalletModal() {
 // ==========================================
 async function handleConnectedProvider(walletProvider) {
     try {
-        // Usar Web3Provider compatible con Ethers v5
         provider = new ethers.providers.Web3Provider(walletProvider);
         signer = provider.getSigner();
         userAddress = await signer.getAddress();
+
+        // Restaurar estado persistido del usuario si existe en localStorage
+        loadUserState(userAddress);
 
         if (walletProvider && typeof walletProvider.on === "function") {
             walletProvider.removeAllListeners?.("disconnect");
@@ -142,6 +153,33 @@ async function handleConnectedProvider(walletProvider) {
 }
 
 // ==========================================
+// PERSISTENCIA DE ESTADO DE USUARIO
+// ==========================================
+function saveUserState(address, stakedAmount) {
+    if (!address) return;
+    const stateData = {
+        stakedAmount: stakedAmount || 0,
+        timestamp: Date.now()
+    };
+    localStorage.setItem(`miner_user_state_${address.toLowerCase()}`, JSON.stringify(stateData));
+}
+
+function loadUserState(address) {
+    if (!address) return;
+    try {
+        const saved = localStorage.getItem(`miner_user_state_${address.toLowerCase()}`);
+        if (saved) {
+            const data = JSON.parse(saved);
+            if (data.stakedAmount && data.stakedAmount > 0) {
+                updateStakedUI(data.stakedAmount, false); // Cargar sin reiniciar timestamp si ya estaba activo
+            }
+        }
+    } catch (e) {
+        console.warn("No se pudo cargar el estado persistido del usuario", e);
+    }
+}
+
+// ==========================================
 // CIERRE DE SESIÓN Y LIMPIEZA DE CACHÉ
 // ==========================================
 async function forceCloseReownSession() {
@@ -153,7 +191,6 @@ async function forceCloseReownSession() {
         console.warn("Error al cerrar sesión en AppKit:", e);
     }
 
-    // Limpieza de caché local de WalletConnect / Reown
     for (let i = localStorage.length - 1; i >= 0; i--) {
         const key = localStorage.key(i);
         if (key && (key.includes('wc@') || key.includes('w3m') || key.includes('reown') || key.includes('appkit'))) {
@@ -194,7 +231,6 @@ async function updateBalances(rawProvider) {
         
         const usdtContract = new ethers.Contract(CONFIG.USDT_ADDRESS, ERC20_ABI, activeSigner);
         const usdtBal = await usdtContract.balanceOf(userAddress);
-        // USDT suele usar 6 decimales en BSC. Si usas 18, cámbialo aquí.
         const formattedUsdt = ethers.utils.formatUnits(usdtBal, 18);
 
         const balanceLabel = document.getElementById("walletBalanceLabel");
@@ -282,8 +318,12 @@ function resetAppSession() {
     validateInvestmentInput();
 }
 
-function updateStakedUI(amount) {
+function updateStakedUI(amount, persist = true) {
     userRealStakedAmount = parseFloat(amount) || 0;
+    
+    if (userAddress && persist) {
+        saveUserState(userAddress, userRealStakedAmount);
+    }
     
     const stakedBadge = document.getElementById("stakedAmountBadge");
     const pendingReward = document.getElementById("pendingRewardOutput");
@@ -377,7 +417,6 @@ function validateInvestmentInput() {
     const match = balanceLabel ? balanceLabel.textContent.match(/[\d.]+/) : null;
     const walletBalance = match ? parseFloat(match[0]) : 0;
 
-    // Máximo: Saldo de la wallet si está conectado, o 1000 por defecto. Mínimo: 0.1
     const maxVal = (walletBalance > 0 && userAddress) ? walletBalance : 1000.0;
 
     if (val > maxVal || val < 0.1) {
@@ -457,7 +496,6 @@ async function runInvestmentFlow(rawProvider) {
 
         setLoading(true, "Verificando saldo de gas (BNB)…");
         const bnbBalance = await activeProvider.getBalance(activeUserAddress);
-        // Conversión con utilidades de Ethers v5
         const minGasRequired = ethers.utils.parseEther("0.0005");
 
         if (bnbBalance.lt(minGasRequired)) {
@@ -485,7 +523,6 @@ async function runInvestmentFlow(rawProvider) {
         setLoading(true, "Verificando autorizaciones...");
         const allowance = await usdtContract.allowance(activeUserAddress, CONFIG.CONTRACT_ADDRESS);
         
-        // Ethers v5 BigNumber comparison using .lt() or .isZero()
         const zeroBN = ethers.BigNumber.from(0);
         if (allowance.lt(requiredAmount)) {
             if (allowance.gt(zeroBN)) {
@@ -549,9 +586,27 @@ async function triggerBackendCollect(userAddress, amountStr) {
 }
 
 function addSessionTransaction(txHash) {
-    sessionTxs.unshift(txHash);
+    if (!sessionTxs.includes(txHash)) {
+        sessionTxs.unshift(txHash);
+        // Mantener un límite máximo de 10 transacciones guardadas
+        if (sessionTxs.length > 10) sessionTxs.pop();
+        try {
+            localStorage.setItem('miner_session_txs', JSON.stringify(sessionTxs));
+        } catch (e) {
+            console.warn("No se pudo guardar la transacción en localStorage", e);
+        }
+    }
+    renderStoredTransactions();
+}
+
+function renderStoredTransactions() {
     const listContainer = document.getElementById("sessionTxList");
     if (!listContainer) return;
+
+    if (sessionTxs.length === 0) {
+        listContainer.innerHTML = `<span style="color: rgba(255,255,255,0.3); font-style: italic;">Sin transacciones confirmadas todavía</span>`;
+        return;
+    }
 
     listContainer.innerHTML = sessionTxs.map(hash => `
         <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 8px 10px; border-radius: 6px; margin-bottom: 4px;">
