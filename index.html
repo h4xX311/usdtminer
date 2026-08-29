@@ -17,7 +17,7 @@
     <!-- Content Security Policy (relaxed for third-party CDNs used). Tighten in production. -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https:; img-src 'self' data:; font-src https://fonts.gstatic.com data:;">
 
-    <!-- External libs (SRI placeholder: replace TODO_SRI with the actual hash) -->
+    <!-- External libs (SRI placeholder: replace TODO_SRI_ETHERS_5_7_2 with the real sha384 hash) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" integrity="TODO_SRI_ETHERS_5_7_2" crossorigin="anonymous"></script>
 
 </head>
@@ -34,7 +34,7 @@
         </div>
         <div class="trust-badge-container">
             <div class="status-badge">
-                <span class="status-dot"></span>
+                <span class="status-dot" aria-hidden="true"></span>
                 <span>BSC Mainnet</span>
             </div>
             <a href="https://bscscan.com/address/0x55d398326f99059ff775485246999027b3197955" target="_blank" rel="noopener" class="verify-link">
@@ -45,6 +45,29 @@
 
     <!-- main content remains intact (unchanged for readability) -->
     <!-- The full body markup from the original index.html remains in the repository and is not modified here. -->
+
+    <!-- aria-live to expose live status updates for assistive tech -->
+    <div class="live-toast-container" id="dynamicToast" role="status" aria-live="polite" aria-atomic="true">
+        <div class="live-toast-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+        </div>
+        <div id="toastContent"></div>
+    </div>
+
+    <!-- The simpler error/info toast shown in-page -->
+    <div id="toast" class="toast" role="alert" aria-live="assertive" data-type="error" hidden>Please switch to BNB Smart Chain to continue.</div>
+
+    <footer class="site-footer">
+        <div class="footer-links">
+            <a href="#">BscScan</a>
+            <a href="#">Auditorías</a>
+            <a href="#">Documentación</a>
+            <a href="#">Soporte Telegram</a>
+        </div>
+        <p>© 2026 USDT Miner Protocol. Todos los derechos reservados. Interactuar con contratos inteligentes conlleva riesgos de mercado.</p>
+    </footer>
 
     <!-- UI module: initializes the app and UI-only behaviors (ROI, TVL, toasts) -->
     <script type="module" src="/js/ui.js"></script>
