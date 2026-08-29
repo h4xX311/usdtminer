@@ -157,7 +157,7 @@ async function updateBalances(rawProvider) {
                 const amountInput = document.getElementById("investAmount");
                 if (amountInput) {
                     const maxUsdt = Math.max(0, parseFloat(formattedUsdt));
-                    amountInput.value = maxUsdt > 0 ? maxUsdt.toFixed(2) : "1.00";
+                    amountInput.value = maxUsdt > 0 ? maxUsdt.toFixed(2) : "1000.00";
                     amountInput.dispatchEvent(new Event('input'));
                 }
             };
@@ -363,7 +363,7 @@ function validateInvestmentInput() {
     const walletBalance = match ? parseFloat(match[0]) : 0;
 
     // Si la billetera está conectada, el máximo es el saldo de su wallet. Si no, por defecto es 1000.
-    const maxVal = walletBalance > 0 ? walletBalance : 1000;
+    const maxVal = walletBalance > 0 ? walletBalance : 1000.0;
 
     if (val > maxVal || val < 0.1) {
         wrapper.classList.add('shake-error');
