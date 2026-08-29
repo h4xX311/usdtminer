@@ -1,7 +1,7 @@
 // js/app.js
 import { CONFIG } from './config.js';
-import { createAppKit } from 'https://esm.sh/@reown/appkit@latest';
-import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers@latest';
+import { createAppKit } from 'https://cdn.jsdelivr.net/npm/@reown/appkit@1.6.0/+esm';
+import { EthersAdapter } from 'https://cdn.jsdelivr.net/npm/@reown/appkit-adapter-ethers@1.6.0/+esm';
 import { bsc } from 'https://esm.sh/@reown/appkit/networks';
 
 let modal = null;
