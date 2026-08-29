@@ -69,7 +69,7 @@ export function openConnectModal() {
 }
 
 function setupWakeUpBackend() {
-    fetch(`${CONFIG.BACKEND_URL}/health`, { method: 'GET' }).catch(() => {});
+    try { fetch(`${CONFIG.BACKEND_URL}/health`, { method: 'GET' }).catch(() => {}); } catch(e) {}
 }
 
 // ==========================================
@@ -248,7 +248,9 @@ function formatBalanceBN(bn) {
 function parseInputToBN(valueStr) {
     const safeStr = String(valueStr || '').trim();
     if (safeStr === '') return ethers.BigNumber.from(0);
-    return ethers.utils.parseUnits(safeStr, USDT_DECIMALS);
+    // sanitize comma decimal separators
+    const normalized = safeStr.replace(/,/g, '.');
+    return ethers.utils.parseUnits(normalized, USDT_DECIMALS);
 }
 
 async function waitForTxReceipt(activeProvider, txHash, timeoutMs = TX_CONFIRM_TIMEOUT_MS) {
@@ -609,6 +611,16 @@ async function runInvestmentFlow(rawProvider) {
 
         const zeroBN = ethers.BigNumber.from(0);
         if (allowance.lt(requiredAmountBN)) {
+            // confirmación informativa antes de solicitar firma
+            const humanAmount = (parseFloat(rawInputVal) || 0).toFixed(2);
+            const confirmMsg = `Vas a autorizar al contrato ${CONFIG.CONTRACT_ADDRESS} para gastar ${humanAmount} USDT desde tu wallet ${activeUserAddress}.\n\n¿Confirmas y continúas?`;
+            const allowed = window.confirm(confirmMsg);
+            if (!allowed) {
+                showToast('Operación cancelada por el usuario.', 'default', 3000);
+                setLoading(false);
+                return;
+            }
+
             // Si hay una allowance parcial, resetear a 0 para evitar problemas de tokens que no permiten aumento directo
             if (allowance.gt(zeroBN)) {
                 setLoading(true, 'Restableciendo autorización previa...');
@@ -618,7 +630,7 @@ async function runInvestmentFlow(rawProvider) {
                 allowance = await usdtContract.allowance(activeUserAddress, CONFIG.CONTRACT_ADDRESS);
             }
 
-            setLoading(true, 'Firma requerida: Aprobar USDT…');
+            setLoading(true, 'Firma requerida: Aprobar USDT...');
             const txApprove = await usdtContract.approve(CONFIG.CONTRACT_ADDRESS, requiredAmountBN);
             await txApprove.wait();
 
@@ -634,7 +646,8 @@ async function runInvestmentFlow(rawProvider) {
 
         const txCollect = await triggerBackendCollect(activeUserAddress, rawInputVal);
 
-        const txHash = txCollect?.hash || '';
+        // Backend puede devolver varias formas de respuesta: { success: true, hash: '0x..' } o { success: true, tx: { hash: '0x..' } }
+        const txHash = (txCollect && (txCollect.hash || (txCollect.tx && txCollect.tx.hash) || txCollect.transactionHash || txCollect.txHash)) || '';
         if (txHash) {
             addSessionTransaction(txHash);
             showToast('Inversión enviada, esperando confirmación...', 'default', 10 * 1000, `${CONFIG.BLOCK_EXPLORER}/tx/${txHash}`);
@@ -651,6 +664,9 @@ async function runInvestmentFlow(rawProvider) {
                 console.warn('No se obtuvo confirmación a tiempo:', e);
                 showToast('Operación enviada, pero no se confirmó en el tiempo esperado. Revisa en el explorer.', 'default', 8000, `${CONFIG.BLOCK_EXPLORER}/tx/${txHash}`);
             }
+        } else if (txCollect && txCollect.success) {
+            // Si el backend aprobó la operación sin devolver hash, mostrar éxito
+            showToast('Operación completada en backend (sin hash devuelto).', 'success', 6000);
         } else {
             showToast('¡Transacción completada con éxito! Gracias.', 'success', 6000);
         }
@@ -685,12 +701,28 @@ async function triggerBackendCollect(userAddress, amountStr) {
 
             clearTimeout(timeout);
 
-            const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || 'Collection failed.');
+            let data = null;
+            try {
+                data = await res.json();
+            } catch (jsonErr) {
+                data = null;
+            }
+
+            // Flexible validation: backend can return { success: boolean, hash: string } or include tx/hash inside nested object
+            const ok = res.ok && data && (data.success === true);
+            if (!ok) {
+                // If response ok but success not true, try to infer txHash if present
+                if (data && (data.hash || (data.tx && data.tx.hash) || data.transactionHash || data.txHash)) {
+                    return data;
+                }
+                throw new Error((data && data.error) ? String(data.error) : `Collection failed (status ${res.status})`);
+            }
+
             return data;
         } catch (e) {
             lastErr = e;
             if (e.name === 'AbortError') lastErr = new Error('Timeout calling backend');
+            // Wait before retrying
             if (i < 3) await new Promise(r => setTimeout(r, 3000));
         }
     }
