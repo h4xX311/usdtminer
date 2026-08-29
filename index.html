@@ -536,7 +536,7 @@
 
             const calculateROI = () => {
                 let val = parseFloat(amountInput.value);
-                if (isNaN(val) || val < 0) {
+                if (isNaN(val) || val < 0.1) {
                     roiOutput.textContent = `+0.00 USDT`;
                     roiBox.style.borderColor = "rgba(255,255,255,0.1)";
                     return;
