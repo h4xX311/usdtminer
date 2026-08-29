@@ -261,12 +261,12 @@ async function updateBalances(rawProvider) {
         
                 amountInput.value = targetVal.toFixed(2);
                 amountInput.dispatchEvent(new Event('input'));
-        validateInvestmentInput();
-    } catch (err) {
+                validateInvestmentInput();
+        } catch (err) {
         console.error("Error al sincronizar saldos en vivo:", err);
+        }
     }
-}
-        
+}       
 function updateWalletUI(account) {
     const container = document.getElementById("walletButtonContainer");
     if (container) {
