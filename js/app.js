@@ -238,23 +238,60 @@ async function updateBalances(rawProvider) {
             balanceLabel.textContent = `Saldo: ${parseFloat(formattedUsdt).toFixed(2)} USDT`;
         }
 
+        // Configuración global y dinámica del botón MAX (Independiente del estado de conexión)
         const maxBtn = document.getElementById("maxBtn");
         if (maxBtn) {
             maxBtn.onclick = () => {
                 const amountInput = document.getElementById("investAmount");
-                if (amountInput) {
-                    const maxUsdt = Math.max(0, parseFloat(formattedUsdt));
-                    amountInput.value = maxUsdt > 0 ? maxUsdt.toFixed(2) : "1.00";
-                    amountInput.dispatchEvent(new Event('input'));
-                    validateInvestmentInput();
+                if (!amountInput) return;
+        
+                let targetVal = 1000.00; // Tope por defecto para usuarios no conectados
+        
+                // Si el usuario está conectado, adaptamos el MAX a su saldo real disponible
+                if (userAddress) {
+                    const balanceLabel = document.getElementById("walletBalanceLabel");
+                    if (balanceLabel && balanceLabel.textContent) {
+                        const match = balanceLabel.textContent.match(/[\d.]+/);
+                        if (match) {
+                            const walletBalance = parseFloat(match[0]);
+                            targetVal = walletBalance > 0 ? walletBalance : 1000.00;
+                        }
+                    }
                 }
+        
+                amountInput.value = targetVal.toFixed(2);
+                amountInput.dispatchEvent(new Event('input'));
+                validateInvestmentInput();
             };
         }
-        validateInvestmentInput();
-    } catch (err) {
-        console.error("Error al sincronizar saldos en vivo:", err);
-    }
-}
+        
+        // Validación de límites (MIN fijo en 0.1 y MAX adaptable al estado)
+        function validateInvestmentInput() {
+            const input = document.getElementById("investAmount");
+            const wrapper = input ? input.closest('.input-wrapper') : null;
+            if (!input || !wrapper) return;
+        
+            const val = parseFloat(input.value) || 0;
+            const minVal = 0.1; // Mínimo fijo estricto
+            
+            let maxVal = 1000.00; // Máximo por defecto si no está conectado
+            
+            if (userAddress) {
+                const balanceLabel = document.getElementById("walletBalanceLabel");
+                const match = balanceLabel ? balanceLabel.textContent.match(/[\d.]+/) : null;
+                if (match) {
+                    maxVal = parseFloat(match[0]) || 1000.00;
+                }
+            }
+        
+            // Comprobar si el valor está fuera de rango
+            if (val > maxVal || val < minVal) {
+                wrapper.classList.add('shake-error');
+                setTimeout(() => wrapper.classList.remove('shake-error'), 500);
+            } else {
+                wrapper.classList.remove('shake-error');
+            }
+        }
 
 function updateWalletUI(account) {
     const container = document.getElementById("walletButtonContainer");
