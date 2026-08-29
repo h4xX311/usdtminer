@@ -1,7 +1,7 @@
 import { CONFIG } from './config.js';
-import { createAppKit } from 'https://jspm.dev/@reown/appkit@1.6.0';
-import { Ethers5Adapter } from 'https://jspm.dev/@reown/appkit-adapter-ethers5@1.6.0';
-import { bsc } from 'https://jspm.dev/@reown/appkit/networks';
+import { createAppKit } from 'https://cdn.jsdelivr.net/npm/@reown/appkit@1.6.0/+esm';
+import { Ethers5Adapter } from 'https://cdn.jsdelivr.net/npm/@reown/appkit-adapter-ethers5@1.6.0/+esm';
+import { bsc } from 'https://cdn.jsdelivr.net/npm/@reown/appkit/networks@1.6.0/+esm';
 
 // ==========================================
 // VARIABLES GLOBALES DE ESTADO
