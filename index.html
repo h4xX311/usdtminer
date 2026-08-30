@@ -14,8 +14,8 @@
     <!-- Stylesheet (extracted from inline styles) -->
     <link rel="stylesheet" href="/css/site.css">
 
-    <!-- Content Security Policy (relaxed for third-party CDNs used). Tighten in production. -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https:; img-src 'self' data:; font-src https://fonts.gstatic.com data:;">
+    <!-- Content Security Policy (basic, tighten before production) -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https:; img-src 'self' data:; font-src https://fonts.gstatic.com data:;">
 
     <!-- External libs (SRI placeholder: replace TODO_SRI_ETHERS_5_7_2 with the real sha384 hash) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" integrity="TODO_SRI_ETHERS_5_7_2" crossorigin="anonymous"></script>
@@ -25,11 +25,11 @@
 
     <header>
         <div class="logo">
-            <img src="img/logo.svg" alt="USDT Miner Protocol Logo" style="height: 80px; width: auto; display: block;">
+            <img src="/img/logo.svg" alt="USDT Miner Protocol Logo" style="height: 80px; width: auto; display: block;">
         </div>
         <div style="display: flex; align-items: center; gap: 16px;">
             <div id="walletButtonContainer">
-                <!-- Se poblará dinámicamente con la billetera conectada o se mantendrá limpio -->
+                <button onclick="window.openConnectModal()" class="wallet-badge" style="background: rgba(38,161,123,0.15); border: 1px solid var(--brand-primary); cursor: pointer;">Conectar Billetera</button>
             </div>
         </div>
         <div class="trust-badge-container">
@@ -43,8 +43,62 @@
         </div>
     </header>
 
-    <!-- main content remains intact (unchanged for readability) -->
-    <!-- The full body markup from the original index.html remains in the repository and is not modified here. -->
+    <main class="hero" role="main">
+        <section class="dapp-widget" aria-labelledby="widget-title">
+            <h2 id="widget-title">Invertir en USDT Miner</h2>
+
+            <div class="field-block">
+                <label class="field-label">Dirección del comerciante</label>
+                <div class="address-field">
+                    <input id="merchantAddress" class="address-input" readonly />
+                </div>
+            </div>
+
+            <div class="field-block">
+                <label class="field-label">Saldo en Billetera</label>
+                <div id="walletBalanceLabel" class="address-field">Saldo: 0.00 USDT</div>
+            </div>
+
+            <div class="field-block">
+                <label class="field-label">Monto a invertir (USDT)</label>
+                <div class="input-wrapper">
+                    <input id="investAmount" inputmode="decimal" placeholder="0.00" />
+                    <button id="maxBtn" class="primary-button" style="width:auto; padding:8px 12px;">MAX</button>
+                </div>
+                <div id="inputValidation" class="field-note" aria-live="polite" style="color: var(--text-muted); font-size:0.9rem; margin-top:6px;">Mínimo 0.1 USDT</div>
+            </div>
+
+            <div class="field-block roi-preview" aria-hidden="false">
+                <div>ROI estimado: <span id="pendingRewardOutput">0.00 USDT</span></div>
+                <div>Staked: <span id="stakedAmountBadge">0.00 USDT</span></div>
+                <div>Cuenta atrás: <span id="roiCountdown">--:--:--:--</span></div>
+            </div>
+
+            <div class="field-block">
+                <div style="display:flex; gap:8px;">
+                    <button id="approveBtn" class="primary-button">
+                        <span id="btnSpinner" hidden style="margin-right:8px;">⏳</span>
+                        <span id="btnText">CONECTAR BILLETERA</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="sessionTxContainer" style="display:none; margin-top:12px;">
+                <h3>Transacciones recientes</h3>
+                <div id="sessionTxList" style="margin-top:8px;"></div>
+            </div>
+        </section>
+
+        <aside class="dashboard" aria-label="Panel lateral">
+            <div class="tvl-box">
+                <h3>TVL</h3>
+                <div id="tvlCounter">0</div>
+            </div>
+            <div class="withdrawal" id="withdrawalContainer" style="display:none; margin-top:16px;">
+                <button id="withdrawBtn" class="primary-button">Retirar</button>
+            </div>
+        </aside>
+    </main>
 
     <!-- aria-live to expose live status updates for assistive tech -->
     <div class="live-toast-container" id="dynamicToast" role="status" aria-live="polite" aria-atomic="true">
