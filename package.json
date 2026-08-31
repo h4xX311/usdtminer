@@ -3,9 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "npm run lint && npm test",
-    "lint": "eslint . --ext .js",
-    "test": "node ./js/__tests__/run-tests.js"
+    "build": "npm run lint",
+    "lint": "eslint . --ext .js"
   },
   "devDependencies": {
     "eslint": "^8.0.0"

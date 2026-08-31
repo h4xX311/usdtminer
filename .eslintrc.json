@@ -13,6 +13,7 @@
     "ethers": "readonly"
   },
   "ignorePatterns": [
+    "node_modules/",
     "js/ethers.umd.min.js"
   ],
   "rules": {
