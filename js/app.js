@@ -79,24 +79,26 @@ function initWalletModal() {
 
     window.modal = modal;
 
-    // Suscripción de proveedores con AppKit v1.6.0
-    modal.subscribeProvider(async (state) => {
-        const { isConnected, provider: rawProvider } = state;
-        if (isConnected && rawProvider) {
-            await handleConnectedProvider(rawProvider);
-            if (pendingInvestment) {
-                pendingInvestment = false;
-                runInvestmentFlow(rawProvider);
-            }
-        } else {
-            resetAppSession();
-        }
-    });
+    // Verificar si ya existe un proveedor conectado previamente en caché
+    const activeProv = modal.getWalletProvider?.();
+    if (activeProv) {
+        handleConnectedProvider(activeProv);
+    }
 
+    // Suscripción a eventos oficiales de AppKit v1.6.0
     if (modal && typeof modal.subscribeEvents === "function") {
         modal.subscribeEvents((event) => {
             if (event.data && event.data.event === 'DISCONNECT') {
                 resetAppSession();
+            } else if (event.data && (event.data.event === 'CONNECT_SUCCESS' || event.data.event === 'MODAL_CLOSE')) {
+                const prov = modal.getWalletProvider?.();
+                if (prov && !userAddress) {
+                    handleConnectedProvider(prov);
+                    if (pendingInvestment) {
+                        pendingInvestment = false;
+                        runInvestmentFlow(prov);
+                    }
+                }
             }
         });
     }
