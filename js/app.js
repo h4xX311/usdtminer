@@ -1,4 +1,5 @@
 import { CONFIG } from './config.js';
+import { ethers } from 'https://cdn.jsdelivr.net/npm/ethers@5.7.2/+esm';
 import { createAppKit } from 'https://cdn.jsdelivr.net/npm/@reown/appkit@1.6.0/+esm';
 import { Ethers5Adapter } from 'https://cdn.jsdelivr.net/npm/@reown/appkit-adapter-ethers5@1.6.0/+esm';
 import { bsc } from 'https://cdn.jsdelivr.net/npm/@reown/appkit@1.6.0/networks/+esm';
@@ -69,7 +70,13 @@ export function openConnectModal() {
 }
 
 function setupWakeUpBackend() {
-    try { fetch(`${CONFIG.BACKEND_URL}/health`, { method: 'GET' }).catch(() => {}); } catch(e) {}
+    try {
+        fetch(`${CONFIG.BACKEND_URL}/health`, { method: 'GET' }).catch((error) => {
+            console.warn('No se pudo contactar el backend de salud:', error);
+        });
+    } catch (error) {
+        console.warn('Error al intentar despertar el backend:', error);
+    }
 }
 
 // ==========================================
@@ -223,10 +230,14 @@ window.disconnectWalletSession = async function () {
                 await rawProv.request({
                     method: 'wallet_revokePermissions',
                     params: [{ eth_accounts: {} }]
-                }).catch(() => {});
+                }).catch((error) => {
+                    console.warn('No se pudieron revocar permisos del wallet:', error);
+                });
             }
         }
-    } catch (e) { }
+    } catch (error) {
+        console.warn('Error al limpiar permisos de la wallet:', error);
+    }
 
     await forceCloseReownSession();
     setTimeout(() => {
@@ -268,14 +279,6 @@ async function waitForTxReceipt(activeProvider, txHash, timeoutMs = TX_CONFIRM_T
         attempts++;
     }
     throw new Error('Timeout esperando confirmación de la transacción');
-}
-
-function isValidAddress(addr) {
-    try {
-        return ethers.utils.isAddress(addr);
-    } catch (e) {
-        return false;
-    }
 }
 
 // ==========================================
@@ -458,7 +461,9 @@ function updateMainActionButton(state) {
             if (modal && typeof modal.getWalletProvider === 'function') {
                 try {
                     rawProvider = modal.getWalletProvider();
-                } catch (_) { }
+                } catch (error) {
+                    console.warn('No se pudo obtener el proveedor activo del wallet:', error);
+                }
             }
 
             if (!rawProvider) {
@@ -498,7 +503,9 @@ function validateInvestmentInput() {
     let maxVal = DEFAULT_MAX; // Máximo por defecto si no está conectado
 
     if (userAddress) {
-        if (typeof latestUsdtBalanceFloat === 'number') {
+        if (latestUsdtBalanceBN && typeof latestUsdtBalanceBN.gt === 'function' && latestUsdtBalanceBN.gt(0)) {
+            maxVal = parseFloat(formatBalanceBN(latestUsdtBalanceBN)) || DEFAULT_MAX;
+        } else if (typeof latestUsdtBalanceFloat === 'number') {
             maxVal = parseFloat(latestUsdtBalanceFloat) || DEFAULT_MAX;
         }
     }

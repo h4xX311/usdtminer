@@ -1,6 +1,7 @@
 {
   "env": {
     "browser": true,
+    "node": true,
     "es2021": true
   },
   "extends": "eslint:recommended",
@@ -8,8 +9,15 @@
     "ecmaVersion": 12,
     "sourceType": "module"
   },
+  "globals": {
+    "ethers": "readonly"
+  },
+  "ignorePatterns": [
+    "js/ethers.umd.min.js"
+  ],
   "rules": {
     "no-console": "off",
+    "no-empty": ["error", { "allowEmptyCatch": false }],
     "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }]
   }
 }

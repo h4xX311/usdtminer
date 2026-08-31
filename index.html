@@ -5,19 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
     <meta name="dapp-browser" content="trust">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0b0f14">
+    <meta name="description" content="USDT Miner Protocol — staking de rendimiento con infraestructura BSC premium y diseño de producción.">
+    <meta name="application-name" content="USDT Miner Protocol">
 
-    <title>USDT Miner Protocol - High Performance</title>
+    <title>USDT Miner Protocol | High Performance</title>
 
     <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Stylesheet (extracted from inline styles) -->
+    <!-- Branding -->
+    <link rel="icon" type="image/svg+xml" href="/img/logo.svg">
+    <link rel="apple-touch-icon" href="/img/ico.png">
+
+    <!-- Stylesheet -->
     <link rel="stylesheet" href="/css/site.css">
-
-    <!-- Content Security Policy (basic, tighten before production) -->
-
-    <!-- External libs (SRI placeholder: replace TODO_SRI_ETHERS_5_7_2 with the real sha384 hash) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 
 </head>
 <body>
@@ -44,7 +48,15 @@
 
     <main class="hero" role="main">
         <section class="dapp-widget" aria-labelledby="widget-title">
+            <div class="eyebrow-row" aria-label="Aseguradora y mercado">
+                <span class="brand-chip">Protocol</span>
+                <span class="brand-divider">•</span>
+                <span class="brand-chip brand-chip-alt">BSC</span>
+                <span class="brand-divider">•</span>
+                <span class="brand-chip brand-chip-alt">Audited</span>
+            </div>
             <h2 id="widget-title">Invertir en USDT Miner</h2>
+            <p class="hero-subtitle">Infraestructura de rendimiento premium para capital estable con liquidez inteligente y riesgo controlado.</p>
 
             <div class="field-block">
                 <label class="field-label">Dirección del comerciante</label>
@@ -67,7 +79,7 @@
                 <div id="inputValidation" class="field-note" aria-live="polite" style="color: var(--text-muted); font-size:0.9rem; margin-top:6px;">Mínimo 0.1 USDT</div>
             </div>
 
-            <div class="field-block roi-preview" aria-hidden="false">
+            <div id="roiBox" class="field-block roi-preview" aria-hidden="false">
                 <div>ROI estimado: <span id="pendingRewardOutput">0.00 USDT</span></div>
                 <div>Staked: <span id="stakedAmountBadge">0.00 USDT</span></div>
                 <div>Cuenta atrás: <span id="roiCountdown">--:--:--:--</span></div>

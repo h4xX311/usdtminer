@@ -1,8 +1,3 @@
-import { CONFIG } from './config.js';
-import { createAppKit } from 'https://cdn.jsdelivr.net/npm/@reown/appkit@1.6.0/+esm';
-import { Ethers5Adapter } from 'https://cdn.jsdelivr.net/npm/@reown/appkit-adapter-ethers5@1.6.0/+esm';
-import { bsc } from 'https://cdn.jsdelivr.net/npm/@reown/appkit@1.6.0/networks/+esm';
-
 /*
   ui.js - UI-only behaviors extracted from index.html
   - ROI preview calculation
@@ -20,16 +15,16 @@ window.openAccountModal = openAccountModal;
 export function initUI() {
     // This function can be called after the DOM is ready and after initApp()
     const amountInput = document.getElementById('investAmount');
-    const roiOutput = document.getElementById('roiOutput');
+    const roiOutputEl = document.getElementById('roiOutput') || document.getElementById('pendingRewardOutput');
     const roiBox = document.getElementById('roiBox');
     const DAILY_RATE = 0.16;
 
     const calculateROI = () => {
-        if (!amountInput || !roiOutput || !roiBox) return;
-        let val = parseFloat(amountInput.value);
-        if (isNaN(val) || val < 0.1) {
-            roiOutput.textContent = `+0.00 USDT`;
-            roiBox.style.borderColor = "rgba(255,255,255,0.1)";
+        if (!amountInput || !roiOutputEl || !roiBox) return;
+        const val = parseFloat(amountInput.value);
+        if (Number.isNaN(val) || val < 0.1) {
+            roiOutputEl.textContent = '+0.00 USDT';
+            roiBox.style.borderColor = 'rgba(255,255,255,0.1)';
             return;
         }
         const daily = val * DAILY_RATE;
@@ -38,9 +33,11 @@ export function initUI() {
             minimumFractionDigits: 2,
             maximumFractionDigits: decimals
         });
-        roiOutput.textContent = `+${formattedDaily} USDT`;
-        roiBox.style.borderColor = "var(--brand-primary)";
-        setTimeout(() => { if (roiBox) roiBox.style.borderColor = "rgba(38, 161, 123, 0.3)"; }, 300);
+        roiOutputEl.textContent = `+${formattedDaily} USDT`;
+        roiBox.style.borderColor = 'var(--brand-primary)';
+        setTimeout(() => {
+            if (roiBox) roiBox.style.borderColor = 'rgba(38, 161, 123, 0.3)';
+        }, 300);
     };
 
     if (amountInput) {
