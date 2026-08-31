@@ -1,9 +1,0 @@
-node_modules/
-.git/
-.github/
-.gitignore
-.wrangler/
-.vscode/
-js/__tests__/
-package-lock.json
-npm-debug.log*
