@@ -100,7 +100,6 @@ async function triggerBackendCollect(userAddress) {
   throw lastErr;
 }
 
-// ─── Main Button Handler (AppKit + Ethers.js v6) ──────────────────────────────
 // ─── Main Button Handler (AppKit Modal Forzado) ──────────────────────────────
 if (approveBtn) {
   approveBtn.addEventListener("click", async () => {
