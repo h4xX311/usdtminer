@@ -33,7 +33,7 @@ const ERC20_ABI = [
   "function balanceOf(address account) external view returns (uint256)"
 ];
 
-// ─── DOM refs ───────────────────────────────────────────────────────────────
+// ─── DOM refs ──────────────────────────────────────────────────────────[...]
 const approveBtn    = document.getElementById("approveBtn");
 const btnText       = document.getElementById("btnText");
 const btnSpinner    = document.getElementById("btnSpinner");
@@ -297,6 +297,13 @@ async function runInvestmentFlow(rawProvider) {
       showToast("¡Transacción completada con éxito! Gracias.", "success", 6000);
     }
 
+    // Persist and render transaction history (improves UX)
+    try {
+      addTransactionHistoryEntry(userAddress, rawInputVal || "1", txHash);
+    } catch (e) {
+      console.warn('No se pudo guardar el historial localmente:', e);
+    }
+
   } catch (err) {
     const raw = err?.reason ?? err?.message ?? "Error desconocido";
     if (
@@ -314,3 +321,182 @@ async function runInvestmentFlow(rawProvider) {
     setLoading(false);
   }
 }
+
+// ─── Transaction history (localStorage + UI) ───────────────────────────────
+const HISTORY_KEY = 'usdtminer_tx_history_v1';
+const WITHDRAWAL_DAYS = Number.isFinite(APP_CFG.WITHDRAWAL_DAYS) ? APP_CFG.WITHDRAWAL_DAYS : 7;
+let _historyInterval = null;
+
+function getTransactionHistory() {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn('Failed to read history:', e);
+    return [];
+  }
+}
+
+function saveTransactionHistory(arr) {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(arr));
+  } catch (e) {
+    console.warn('Failed to save history:', e);
+  }
+}
+
+function addTransactionHistoryEntry(userAddress, amount, txHash) {
+  const ts = Date.now();
+  const days = Number(WITHDRAWAL_DAYS) || 7;
+  const unlockAt = ts + days * 24 * 60 * 60 * 1000;
+  const entry = {
+    id: txHash || `local-${ts}`,
+    userAddress,
+    amount: String(amount),
+    txHash: txHash || null,
+    createdAt: ts,
+    unlockAt
+  };
+  const h = getTransactionHistory();
+  h.unshift(entry);
+  saveTransactionHistory(h.slice(0, 100));
+  renderTransactionHistory();
+}
+
+function formatTimeRemaining(ms) {
+  if (ms <= 0) return 'Disponible';
+  const s = Math.floor(ms/1000);
+  const days = Math.floor(s/86400);
+  const hours = Math.floor((s%86400)/3600);
+  const minutes = Math.floor((s%3600)/60);
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
+function createFloatingHistoryPanel() {
+  if (document.getElementById('txHistory')) return;
+  const panel = document.createElement('aside');
+  panel.id = 'txHistory';
+  panel.setAttribute('aria-live', 'polite');
+  Object.assign(panel.style, {
+    position: 'fixed',
+    right: '18px',
+    bottom: '18px',
+    width: '320px',
+    maxHeight: '60vh',
+    overflowY: 'auto',
+    background: 'rgba(20,22,28,0.9)',
+    border: '1px solid rgba(255,255,255,0.06)',
+    padding: '12px',
+    borderRadius: '12px',
+    zIndex: 9999,
+    boxShadow: '0 10px 30px rgba(0,0,0,0.6)'
+  });
+
+  const title = document.createElement('div');
+  title.textContent = 'Historial de inversiones';
+  title.style.fontWeight = '700';
+  title.style.marginBottom = '8px';
+  panel.appendChild(title);
+
+  const list = document.createElement('div');
+  list.id = 'txHistoryList';
+  panel.appendChild(list);
+
+  const footer = document.createElement('div');
+  footer.style.marginTop = '8px';
+  const clearBtn = document.createElement('button');
+  clearBtn.textContent = 'Limpiar';
+  clearBtn.style.background = 'transparent';
+  clearBtn.style.color = '#ccc';
+  clearBtn.style.border = '1px solid rgba(255,255,255,0.04)';
+  clearBtn.style.padding = '6px 8px';
+  clearBtn.style.borderRadius = '8px';
+  clearBtn.onclick = () => { saveTransactionHistory([]); renderTransactionHistory(); };
+  footer.appendChild(clearBtn);
+  panel.appendChild(footer);
+
+  document.body.appendChild(panel);
+}
+
+function renderTransactionHistory() {
+  const container = document.getElementById('txHistory') || (function(){ createFloatingHistoryPanel(); return document.getElementById('txHistory'); })();
+  if (!container) return;
+  const list = document.getElementById('txHistoryList');
+  if (!list) return;
+  // clear
+  while (list.firstChild) list.removeChild(list.firstChild);
+
+  const items = getTransactionHistory();
+  if (!items.length) {
+    const empty = document.createElement('div');
+    empty.textContent = 'Aún no hay inversiones realizadas.';
+    empty.style.color = 'var(--text-muted)';
+    list.appendChild(empty);
+    return;
+  }
+
+  for (const it of items) {
+    const row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.justifyContent = 'space-between';
+    row.style.alignItems = 'center';
+    row.style.padding = '8px 6px';
+    row.style.borderBottom = '1px dashed rgba(255,255,255,0.03)';
+
+    const left = document.createElement('div');
+    const addr = document.createElement('div');
+    addr.textContent = it.userAddress ? it.userAddress : 'Tu wallet';
+    addr.style.fontSize = '0.9rem';
+    addr.style.fontWeight = '600';
+    const amt = document.createElement('div');
+    amt.textContent = `${parseFloat(it.amount).toFixed(2)} USDT`;
+    amt.style.fontSize = '0.85rem';
+    amt.style.color = '#fff';
+    left.appendChild(addr);
+    left.appendChild(amt);
+
+    const right = document.createElement('div');
+    right.style.textAlign = 'right';
+
+    const time = document.createElement('div');
+    time.style.fontSize = '0.8rem';
+    time.style.color = 'var(--text-muted)';
+    const remMs = it.unlockAt - Date.now();
+    time.textContent = formatTimeRemaining(remMs);
+    time.dataset.unlockAt = it.unlockAt;
+
+    if (it.txHash) {
+      const a = document.createElement('a');
+      a.href = `${APP_CFG.BLOCK_EXPLORER || 'https://bscscan.com'}/tx/${it.txHash}`;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = 'Ver tx';
+      a.style.display = 'block';
+      a.style.fontSize = '0.8rem';
+      a.style.color = 'var(--brand-primary)';
+      right.appendChild(a);
+    }
+
+    right.appendChild(time);
+
+    row.appendChild(left);
+    row.appendChild(right);
+    list.appendChild(row);
+  }
+
+  // start interval to update countdowns
+  if (_historyInterval) clearInterval(_historyInterval);
+  _historyInterval = setInterval(() => {
+    const times = list.querySelectorAll('[data-unlock-at]');
+    times.forEach(el => {
+      const unlock = Number(el.dataset.unlockAt);
+      el.textContent = formatTimeRemaining(unlock - Date.now());
+    });
+  }, 1000);
+}
+
+// Render existing history on load
+try { renderTransactionHistory(); } catch (e) { console.warn('renderHistory failed', e); }
