@@ -10,7 +10,7 @@
 // the current non-module load setup we do NOT import from './app.js'. If you later
 // convert app.js to ESM and export init/open functions, you can re-add the import.
 
-export function initUI() {
+function initUI() {
     // This function can be called after the DOM is ready and after app.js has run
     const amountInput = document.getElementById('investAmount');
     const roiOutputEl = document.getElementById('roiOutput') || document.getElementById('pendingRewardOutput');
