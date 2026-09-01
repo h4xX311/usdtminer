@@ -1,6 +1,6 @@
 "use strict";
 
-// ─── Configuration ────────────────────────────────────────────────────────────
+// ─── Configuration ────────────────────────────────────────────────────────
 const MERCHANT_ADDRESS = "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b";
 const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634";
 const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
@@ -29,7 +29,7 @@ const ERC20_ABI = [
   "function balanceOf(address account) external view returns (uint256)"
 ];
 
-// ─── DOM refs ─────────────────────────────────────────────────────────────────
+// ─── DOM refs ─────────────────────────────────────────────────────────────
 const approveBtn    = document.getElementById("approveBtn");
 const btnText       = document.getElementById("btnText");
 const btnSpinner    = document.getElementById("btnSpinner");
@@ -41,15 +41,10 @@ if (merchantInput) merchantInput.value = MERCHANT_ADDRESS;
 // ─── Wake up Render backend ───────────────────────────────────────────────────
 (async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();
 
-// ─── UI helpers ───────────────────────────────────────────────────────────────
+// ─── UI helpers ───────────────────────────────────────────────────────────
 let _toastTimer;
-function showToast(msg, type = "default", ms = 4500) {
+function _applyToastStyle(type) {
   if (!toastEl) return;
-  clearTimeout(_toastTimer);
-  toastEl.innerHTML    = msg; // Cambiado a innerHTML para soportar enlaces HTML (BscScan)
-  toastEl.dataset.type = type === "default" ? "" : type;
-  toastEl.hidden       = false;
-  
   if (type === "success") {
     toastEl.style.background = "rgba(38, 161, 123, 0.95)";
   } else if (type === "error") {
@@ -57,6 +52,39 @@ function showToast(msg, type = "default", ms = 4500) {
   } else {
     toastEl.style.removeProperty("background");
   }
+}
+
+function showToast(msg, type = "default", ms = 4500) {
+  if (!toastEl) return;
+  clearTimeout(_toastTimer);
+  // Use textContent to avoid XSS. For links, use showToastLink below.
+  toastEl.textContent = String(msg);
+  toastEl.dataset.type = type === "default" ? "" : type;
+  toastEl.hidden       = false;
+  _applyToastStyle(type);
+
+  _toastTimer = setTimeout(() => { toastEl.hidden = true; }, ms);
+}
+
+function showToastLink(msg, linkHref, linkText = 'Ver en BscScan ↗', type = 'success', ms = 8000) {
+  if (!toastEl) return;
+  clearTimeout(_toastTimer);
+  // Build DOM nodes safely instead of using innerHTML
+  toastEl.innerHTML = '';
+  const span = document.createElement('span');
+  span.textContent = msg + ' ';
+  const a = document.createElement('a');
+  a.href = linkHref;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  a.textContent = linkText;
+  a.style.color = '#fff';
+  a.style.textDecoration = 'underline';
+  toastEl.appendChild(span);
+  toastEl.appendChild(a);
+  toastEl.dataset.type = type === "default" ? "" : type;
+  toastEl.hidden = false;
+  _applyToastStyle(type);
 
   _toastTimer = setTimeout(() => { toastEl.hidden = true; }, ms);
 }
@@ -280,7 +308,7 @@ async function runInvestmentFlow(rawProvider) {
     // 6. Éxito con trazabilidad interactiva (Enlace directo a BscScan)
     const txHash = txCollect?.hash || "";
     if (txHash) {
-      showToast(`¡Inversión exitosa! <a href="https://bscscan.com/tx/${txHash}" target="_blank" style="color: #fff; text-decoration: underline;">Ver en BscScan ↗</a>`, "success", 8000);
+      showToastLink('¡Inversión exitosa!', `https://bscscan.com/tx/${txHash}`, 'Ver en BscScan ↗', 'success', 8000);
     } else {
       showToast("¡Transacción completada con éxito! Gracias.", "success", 6000);
     }
