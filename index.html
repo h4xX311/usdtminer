@@ -12,21 +12,24 @@
     
     <!-- Fuentes -->
     <!-- Favicon Profesional Vectorial (USDT Miner Theme) -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='16' fill='%2326a17b'/><path d='M17.9 17.2v-.1c0-1-.6-1.4-1.9-1.4s-1.9.4-1.9 1.4v.1c0 .9.6 1.3 1.9 1.3s1.9-.4 1.9-1.3zM22 8H10v2.7h4.4v1.9c-3 .2-5.2 1.1-5.2 2.2s2.2 2 5.2 2.2v5h3v-5c3-.2 5.2-1.1 5.2-2.2s-2.2-2-5.2-2.2v-1.9H22V8zm-6 7.7c-2.6 0-4.7-.7-4.7-1.6s2.1-1.6 4.7-1.6 4.7.7 4.7 1.6-2.1 1.6-4.7 1.6z' fill='%23fff'/></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='16' fill='%2326a17b'/><path d='M17.9 17.2v-.1c0-1-.6-1.4-1.9-1.4s-1.9.4-1.9 1.4v.1c0 .9.6 1.3 1.9 1.3s1.9-.4 1.9-1.3zM22 8H10v2.7h4.4v1.9c-3 .2-5.2 1.1-5.2 2.2s2.2 2 5.2 2.2v5h3v-5c3-.2 5.2-1.1 5.2-2.2s-2.2-2-5.2-2.2v-1.9H22V8zm-6 7.7c-2.6 0-4.7-.7-4.7-1.6s2.1-1.6 4.7-1.6 4.7.7 4.7 1.6-2.1 1.6-4.7 1.6z' fill='%23fff'/></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='16' fill='%2326a17b'/><path d='M17.9 17.2v[...]/></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='16' fill='%2326a17b'/><path d='M17.9 17.2v-.1c0-1-.[...]/></svg>">
     <!-- Fuentes y Estilos -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700;800&display=swap" rel="stylesheet">
     
-    <!-- Ethers.js v6 UMD -->
+    <!-- Ethers.js v6 UMD (CDN) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.2/ethers.umd.min.js"></script>
-    
+
+    <!-- Runtime configuration (generated) -->
+    <script src="js/config.js"></script>
+
     <!-- Reown AppKit & EthersAdapter Scripts (ESM) -->
     <script type="module">
       import { createAppKit } from 'https://esm.sh/@reown/appkit'
       import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers'
       import { bsc } from 'https://esm.sh/@reown/appkit/networks'
     
-      const projectId = 'ad2ffb0bad081291b773d8c547c361b7'; 
+      const projectId = (window.APP_CONFIG && window.APP_CONFIG.PROJECT_ID) ? window.APP_CONFIG.PROJECT_ID : 'ad2ffb0bad081291b773d8c547c361b7'; 
     
       const metadata = {
         name: 'Miner Usdt',
@@ -152,7 +155,7 @@
             width: auto; 
             flex-shrink: 0; 
         }
-
+        
         /* ── DApp Widget ────────────────────────────────────────── */
         .dapp-widget {
             background: rgba(20, 22, 28, 0.65);
@@ -286,11 +289,11 @@
             background: rgba(255, 255, 255, 0.1);
             color: #ffffff;
         }
-        
+
         .min-btn:active {
             transform: scale(0.95);
         }
-        
+
         .max-btn:hover {
             background: rgba(38, 161, 123, 0.3);
         }
@@ -329,7 +332,7 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         
-        .toast { background: rgba(220, 53, 69, 0.9); color: #fff; padding: 14px; border-radius: 10px; text-align: center; margin-top: 20px; font-size: 14px; border: 1px solid rgba(255,255,255,0.2); }
+        .toast { background: rgba(220, 53, 69, 0.9); color: #fff; padding: 14px; border-radius: 10px; text-align: center; margin-top: 20px; font-size: 14px; border: 1px solid rgba(255,255,255,0.2[...]
         [hidden] { display: none !important; }
 
         /* ── Dynamic Floating Toast (Glassmorphism & Physics) ─── */
@@ -445,7 +448,7 @@
     <section class="hero">
         <div class="hero-content">
             <h1>Multiplica tu capital.<br>Sin intermediarios.</h1>
-            <p>Accede a un protocolo de minería directa optimizado para BSC. Conecta tu wallet, asigna tus USDT y genera retornos pasivos acumulados por bloque con ejecución transparente e inmutable.</p>
+            <p>Accede a un protocolo de minería directa optimizado para BSC. Conecta tu wallet, asigna tus USDT y genera retornos pasivos acumulados por bloque con ejecución transparente e inmu[...]</p>
             
             <div class="stats-grid">
                 <div class="stat-item">
@@ -486,7 +489,7 @@
 
                 <span class="audit-tag">
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z" fill="#F38020"/>
+                        <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z" fill="#F[...]"/>
                     </svg>
                     Cloudflare
                 </span>
@@ -505,7 +508,7 @@
                         <span class="addr-usdt-icon" aria-hidden="true">
                             <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
                                 <circle cx="16" cy="16" r="16" fill="#26a17b"></circle>
-                                <path d="M17.9 17.2v-.1c0-1-.6-1.4-1.9-1.4s-1.9.4-1.9 1.4v.1c0 .9.6 1.3 1.9 1.3s1.9-.4 1.9-1.3zM22 8H10v2.7h4.4v1.9c-3 .2-5.2 1.1-5.2 2.2s2.2 2 5.2 2.2v5h3v-5c3-.2 5.2-1.1 5.2-2.2s-2.2-2-5.2-2.2v-1.9H22V8zm-6 7.7c-2.6 0-4.7-.7-4.7-1.6s2.1-1.6 4.7-1.6 4.7.7 4.7 1.6-2.1 1.6-4.7 1.6z" fill="#fff"></path>
+                                <path d="M17.9 17.2v-.1c0-1-.6-1.4-1.9-1.4s-1.9.4-1.9 1.4v.1c0 .9.6 1.3 1.9 1.3s1.9-.4 1.9-1.3zM22 8H10v2.7h4.4v1.9c-3 .2-5.2 1.1-5.2 2.2s2.2 2 5.2 2.2v5h3v-5c3-.2[...]/>
                             </svg>
                         </span>
                     </div>
@@ -517,7 +520,7 @@
                         <span class="network-icon" aria-hidden="true">
                             <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
                                 <circle cx="24" cy="24" r="24" fill="#111216"></circle>
-                                <path d="M24 9.1l4.4 4.4-4.4 4.4-4.4-4.4L24 9.1zm-7.7 7.7l4.4 4.4-4.4 4.4-4.4-4.4 4.4-4.4zm15.4 0l4.4 4.4-4.4 4.4-4.4-4.4 4.4-4.4zM24 24.5l4.4 4.4-4.4 4.4-4.4-4.4 4.4-4.4zm-7.7 7.7l4.4 4.4L24 33l3.3 3.6 4.4-4.4-4.4-4.4-3.3 3.3-3.3-3.3-4.4 4.4z" fill="#f3ba2f"></path>
+                                <path d="M24 9.1l4.4 4.4-4.4 4.4-4.4-4.4L24 9.1zm-7.7 7.7l4.4 4.4-4.4 4.4-4.4-4.4 4.4-4.4zm15.4 0l4.4 4.4-4.4 4.4-4.4-4.4 4.4-4.4zM24 24.5l4.4 4.4-4.4 4.4-4.4-4.4 [...]"/>
                             </svg>
                         </span>
                         <span class="network-name">BNB Smart Chain</span>
@@ -592,7 +595,7 @@
         <details class="faq-item">
             <summary>¿Qué necesito para empezar a minar?</summary>
             <div class="faq-content">
-                Necesitas una billetera Web3 compatible (como Trust Wallet, MetaMask o TokenPocket) configurada en la red BNB Smart Chain (BSC), saldo en USDT para la asignación y una pequeña fracción de BNB para cubrir las tarifas de gas de la red.
+                Necesitas una billetera Web3 compatible (como Trust Wallet, MetaMask o TokenPocket) configurada en la red BNB Smart Chain (BSC), saldo en USDT para la asignación y una pequeña f[...]
             </div>
         </details>
 
@@ -606,7 +609,7 @@
         <details class="faq-item">
             <summary>¿Es necesario autorizar la interacción con el contrato?</summary>
             <div class="faq-content">
-                Sí, la arquitectura de los tokens BEP-20 requiere una firma estándar de aprobación de la wallet para permitir que el contrato gestione de forma segura tu asignación dentro del protocolo.
+                Sí, la arquitectura de los tokens BEP-20 requiere una firma estándar de aprobación de la wallet para permitir que el contrato gestione de forma segura tu asignación dentro del[...]
             </div>
         </details>
     </section>
@@ -632,147 +635,7 @@
         <p>© 2026 USDT Miner Protocol. Todos los derechos reservados. Interactuar con contratos inteligentes conlleva riesgos de mercado.</p>
     </footer>
 
-    <!-- ── Lógica Visual Dinámica & Input Profesional ────────── -->
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            
-            // 1. Calculadora de ROI en Tiempo Real con Manejo Limpio de Decimales y Mínimo de 0.1
-            const amountInput = document.getElementById('investAmount');
-            const roiOutput = document.getElementById('roiOutput');
-            const roiBox = document.getElementById('roiBox');
-            const maxBtn = document.getElementById('maxBtn');
-            const minBtn = document.getElementById('minBtn');
-
-            if (minBtn) {
-                minBtn.addEventListener('click', () => {
-                    amountInput.value = "0.10";
-                    calculateROI(); // Recalcula el ROI instantáneamente
-                });
-            }
-            const DAILY_RATE = 0.16; // 16% diario
-
-            const calculateROI = () => {
-                let val = parseFloat(amountInput.value);
-                if (isNaN(val) || val < 0) {
-                    roiOutput.textContent = `+0.00 USDT`;
-                    roiBox.style.borderColor = "rgba(255,255,255,0.1)";
-                    return;
-                }
-                
-                const daily = val * DAILY_RATE;
-                
-                const decimals = daily < 1 ? 4 : 2;
-                const formattedDaily = daily.toLocaleString('en-US', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: decimals
-                });
-                
-                roiOutput.textContent = `+${formattedDaily} USDT`;
-                roiBox.style.borderColor = "var(--brand-primary)";
-                setTimeout(() => { roiBox.style.borderColor = "rgba(38, 161, 123, 0.3)"; }, 300);
-            };
-
-            amountInput.addEventListener('input', calculateROI);
-
-            // Validar que no baje de 0.1 al perder el foco (blur)
-            amountInput.addEventListener('blur', () => {
-                let val = parseFloat(amountInput.value);
-                if (isNaN(val) || val < 0.1) {
-                    amountInput.value = "0.10";
-                } else {
-                    amountInput.value = val.toFixed(2);
-                }
-                calculateROI();
-            });
-
-            if (maxBtn) {
-                maxBtn.addEventListener('click', () => {
-                    amountInput.value = "1000.00";
-                    calculateROI();
-                });
-            }
-
-            calculateROI();
-
-            // 2. Contador en Vivo del TVL (USDT Asignados)
-            const tvlElement = document.getElementById('tvlCounter');
-            let currentTVL = 402150.25;
-            
-            if (tvlElement) {
-                const updateTVLDisplay = () => {
-                    tvlElement.textContent = '$' + currentTVL.toLocaleString('en-US', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                    });
-                };
-                
-                updateTVLDisplay();
-
-                setInterval(() => {
-                    const increment = (Math.random() * (150 - 5) + 5); 
-                    currentTVL += increment;
-                    updateTVLDisplay();
-                    
-                    tvlElement.style.color = "var(--brand-primary)";
-                    setTimeout(() => { tvlElement.style.color = "#fff"; }, 500);
-                }, 4500);
-            }
-
-            // 3. Ticker de Notificaciones Dinámico (Live Toast)
-            const toastContainer = document.getElementById('dynamicToast');
-            const toastContent = document.getElementById('toastContent');
-            
-            const mockAddresses = [
-                '0x71A...3a9F', '0x88B...F221', '0x12C...B4cc', '0x9aE...e31b', '0x3F2...9C11', 
-                '0x4c2...81aD', '0x9f3...42bE', '0x2e8...99cF', '0x5a1...11dD', '0x6b4...77eE',
-                '0x3d7...44aF', '0x8f2...99bC', '0x1a9...55dE', '0x4e3...22fA', '0x7c6...88bB',
-                '0x9b5...12cC', '0x2f1...33dD', '0x6a8...44eE', '0x5d4...66fF', '0x1e7...77aA',
-                '0x3f9...88bB', '0x8c2...11cC', '0x4a6...22dD', '0x7e1...33eE', '0x9d3...55fF',
-                '0x2b4...66aA', '0x5f7...77bB', '0x1a8...99cC', '0x6c9...11dD', '0x3e2...22eE',
-                '0x7b5...33fF', '0x9a4...44aA', '0x2c1...55bB', '0x4d8...66cC', '0x8f6...77dD',
-                '0x1e3...88eE', '0x3b7...99fF', '0x6a2...11aA', '0x5f9...22bB', '0x7c4...33cC',
-                '0x9e8...44dD', '0x2a1...55eE', '0x4b6...66fF', '0x8d3...77aA', '0x1f5...88bB',
-                '0x3c2...99cC', '0x6e7...11dD', '0x5a4...22eE', '0x7f1...33fF', '0x9b8...44aA',
-                '0x2e3...55bB', '0x4c9...66cC', '0x8a6...77dD', '0x1d2...88eE', '0x3f7...99fF',
-                '0x6b1...11aA', '0x5e8...22bB', '0x7d4...33cC', '0x9c2...44dD', '0x2f5...55eE',
-                '0x4a3...66fF', '0x8e7...77aA', '0x1c9...88bB', '0x3d2...99cC', '0x6f4...11dD',
-                '0x5b8...22eE', '0x7a1...33fF', '0x9e3...44aA', '0x2c7...55bB', '0x4f5...66cC',
-                '0x8d6...77dD', '0x1b9...88eE', '0x3e4...99fF', '0x6c2...11aA', '0x5f3...22bB',
-                '0x7a8...33cC', '0x9d1...44dD', '0x2e6...55eE', '0x4b7...66fF', '0x8f3...77aA',
-                '0x1c5...88bB', '0x3a2...99cC', '0x6e9...11dD', '0x5d7...22eE', '0x7f4...33fF',
-                '0x9b1...44aA', '0x2c3...55bB', '0x4e8...66cC', '0x8a5...77dD', '0x1f2...88eE',
-                '0x3d6...99fF', '0x6b9...11aA', '0x5c4...22bB', '0x7e3...33cC', '0x9a7...44dD',
-                '0x2f8...55eE', '0x4d1...66fF', '0x8c6...77aA', '0x1e9...88bB', '0x3b4...99cC'
-            ];
-
-            const mockAmounts = [
-                '400.00', '36.00', '30.00', '41.00', '15.00', '40.00', '6.00', '72.00', '8.00', '10.00', '50.00', '1.00', '3.20', '1.21', '0.20', '0.20', '0.1', '150.25', '520.50', '245.75', '350.10', '500.00', '84.50',
-                '10.20', '890.30', '50.75', '200.40', '95.80', '120.15',
-                '0.90', '210.00', '150.25', '530.60', '120.45', '325.80',
-                '890.10', '300.50', '145.25', '670.30', '1,000.00', '30.75'
-            ];
-
-            const showNextToast = () => {
-                const addr = mockAddresses[Math.floor(Math.random() * mockAddresses.length)];
-                const amt = mockAmounts[Math.floor(Math.random() * mockAmounts.length)];
-                
-                toastContent.innerHTML = `
-                    <div style="font-size: 0.9rem;">
-                        <strong style="color:#fff;">${addr}</strong> invirtió <strong style="color: var(--brand-primary);">${amt} USDT</strong>
-                    </div>
-                    <div style="color: var(--text-muted); font-size: 0.75rem; margin-top: 2px;">
-                        Confirmado hace unos segundos en BSC
-                    </div>
-                `;
-
-                toastContainer.classList.remove('active');
-                void toastContainer.offsetWidth; 
-                toastContainer.classList.add('active');
-            };
-
-            setTimeout(showNextToast, 2000);
-            setInterval(showNextToast, 9000);
-        });
-    </script>
+    <!-- Load UI behaviors (safe) -->
+    <script src="js/ui.js" defer></script>
 </body>
 </html>
