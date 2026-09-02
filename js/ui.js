@@ -6,22 +6,11 @@
   - Bridges with app.js (exposes window.openConnectModal/openAccountModal)
 */
 
-// Use global AppKit modal (created in index.html) when available
-function openConnectModal() {
-    if (window.modal && typeof window.modal.open === 'function') return window.modal.open();
-    return Promise.reject(new Error('Modal not available'));
-}
-function openAccountModal() {
-    if (window.modal && typeof window.modal.open === 'function') return window.modal.open();
-    return Promise.reject(new Error('Modal not available'));
-}
+import { initApp as initCoreApp, openConnectModal, openAccountModal } from './app.js';
 
 // Re-expose for inline button usage
 window.openConnectModal = openConnectModal;
 window.openAccountModal = openAccountModal;
-
-// initCoreApp is a no-op if app provides no init; prefer window.initApp() if present
-const initCoreApp = (typeof window.initApp === 'function') ? window.initApp.bind(window) : (async () => {});
 
 
 export function initUI() {
