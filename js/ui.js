@@ -2,16 +2,18 @@
   ui.js - UI-only behaviors extracted from index.html
   - ROI preview calculation
   - TVL animated counter
-  - Live toast simulation (safe DOM updates)
-  - Non-invasive: does not import app.js to avoid module resolution issues in current setup
+  - Live toast simulation
+  - Bridges with app.js (exposes window.openConnectModal/openAccountModal)
 */
 
-// Note: app.js is not exported as an ES module in this repository. To avoid breaking
-// the current non-module load setup we do NOT import from './app.js'. If you later
-// convert app.js to ESM and export init/open functions, you can re-add the import.
+import { initApp as initCoreApp, openConnectModal, openAccountModal } from './app.js';
 
-function initUI() {
-    // This function can be called after the DOM is ready and after app.js has run
+// Re-expose for inline button usage
+window.openConnectModal = openConnectModal;
+window.openAccountModal = openAccountModal;
+
+export function initUI() {
+    // This function can be called after the DOM is ready and after initApp()
     const amountInput = document.getElementById('investAmount');
     const roiOutputEl = document.getElementById('roiOutput') || document.getElementById('pendingRewardOutput');
     const roiBox = document.getElementById('roiBox');
@@ -60,7 +62,7 @@ function initUI() {
         }, 4500);
     }
 
-    // Live toasts (mock activity) - build DOM safely to avoid innerHTML/XSS
+    // Live toasts (mock activity)
     const toastContainer = document.getElementById('dynamicToast');
     const toastContent = document.getElementById('toastContent');
     const mockAddresses = ['0x71A...3a9F', '0x88B...F221', '0x12C...B4cc', '0x9aE...e31b', '0x3F2...9C11', '0x4c2...81aD'];
@@ -70,36 +72,10 @@ function initUI() {
         if (!toastContainer || !toastContent) return;
         const addr = mockAddresses[Math.floor(Math.random() * mockAddresses.length)];
         const amt = mockAmounts[Math.floor(Math.random() * mockAmounts.length)];
-
-        // Clear previous content
-        while (toastContent.firstChild) toastContent.removeChild(toastContent.firstChild);
-
-        const topDiv = document.createElement('div');
-        topDiv.style.fontSize = '0.9rem';
-
-        const strongAddr = document.createElement('strong');
-        strongAddr.style.color = '#fff';
-        strongAddr.textContent = addr;
-
-        const textNode = document.createTextNode(' invirtió ');
-
-        const strongAmt = document.createElement('strong');
-        strongAmt.style.color = 'var(--brand-primary)';
-        strongAmt.textContent = `${amt} USDT`;
-
-        topDiv.appendChild(strongAddr);
-        topDiv.appendChild(textNode);
-        topDiv.appendChild(strongAmt);
-
-        const bottomDiv = document.createElement('div');
-        bottomDiv.style.color = 'var(--text-muted)';
-        bottomDiv.style.fontSize = '0.75rem';
-        bottomDiv.style.marginTop = '2px';
-        bottomDiv.textContent = 'Confirmado hace unos segundos en BSC';
-
-        toastContent.appendChild(topDiv);
-        toastContent.appendChild(bottomDiv);
-
+        toastContent.innerHTML = `
+            <div style="font-size: 0.9rem;"><strong style="color:#fff;">${addr}</strong> invirtió <strong style="color: var(--brand-primary);">${amt} USDT</strong></div>
+            <div style="color: var(--text-muted); font-size: 0.75rem; margin-top: 2px;">Confirmado hace unos segundos en BSC</div>
+        `;
         toastContainer.classList.remove('active');
         void toastContainer.offsetWidth;
         toastContainer.classList.add('active');
@@ -111,9 +87,23 @@ function initUI() {
 
 // Auto-initialize when module is loaded and DOM is ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        try { initUI(); } catch (e) { console.warn('initUI threw:', e); }
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            await initCoreApp();
+        } catch (e) {
+            // initApp errors are handled inside app.js; still continue to init UI
+            console.warn('initApp threw:', e);
+        }
+        initUI();
     });
 } else {
-    try { initUI(); } catch (e) { console.warn('initUI threw:', e); }
+    // DOM already ready
+    (async () => {
+        try {
+            await initCoreApp();
+        } catch (e) {
+            console.warn('initApp threw:', e);
+        }
+        initUI();
+    })();
 }
