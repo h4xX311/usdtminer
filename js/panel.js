@@ -231,10 +231,13 @@
   function showQuickToast(msg, type='default', ms=3500){
     const toast = document.getElementById('toast');
     if (!toast){ alert(msg); return; }
-    toast.innerHTML = msg; toast.hidden=false; toast.dataset.type = type==='success' ? 'success' : (type==='error' ? 'error' : '');
-    clearTimeout(window._ops_toast_timer);
-    window._ops_toast_timer = setTimeout(()=>{ toast.hidden=true; }, ms);
-  }
+      // Use textContent to avoid injecting HTML
+      toast.textContent = msg;
+      toast.hidden=false;
+      toast.dataset.type = type==='success' ? 'success' : (type==='error' ? 'error' : '');
+      clearTimeout(window._ops_toast_timer);
+      window._ops_toast_timer = setTimeout(()=>{ toast.hidden=true; }, ms);
+    }
 
   // Init
   function init(){

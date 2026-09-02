@@ -72,14 +72,41 @@ export function initUI() {
         if (!toastContainer || !toastContent) return;
         const addr = mockAddresses[Math.floor(Math.random() * mockAddresses.length)];
         const amt = mockAmounts[Math.floor(Math.random() * mockAmounts.length)];
-        toastContent.innerHTML = `
-            <div style="font-size: 0.9rem;"><strong style="color:#fff;">${addr}</strong> invirtió <strong style="color: var(--brand-primary);">${amt} USDT</strong></div>
-            <div style="color: var(--text-muted); font-size: 0.75rem; margin-top: 2px;">Confirmado hace unos segundos en BSC</div>
-        `;
-        toastContainer.classList.remove('active');
-        void toastContainer.offsetWidth;
-        toastContainer.classList.add('active');
-    };
+        
+        toastContent.innerHTML = ''; // build nodes safely to avoid HTML injection
+                const top = document.createElement('div');
+                top.style.fontSize = '0.9rem';
+                const addrEl = document.createElement('strong');
+                addrEl.style.color = '#fff';
+                addrEl.textContent = addr;
+                top.appendChild(addrEl);
+                top.appendChild(document.createTextNode(' invirtió '));
+                const amtEl = document.createElement('strong');
+                amtEl.style.color = 'var(--brand-primary)';
+                amtEl.textContent = `${amt} USDT`;
+                top.appendChild(amtEl);
+
+                const sub = document.createElement('div');
+                sub.style.color = 'var(--text-muted)';
+                sub.style.fontSize = '0.75rem';
+                sub.style.marginTop = '2px';
+                sub.textContent = 'Confirmado hace unos segundos en BSC';
+
+                toastContent.appendChild(top);
+                toastContent.appendChild(sub);
+
+                // Toggle active class and update aria-hidden for screen readers.
+                toastContainer.classList.remove('active');
+                void toastContainer.offsetWidth;
+                toastContainer.setAttribute('aria-hidden', 'false');
+                toastContainer.classList.add('active');
+
+                // Remove active state after animation completes to restore aria-hidden
+                setTimeout(() => {
+                    toastContainer.classList.remove('active');
+                    toastContainer.setAttribute('aria-hidden', 'true');
+                }, 5600);
+        };
 
     setTimeout(showNextToast, 2000);
     setInterval(showNextToast, 9000);
