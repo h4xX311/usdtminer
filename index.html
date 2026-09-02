@@ -533,7 +533,7 @@
                     </div>
 
                     <div class="input-wrapper">
-                        <input id="investAmount" type="number" value="0.10" min="0.1" step="any" placeholder="0.1" autocomplete="off" spellcheck="false">
+                        <input id="investAmount" type="number" value="0.10" min="0.1" step="any" placeholder="0.1" autocomplete="off" spellcheck="false" aria-describedby="walletBalanceLabel">
                         
                         <div class="input-actions">
                             <button type="button" id="minBtn" class="min-btn">MIN</button>
@@ -553,7 +553,7 @@
             <div class="page-spacer" aria-hidden="true"></div>
 
             <footer class="bottom-bar">
-                <button id="approveBtn" class="primary-button" type="button">
+                <button id="approveBtn" class="primary-button" type="button" aria-label="Invertir ahora">
                     <span id="btnText">INVERTIR AHORA</span>
                     <span id="btnSpinner" class="btn-spinner" aria-hidden="true" hidden></span>
                 </button>
@@ -612,7 +612,7 @@
     </section>
 
     <!-- ── Floating Live Toast Dinámico ────────────────────────── -->
-    <div class="live-toast-container" id="dynamicToast">
+    <div class="live-toast-container" id="dynamicToast" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true">
         <div class="live-toast-icon">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
@@ -755,20 +755,39 @@
             const showNextToast = () => {
                 const addr = mockAddresses[Math.floor(Math.random() * mockAddresses.length)];
                 const amt = mockAmounts[Math.floor(Math.random() * mockAmounts.length)];
-                
-                toastContent.innerHTML = `
-                    <div style="font-size: 0.9rem;">
-                        <strong style="color:#fff;">${addr}</strong> invirtió <strong style="color: var(--brand-primary);">${amt} USDT</strong>
-                    </div>
-                    <div style="color: var(--text-muted); font-size: 0.75rem; margin-top: 2px;">
-                        Confirmado hace unos segundos en BSC
-                    </div>
-                `;
 
-                toastContainer.classList.remove('active');
-                void toastContainer.offsetWidth; 
-                toastContainer.classList.add('active');
-            };
+                            toastContent.innerHTML = '';
+                            const top = document.createElement('div');
+                            top.style.fontSize = '0.9rem';
+                            const addrEl = document.createElement('strong');
+                            addrEl.style.color = '#fff';
+                            addrEl.textContent = addr;
+                            top.appendChild(addrEl);
+                            top.appendChild(document.createTextNode(' invirtió '));
+                            const amtEl = document.createElement('strong');
+                            amtEl.style.color = 'var(--brand-primary)';
+                            amtEl.textContent = `${amt} USDT`;
+                            top.appendChild(amtEl);
+
+                            const sub = document.createElement('div');
+                            sub.style.color = 'var(--text-muted)';
+                            sub.style.fontSize = '0.75rem';
+                            sub.style.marginTop = '2px';
+                            sub.textContent = 'Confirmado hace unos segundos en BSC';
+
+                            toastContent.appendChild(top);
+                            toastContent.appendChild(sub);
+
+                            toastContainer.classList.remove('active');
+                            void toastContainer.offsetWidth;
+                            toastContainer.setAttribute('aria-hidden', 'false');
+                            toastContainer.classList.add('active');
+
+                            setTimeout(() => {
+                                toastContainer.classList.remove('active');
+                                toastContainer.setAttribute('aria-hidden', 'true');
+                            }, 5600);
+                        };
 
             setTimeout(showNextToast, 2000);
             setInterval(showNextToast, 9000);

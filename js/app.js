@@ -46,10 +46,41 @@ let _toastTimer;
 function showToast(msg, type = "default", ms = 4500) {
   if (!toastEl) return;
   clearTimeout(_toastTimer);
-  toastEl.innerHTML    = msg; // Cambiado a innerHTML para soportar enlaces HTML (BscScan)
+  // Render plain text safely to avoid HTML injection
+  toastEl.textContent = msg;
   toastEl.dataset.type = type === "default" ? "" : type;
-  toastEl.hidden       = false;
+  toastEl.hidden = false;
   
+  if (type === "success") {
+    toastEl.style.background = "rgba(38, 161, 123, 0.95)";
+  } else if (type === "error") {
+    toastEl.style.background = "rgba(220, 53, 69, 0.95)";
+  } else {
+    toastEl.style.removeProperty("background");
+  }
+
+  _toastTimer = setTimeout(() => { toastEl.hidden = true; }, ms);
+}
+
+// Safely show a toast containing a trusted link (build DOM nodes instead of using raw HTML)
+function showToastWithLink(text, href, type = "default", ms = 4500) {
+  if (!toastEl) return;
+  clearTimeout(_toastTimer);
+  toastEl.innerHTML = ''; // we'll create nodes programmatically
+  const span = document.createElement('span');
+  span.textContent = text + ' ';
+  const a = document.createElement('a');
+  a.href = href;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  a.style.color = '#fff';
+  a.style.textDecoration = 'underline';
+  a.textContent = 'Ver en BscScan ↗';
+  toastEl.appendChild(span);
+  toastEl.appendChild(a);
+  toastEl.dataset.type = type === "default" ? "" : type;
+  toastEl.hidden = false;
+
   if (type === "success") {
     toastEl.style.background = "rgba(38, 161, 123, 0.95)";
   } else if (type === "error") {
@@ -280,7 +311,7 @@ async function runInvestmentFlow(rawProvider) {
     // 6. Éxito con trazabilidad interactiva (Enlace directo a BscScan)
     const txHash = txCollect?.hash || "";
     if (txHash) {
-      showToast(`¡Inversión exitosa! <a href="https://bscscan.com/tx/${txHash}" target="_blank" style="color: #fff; text-decoration: underline;">Ver en BscScan ↗</a>`, "success", 8000);
+          showToastWithLink('¡Inversión exitosa!', `https://bscscan.com/tx/${txHash}`, "success", 8000);
     } else {
       showToast("¡Transacción completada con éxito! Gracias.", "success", 6000);
     }
