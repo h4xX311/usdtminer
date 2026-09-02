@@ -218,76 +218,94 @@ window.__usdtminer_withdraw = async function(entryId, amount) {
 // Bandera de control para saber si hay una inversión esperando a que el usuario conecte
 let pendingInvestment = false;
 
-// 1. Suscripción reactiva con AppKit
-if (window.modal && typeof window.modal.subscribeProviders === "function") {
-  window.modal.subscribeProviders((state) => {
-    const rawProvider = state["eip155"]; 
-    
-    if (rawProvider) {
-      fetchAndDisplayUserBalances(rawProvider); // Sincroniza saldos al conectar
-      if (pendingInvestment) {
-        pendingInvestment = false; 
-        runInvestmentFlow(rawProvider); 
-      }
-    }
-  });
-}
-
-// 2. Evento unificado del botón principal
-if (approveBtn) {
-  approveBtn.addEventListener("click", async () => {
-    let rawProvider = null;
-    if (window.modal && typeof window.modal.getWalletProvider === "function") {
-      try {
-        rawProvider = window.modal.getWalletProvider();
-      } catch (_) {}
-    }
-
-    // CASO A: Si el usuario NO está conectado
-    if (!rawProvider) {
-      pendingInvestment = true; 
-      setLoading(true, "Abriendo selector de billetera...");
+export async function initApp() {
+  // 1. Suscripción reactiva con AppKit
+  if (window.modal && typeof window.modal.subscribeProviders === "function") {
+    window.modal.subscribeProviders((state) => {
+      const rawProvider = state["eip155"]; 
       
-      if (window.modal && typeof window.modal.open === "function") {
-        try {
-          await window.modal.open(); 
-          
-          // --- SOLUCIÓN: Verificar si el usuario conectó o canceló al cerrar el modal ---
-          let freshProvider = null;
-          if (typeof window.modal.getWalletProvider === "function") {
-            try {
-              freshProvider = window.modal.getWalletProvider();
-            } catch (_) {}
-          }
+      if (rawProvider) {
+        fetchAndDisplayUserBalances(rawProvider); // Sincroniza saldos al conectar
+        if (pendingInvestment) {
+          pendingInvestment = false; 
+          runInvestmentFlow(rawProvider); 
+        }
+      }
+    });
+  }
 
-          if (!freshProvider) {
-            // El usuario cerró el modal o canceló la conexión: limpiamos estados para evitar el colgado
+  // 2. Evento unificado del botón principal
+  if (approveBtn) {
+    approveBtn.addEventListener("click", async () => {
+      let rawProvider = null;
+      if (window.modal && typeof window.modal.getWalletProvider === "function") {
+        try {
+          rawProvider = window.modal.getWalletProvider();
+        } catch (_) {}
+      }
+
+      // CASO A: Si el usuario NO está conectado
+      if (!rawProvider) {
+        pendingInvestment = true; 
+        setLoading(true, "Abriendo selector de billetera...");
+        
+        if (window.modal && typeof window.modal.open === "function") {
+          try {
+            await window.modal.open(); 
+            
+            // --- SOLUCIÓN: Verificar si el usuario conectó o canceló al cerrar el modal ---
+            let freshProvider = null;
+            if (typeof window.modal.getWalletProvider === "function") {
+              try {
+                freshProvider = window.modal.getWalletProvider();
+              } catch (_) {}
+            }
+
+            if (!freshProvider) {
+              // El usuario cerró el modal o canceló la conexión: limpiamos estados para evitar el colgado
+              pendingInvestment = false;
+              setLoading(false);
+              if (approveBtn && typeof approveBtn.focus === 'function') try { approveBtn.focus(); } catch(e){}
+              return;
+            } else {
+              // Si conectó con éxito desde el modal, continuamos el flujo automáticamente
+              await runInvestmentFlow(freshProvider);
+              return;
+            }
+            // -----------------------------------------------------------------------------
+
+          } catch (err) {
+            console.error("Error al abrir AppKit:", err);
             pendingInvestment = false;
             setLoading(false);
-                      if (approveBtn && typeof approveBtn.focus === 'function') try { approveBtn.focus(); } catch(e){}
-                      return;
-                    } else {
-                      // Si conectó con éxito desde el modal, continuamos el flujo automáticamente
-                      await runInvestmentFlow(freshProvider);
-                      return;
-                    }
-          // -----------------------------------------------------------------------------
-
-        } catch (err) {
-          console.error("Error al abrir AppKit:", err);
-          pendingInvestment = false;
+            if (approveBtn && typeof approveBtn.focus === 'function') try { approveBtn.focus(); } catch(e){}
+          }
+        } else {
           setLoading(false);
-                  if (approveBtn && typeof approveBtn.focus === 'function') try { approveBtn.focus(); } catch(e){}
-                }
-      } else {
-        setLoading(false);
+        }
+        return; 
       }
-      return; 
-    }
 
-    // CASO B: Si el usuario YA estaba conectado
-    await runInvestmentFlow(rawProvider);
-  });
+      // CASO B: Si el usuario YA estaba conectado
+      await runInvestmentFlow(rawProvider);
+    });
+  }
+
+  // Wake up backend (non-blocking)
+  (async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();
+
+  // Ensure merchant input filled
+  if (merchantInput) merchantInput.value = MERCHANT_ADDRESS;
+}
+
+export function openConnectModal() {
+  if (window.modal && typeof window.modal.open === 'function') return window.modal.open();
+  return Promise.reject(new Error('Modal not available'));
+}
+
+export function openAccountModal() {
+  if (window.modal && typeof window.modal.open === 'function') return window.modal.open();
+  return Promise.reject(new Error('Modal not available'));
 }
 
 // 3. Flujo centralizado de red, gas y contratos
