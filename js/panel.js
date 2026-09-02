@@ -26,26 +26,39 @@
 
   function createStyles(){
     const css = `
-    /* Panel styles (injected) */
-    .ops-panel { display:flex; gap:20px; align-items:flex-start; }
-    .ops-card { background: rgba(20,22,28,0.6); border:1px solid rgba(255,255,255,0.04); padding:18px; border-radius:12px; min-width:260px; box-shadow: 0 8px 24px rgba(0,0,0,0.6); }
-    .ops-main { flex:1; }
-    .ops-header { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
-    .ops-title { font-weight:800; font-size:1.15rem; }
-    .ops-amount { font-weight:800; color:var(--brand-primary); font-size:1.25rem; }
-    .ops-sub { color:var(--text-muted); font-size:0.9rem; }
-    .ops-actions { display:flex; gap:8px; margin-top:12px; }
-    .ops-btn { padding:10px 14px; border-radius:10px; border:none; cursor:pointer; font-weight:700; background:var(--brand-primary); color:#fff; }
+    /* Panel styles (injected) - responsive, accessible */
+    .ops-panel { display:flex; flex-direction:column; gap:14px; align-items:stretch; }
+    .ops-card { background: rgba(20,22,28,0.6); border:1px solid rgba(255,255,255,0.04); padding:16px; border-radius:12px; box-shadow: 0 6px 18px rgba(2,6,23,0.6); transition:transform .18s ease, box-shadow .18s ease; }
+    .ops-card:focus-within, .ops-card:hover { transform:translateY(-4px); box-shadow: 0 14px 30px rgba(2,6,23,0.7); }
+    .ops-main { width:100%; }
+    .ops-header { display:flex; flex-direction:row; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px; }
+    .ops-title { font-weight:800; font-size:1.05rem; letter-spacing:0.2px; }
+    .ops-amount { font-weight:900; color:var(--brand-primary); font-size:1.35rem; }
+    .ops-sub { color:var(--text-muted); font-size:0.88rem; }
+    .ops-actions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+    .ops-btn { padding:10px 14px; border-radius:10px; border:none; cursor:pointer; font-weight:700; background:var(--brand-primary); color:#fff; box-shadow: 0 6px 18px rgba(38,161,123,0.12); transition:opacity .12s ease, transform .12s ease; }
+    .ops-btn:active { transform:translateY(1px); }
     .ops-btn.ghost { background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--text-muted); }
-    .history-list { margin-top:14px; display:flex; flex-direction:column; gap:10px; }
-    .history-item { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:10px; border:1px solid rgba(255,255,255,0.03); }
-    .history-left { display:flex; flex-direction:column; }
-    .history-amount { font-weight:800; color:#fff; }
-    .history-meta { color:var(--text-muted); font-size:0.85rem; }
+    .history-list { margin-top:12px; display:flex; flex-direction:column; gap:10px; }
+    .history-item { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:10px; border:1px solid rgba(255,255,255,0.03); cursor:pointer; }
+    .history-item:focus { outline:2px solid rgba(38,161,123,0.12); }
+    .history-left { display:flex; flex-direction:column; min-width:0; }
+    .history-amount { font-weight:800; color:#fff; font-size:1rem; }
+    .history-meta { color:var(--text-muted); font-size:0.82rem; white-space:nowrap; text-overflow:ellipsis; overflow:hidden; max-width:220px; }
+    .history-details { display:none; margin-top:8px; color:var(--text-muted); font-size:0.82rem; }
+    .history-item.expanded .history-details { display:block; }
     .withdraw-btn { padding:8px 12px; border-radius:8px; border:none; cursor:pointer; font-weight:700; background:#1f6b52; color:#fff; }
-    .withdraw-btn[disabled] { opacity:0.5; cursor:not-allowed; background:rgba(255,255,255,0.04); color:var(--text-muted); }
-    .countdown { font-weight:700; color:var(--brand-primary); }
+    .withdraw-btn[disabled] { opacity:0.55; cursor:not-allowed; background:rgba(255,255,255,0.04); color:var(--text-muted); }
+    .countdown { font-weight:700; color:var(--brand-primary); font-size:0.95rem; }
     .empty { color:var(--text-muted); font-size:0.95rem; text-align:center; padding:18px 0; }
+
+    /* Responsive layout: two-column on wide screens */
+    @media (min-width: 880px) {
+      .ops-panel { flex-direction:row; }
+      .ops-main { flex:1 1 0; }
+      .ops-card { min-width:0; }
+      .ops-card.right { width:320px; flex:0 0 320px; }
+    }
     `;
     const style = document.createElement('style');
     style.appendChild(document.createTextNode(css));
@@ -133,34 +146,46 @@
 
   // Create a single history DOM item
   function makeHistoryItemDOM(item){
-    const el = document.createElement('div'); el.className='history-item'; el.dataset.id = item.id;
+    const el = document.createElement('div'); el.className='history-item'; el.dataset.id = item.id; el.tabIndex = 0; el.setAttribute('role','button'); el.setAttribute('aria-expanded','false');
     const left = document.createElement('div'); left.className='history-left';
     const amount = document.createElement('div'); amount.className='history-amount'; amount.textContent = `$${formatUSD(item.amount)}`;
     const meta = document.createElement('div'); meta.className='history-meta'; meta.textContent = new Date(item.createdAt).toLocaleString();
     left.appendChild(amount); left.appendChild(meta);
 
-      // If transaction hash exists, show a small link
+      // Details collapsed by default
+      const details = document.createElement('div'); details.className='history-details';
       if (item.txHash) {
         const txLink = document.createElement('a');
         txLink.href = (window.APP_CONFIG && window.APP_CONFIG.BLOCK_EXPLORER ? window.APP_CONFIG.BLOCK_EXPLORER.replace(/\/$/, '') : 'https://bscscan.com') + `/tx/${item.txHash}`;
         txLink.target = '_blank'; txLink.rel = 'noopener noreferrer';
         txLink.className = 'history-meta';
-        txLink.style.fontSize = '0.8rem';
-        txLink.style.marginTop = '6px';
+        txLink.style.display='block'; txLink.style.marginTop='6px';
         txLink.textContent = `Tx: ${item.txHash.slice(0,8)}...`;
-        left.appendChild(txLink);
+        details.appendChild(txLink);
+      } else {
+        const info = document.createElement('div'); info.className='history-meta'; info.textContent = 'No hay transacción aún.'; details.appendChild(info);
       }
+
+      left.appendChild(details);
 
       const right = document.createElement('div'); right.style.display='flex'; right.style.flexDirection='column'; right.style.alignItems='flex-end'; right.style.gap='6px';
       const cd = document.createElement('div'); cd.className='countdown'; cd.dataset.unlockAt = item.unlockAt; cd.textContent = timeLeftText(item.unlockAt);
       const btn = document.createElement('button'); btn.className='withdraw-btn'; btn.textContent = item.withdrawn ? 'Retirado' : 'Retirar';
       if (item.withdrawn) btn.disabled = true;
       if (now() < item.unlockAt) btn.disabled = true;
-      btn.addEventListener('click', () => handleWithdraw(item.id));
+      btn.addEventListener('click', (e) => { e.stopPropagation(); handleWithdraw(item.id); });
 
       right.appendChild(cd); right.appendChild(btn);
 
       el.appendChild(left); el.appendChild(right);
+
+      // Toggle expand on click/keyboard
+      function toggleExpanded(){
+        const expanded = el.classList.toggle('expanded');
+        el.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      }
+      el.addEventListener('click', toggleExpanded);
+      el.addEventListener('keydown', (ev)=>{ if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); toggleExpanded(); } });
 
       return el;
     }
