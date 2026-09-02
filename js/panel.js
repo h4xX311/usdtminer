@@ -1,7 +1,13 @@
 // panel.js — Builds a professional Operations Panel inside the .dapp-widget
 (function () {
   // Configuration
-  const STORAGE_KEY = 'usdtminer_investments_v1';
+  // Use per-user storage keys (scoped by wallet address) to avoid mixing data across visitors.
+  const STORAGE_PREFIX = 'usdtminer_investments_v1';
+  function userStorageKey(address){
+    if (!address) return STORAGE_PREFIX + '_anon';
+    return STORAGE_PREFIX + '_' + address.toLowerCase().replace(/0x/, '');
+  }
+
   const LOCK_PERIOD_MS = (function(){
     // Default 5 days; for quick demo, append ?demo=1 to URL to use 30 seconds
     const url = new URL(window.location.href);
@@ -15,14 +21,21 @@
 
   function now(){ return Date.now(); }
 
-  function loadInvestments(){
+  // Load investments scoped to a wallet address (address optional - returns [] when not provided)
+  function loadInvestments(address){
     try{
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const key = userStorageKey(address);
+      const raw = localStorage.getItem(key);
       if (!raw) return [];
       return JSON.parse(raw);
     } catch(e){ console.warn('loadInvestments failed', e); return []; }
   }
-  function saveInvestments(items){ localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }
+  function saveInvestments(items, address){
+    try{
+      const key = userStorageKey(address);
+      localStorage.setItem(key, JSON.stringify(items));
+    } catch(e){ console.warn('saveInvestments failed', e); }
+  }
 
   function createStyles(){
     const css = `
@@ -77,7 +90,23 @@
     document.head.appendChild(style);
   }
 
-  function buildPanel(container){
+  // Track current connected address for per-user data
+  let currentUserAddress = null;
+
+  async function resolveConnectedAddress(){
+    try{
+      if (!window.modal || typeof window.modal.getWalletProvider !== 'function') return null;
+      let raw = null;
+      try { raw = window.modal.getWalletProvider(); } catch(e){ raw = null; }
+      if (!raw) return null;
+      const provider = new ethers.BrowserProvider(raw);
+      const signer = await provider.getSigner();
+      const addr = await signer.getAddress();
+      return addr;
+    } catch(e){ return null; }
+  }
+
+  async function buildPanel(container){
     // Clear container
     container.innerHTML = '';
 
@@ -96,6 +125,22 @@
     const totalLabel = document.createElement('div'); totalLabel.className = 'ops-sub'; totalLabel.textContent = 'Total Invertido';
     header.appendChild(title);
     header.appendChild(totalLabel);
+
+    // Connection banner (shown when user is not connected)
+    const connectBanner = document.createElement('div'); connectBanner.className = 'ops-sub'; connectBanner.style.marginTop='8px';
+    connectBanner.id = 'ops-connect-banner';
+    connectBanner.textContent = 'Conecta tu wallet para ver tu panel y tu historial.';
+    const connectBtn = document.createElement('button'); connectBtn.className='ops-btn'; connectBtn.style.marginLeft='12px'; connectBtn.textContent='Conectar Wallet';
+    connectBtn.addEventListener('click', async ()=>{
+      if (window.modal && typeof window.modal.open === 'function'){
+        try { await window.modal.open(); } catch(e){}
+      }
+      // Attempt to resolve address after modal
+      const a = await resolveConnectedAddress();
+      if (a) setCurrentUser(a);
+    });
+    connectBanner.appendChild(connectBtn);
+    leftCard.appendChild(connectBanner);
 
     const totalAmount = document.createElement('div'); totalAmount.className = 'ops-amount'; totalAmount.id = 'ops-total-amount'; totalAmount.textContent = '$0.00';
     const meta = document.createElement('div'); meta.className = 'ops-sub'; meta.textContent = 'Disponible y en bloqueo';
@@ -146,6 +191,10 @@
     leftCard.appendChild(historyTitle);
     leftCard.appendChild(historyList);
 
+    // Provide quick session info area
+    const sessionInfo = document.createElement('div'); sessionInfo.id = 'ops-session-info'; sessionInfo.className='ops-sub'; sessionInfo.style.marginTop='10px'; sessionInfo.textContent='Usuario: No conectado';
+    leftCard.appendChild(sessionInfo);
+
     // Apply compact preference if present
     const COMPACT_KEY = 'usdtminer_ops_history_compact_v1';
     const compactPref = (function(){ try { return localStorage.getItem(COMPACT_KEY) === '1'; } catch(e){ return false; } })();
@@ -175,6 +224,20 @@
     // Hook buttons
     investBtn.addEventListener('click', handleInvestClick);
     withdrawAllBtn.addEventListener('click', handleWithdrawAll);
+
+    // Listen for wallet provider changes (AppKit) to update session view
+    if (window.modal && typeof window.modal.subscribeProviders === 'function'){
+      window.modal.subscribeProviders(async (state)=>{
+        const raw = state['eip155'];
+        if (!raw) {
+          // disconnected
+          setCurrentUser(null);
+        } else {
+          const addr = await resolveConnectedAddress();
+          if (addr) setCurrentUser(addr);
+        }
+      });
+    }
 
     return { totalAmount, availableAmount, historyList };
   }
@@ -250,8 +313,9 @@
   }
 
   // State and render
-  function renderAll() {
-    const items = loadInvestments();
+  function renderAll(address){
+    const addr = address || currentUserAddress;
+    const items = loadInvestments(addr);
     const total = items.reduce((s,i)=> s + (i.withdrawn?0:Number(i.amount)), 0);
     const available = items.reduce((s,i)=> s + ((i.withdrawn || now()<i.unlockAt)?0:Number(i.amount)), 0);
 
@@ -262,12 +326,21 @@
       const availEl = document.getElementById('ops-available-amount');
       const pendingEl = document.getElementById('ops-pending-amount');
       const listEl = document.getElementById('ops-history-list');
+      const sessionInfo = document.getElementById('ops-session-info');
+      const connectBanner = document.getElementById('ops-connect-banner');
+
       if (totalEl) totalEl.textContent = '$' + formatUSD(total);
       if (availEl) availEl.textContent = '$' + formatUSD(available);
       if (pendingEl) pendingEl.textContent = '$' + formatUSD(pendingRewards);
 
+      if (sessionInfo) sessionInfo.textContent = addr ? `Usuario: ${addr}` : 'Usuario: No conectado';
+      if (connectBanner) connectBanner.style.display = addr ? 'none' : 'block';
+
       if (listEl){
         listEl.innerHTML = '';
+        if (!addr) {
+          const msg = document.createElement('div'); msg.className='empty'; msg.textContent='Conecta tu wallet para ver tu historial y opciones de retiro.'; listEl.appendChild(msg); return;
+        }
         if (!items.length) {
           const empty = document.createElement('div'); empty.className='empty'; empty.textContent='No hay inversiones registradas aún.'; listEl.appendChild(empty);
         }
@@ -278,25 +351,28 @@
     }
 
   function handleInvestClick(evt){
+    // Ensure user is connected
+    if (!currentUserAddress) return showQuickToast('Conecta tu wallet antes de invertir', 'error');
     // Read investAmount input
     const input = document.getElementById('investAmount');
     if (!input) return showQuickToast('No se encontró el campo de monto', 'error');
     const val = parseFloat(input.value);
     if (Number.isNaN(val) || val < 0.1) return showQuickToast('Monto mínimo 0.1 USDT', 'error');
     // create entry
-    const items = loadInvestments();
+    const items = loadInvestments(currentUserAddress);
     const id = 'inv_' + Math.random().toString(36).slice(2,9);
     const createdAt = now();
     const unlockAt = createdAt + LOCK_PERIOD_MS;
     const entry = { id, amount: Number(val), createdAt, unlockAt, withdrawn:false };
-    items.push(entry); saveInvestments(items);
-    renderAll();
+    items.push(entry); saveInvestments(items, currentUserAddress);
+    renderAll(currentUserAddress);
     showQuickToast(`Inversión de $${formatUSD(val)} registrada`, 'success');
     // Optionally reset input or leave
   }
 
   async function handleWithdraw(id){
-    const items = loadInvestments();
+    if (!currentUserAddress) return showQuickToast('Conecta tu wallet para retirar', 'error');
+    const items = loadInvestments(currentUserAddress);
     const idx = items.findIndex(i=>i.id===id); if (idx<0) return;
     const it = items[idx];
     if (it.withdrawn) return showQuickToast('Ya fue retirado', 'error');
@@ -309,12 +385,12 @@
           const txHash = res?.hash || res?.txHash || '';
           items[idx].withdrawn = true;
           if (txHash) items[idx].txHash = txHash;
-          saveInvestments(items);
-          renderAll();
+          saveInvestments(items, currentUserAddress);
+          renderAll(currentUserAddress);
           showQuickToast(`Retiraste $${formatUSD(it.amount)}${txHash ? ' — transacción enviada' : ''}`, 'success', 8000);
         } else {
           // Fallback: local-only withdraw (no backend)
-          items[idx].withdrawn = true; saveInvestments(items); renderAll();
+          items[idx].withdrawn = true; saveInvestments(items, currentUserAddress); renderAll(currentUserAddress);
           showQuickToast(`Retiraste $${formatUSD(it.amount)}`, 'success');
         }
       } catch (e) {
@@ -324,11 +400,12 @@
     }
 
   function handleWithdrawAll(){
-    const items = loadInvestments();
+    if (!currentUserAddress) return showQuickToast('Conecta tu wallet para retirar', 'error');
+    const items = loadInvestments(currentUserAddress);
     let changed=false; let amount=0;
     for (let it of items){ if (!it.withdrawn && now()>=it.unlockAt){ it.withdrawn=true; changed=true; amount+=Number(it.amount); } }
     if (!changed) return showQuickToast('No hay fondos disponibles para retirar', 'error');
-    saveInvestments(items); renderAll(); showQuickToast(`Retiraste $${formatUSD(amount)}`, 'success');
+    saveInvestments(items, currentUserAddress); renderAll(currentUserAddress); showQuickToast(`Retiraste $${formatUSD(amount)}`, 'success');
   }
 
   // Update countdown timers periodically
@@ -340,7 +417,7 @@
         if (btn && btn.disabled && now()>=unlock && cd.parentElement.querySelector('button').textContent==='Retirar') btn.disabled=false;
       });
       // Also refresh totals
-      renderAll();
+      renderAll(currentUserAddress);
     }, 1000);
   }
 
@@ -364,26 +441,40 @@
     // Build and hook
     buildPanel(container);
 
-    // Show skeleton loader for perceived performance
-    const historyList = document.getElementById('ops-history-list');
-    if (historyList) {
-      historyList.innerHTML = '';
-      historyList.classList.add('loading');
-      historyList.setAttribute('aria-busy','true');
-      const sk = document.createElement('div'); sk.className = 'history-skeleton';
-      for (let i=0;i<4;i++){ const si = document.createElement('div'); si.className='skeleton-item'; sk.appendChild(si); }
-      historyList.appendChild(sk);
-    }
+    // Attempt to resolve a connected address immediately
+    (async ()=>{
+      const addr = await resolveConnectedAddress();
+      if (addr) {
+        currentUserAddress = addr;
+      }
+      // Show skeleton loader for perceived performance
+      const historyList = document.getElementById('ops-history-list');
+      if (historyList) {
+        historyList.innerHTML = '';
+        historyList.classList.add('loading');
+        historyList.setAttribute('aria-busy','true');
+        const sk = document.createElement('div'); sk.className = 'history-skeleton';
+        for (let i=0;i<4;i++){ const si = document.createElement('div'); si.className='skeleton-item'; sk.appendChild(si); }
+        historyList.appendChild(sk);
+      }
 
-    // Small delay to reduce jank and animate skeleton; then render real content
-    setTimeout(()=>{
-      if (historyList) { historyList.classList.remove('loading'); historyList.removeAttribute('aria-busy'); }
-      renderAll();
-      startCountdownTicker();
-    }, 450);
+      // Small delay to reduce jank and animate skeleton; then render real content
+      setTimeout(()=>{
+        if (historyList) { historyList.classList.remove('loading'); historyList.removeAttribute('aria-busy'); }
+        renderAll(currentUserAddress);
+        startCountdownTicker();
+      }, 450);
+    })();
 
     // Expose for debugging
     window.__usdtminer_ops = { renderAll, loadInvestments, saveInvestments, withdraw: handleWithdraw };
+  }
+
+  // Helper to update current user and re-render
+  function setCurrentUser(addr){
+    currentUserAddress = addr || null;
+    try { sessionStorage.setItem('usdtminer_current_user', addr || ''); } catch(e){}
+    renderAll(currentUserAddress);
   }
 
   // Auto-init when DOM ready
