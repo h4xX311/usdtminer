@@ -80,6 +80,7 @@
     const header = document.createElement('div'); header.className = 'ops-header';
     const title = document.createElement('div'); title.className = 'ops-title';
     const titleText = document.createElement('span'); titleText.textContent = 'Panel de Operaciones';
+    try { title.prepend(createIcon('tx')); } catch(e){}
     title.appendChild(titleText);
     const totalLabel = document.createElement('div'); totalLabel.className = 'ops-sub'; totalLabel.textContent = 'Total Invertido';
     header.appendChild(title);
@@ -112,7 +113,7 @@
 
     // History
     const historyTitle = document.createElement('div'); historyTitle.className='ops-sub'; historyTitle.style.marginTop='14px'; historyTitle.textContent='Historial de Inversiones';
-    const historyList = document.createElement('div'); historyList.className='history-list'; historyList.id='ops-history-list';
+    const historyList = document.createElement('div'); historyList.className='history-list scrollable'; historyList.id='ops-history-list';
 
     leftCard.appendChild(header);
     leftCard.appendChild(totalAmount);
