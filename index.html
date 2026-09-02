@@ -426,6 +426,11 @@
     </style>
 </head>
 <body>
+    <a href="#main-content" class="skip-link">Saltar al contenido</a>
+    <style>
+      .skip-link { position: absolute; left: -999px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+      .skip-link:focus { left: 16px; top: 8px; width: auto; height: auto; background: #fff; color: #000; padding: 8px 12px; border-radius: 6px; z-index: 9999; }
+    </style>
 
     <header>
         <div class="logo">
@@ -494,7 +499,7 @@
         </div>
 
         <!-- ── DApp Widget ────────────────────────────────────────── -->
-        <main class="dapp-widget screen">
+        <main id="main-content" class="dapp-widget screen">
             <h3 style="margin-bottom: 20px; font-size: 1.4rem;">Panel de Operación</h3>
 
             <section class="form-shell" aria-label="Merchant approval form">
@@ -562,7 +567,7 @@
                 </p>
             </footer>
 
-            <div id="toast" class="toast" aria-live="polite" data-type="error" hidden>Please switch to BNB Smart Chain to continue.</div>
+            <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true" data-type="error" hidden>Please switch to BNB Smart Chain to continue.</div>
         </main>
     </section>
 
