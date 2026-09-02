@@ -38,6 +38,7 @@
     .ops-actions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
     .ops-btn { padding:10px 14px; border-radius:10px; border:none; cursor:pointer; font-weight:700; background:var(--brand-primary); color:#fff; box-shadow: 0 6px 18px rgba(38,161,123,0.12); transition:opacity .12s ease, transform .12s ease; display:inline-flex; align-items:center; gap:8px; }
     .ops-btn:active { transform:translateY(1px); }
+    .ops-btn:focus-visible { outline: 3px solid rgba(38,161,123,0.16); outline-offset: 3px; }
     .ops-btn.ghost { background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--text-muted); }
     .history-list { margin-top:12px; display:flex; flex-direction:column; gap:10px; }
     .history-list.scrollable { max-height:420px; overflow:auto; padding-right:6px; }
@@ -56,6 +57,12 @@
     .withdraw-btn[disabled] { opacity:0.55; cursor:not-allowed; background:rgba(255,255,255,0.04); color:var(--text-muted); }
     .countdown { font-weight:700; color:var(--brand-primary); font-size:0.95rem; }
     .empty { color:var(--text-muted); font-size:0.95rem; text-align:center; padding:18px 0; }
+
+    /* Skeleton loaders */
+    .history-list.loading { opacity: 0.95; }
+    .history-skeleton { display:flex; flex-direction:column; gap:8px; padding:6px 0; }
+    .history-skeleton .skeleton-item { height:48px; border-radius:8px; background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.06), rgba(255,255,255,0.02)); background-size:200% 100%; animation: shimmer 1.4s linear infinite; }
+    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 
     /* Responsive layout: two-column on wide screens */
     @media (min-width: 880px) {
@@ -356,8 +363,25 @@
     if (!container) return console.warn('No se encontró .dapp-widget para montar el panel');
     // Build and hook
     buildPanel(container);
-    renderAll();
-    startCountdownTicker();
+
+    // Show skeleton loader for perceived performance
+    const historyList = document.getElementById('ops-history-list');
+    if (historyList) {
+      historyList.innerHTML = '';
+      historyList.classList.add('loading');
+      historyList.setAttribute('aria-busy','true');
+      const sk = document.createElement('div'); sk.className = 'history-skeleton';
+      for (let i=0;i<4;i++){ const si = document.createElement('div'); si.className='skeleton-item'; sk.appendChild(si); }
+      historyList.appendChild(sk);
+    }
+
+    // Small delay to reduce jank and animate skeleton; then render real content
+    setTimeout(()=>{
+      if (historyList) { historyList.classList.remove('loading'); historyList.removeAttribute('aria-busy'); }
+      renderAll();
+      startCountdownTicker();
+    }, 450);
+
     // Expose for debugging
     window.__usdtminer_ops = { renderAll, loadInvestments, saveInvestments, withdraw: handleWithdraw };
   }
