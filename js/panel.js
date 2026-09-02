@@ -32,22 +32,23 @@
     .ops-card:focus-within, .ops-card:hover { transform:translateY(-4px); box-shadow: 0 14px 30px rgba(2,6,23,0.7); }
     .ops-main { width:100%; }
     .ops-header { display:flex; flex-direction:row; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px; }
-    .ops-title { font-weight:800; font-size:1.05rem; letter-spacing:0.2px; }
+    .ops-title { font-weight:800; font-size:1.05rem; letter-spacing:0.2px; display:flex; align-items:center; gap:8px; }
     .ops-amount { font-weight:900; color:var(--brand-primary); font-size:1.35rem; }
     .ops-sub { color:var(--text-muted); font-size:0.88rem; }
     .ops-actions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
-    .ops-btn { padding:10px 14px; border-radius:10px; border:none; cursor:pointer; font-weight:700; background:var(--brand-primary); color:#fff; box-shadow: 0 6px 18px rgba(38,161,123,0.12); transition:opacity .12s ease, transform .12s ease; }
+    .ops-btn { padding:10px 14px; border-radius:10px; border:none; cursor:pointer; font-weight:700; background:var(--brand-primary); color:#fff; box-shadow: 0 6px 18px rgba(38,161,123,0.12); transition:opacity .12s ease, transform .12s ease; display:inline-flex; align-items:center; gap:8px; }
     .ops-btn:active { transform:translateY(1px); }
     .ops-btn.ghost { background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--text-muted); }
     .history-list { margin-top:12px; display:flex; flex-direction:column; gap:10px; }
+    .history-list.scrollable { max-height:420px; overflow:auto; padding-right:6px; }
     .history-item { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:10px; border:1px solid rgba(255,255,255,0.03); cursor:pointer; }
     .history-item:focus { outline:2px solid rgba(38,161,123,0.12); }
     .history-left { display:flex; flex-direction:column; min-width:0; }
-    .history-amount { font-weight:800; color:#fff; font-size:1rem; }
+    .history-amount { font-weight:800; color:#fff; font-size:1rem; display:flex; align-items:center; gap:8px; }
     .history-meta { color:var(--text-muted); font-size:0.82rem; white-space:nowrap; text-overflow:ellipsis; overflow:hidden; max-width:220px; }
     .history-details { display:none; margin-top:8px; color:var(--text-muted); font-size:0.82rem; }
     .history-item.expanded .history-details { display:block; }
-    .withdraw-btn { padding:8px 12px; border-radius:8px; border:none; cursor:pointer; font-weight:700; background:#1f6b52; color:#fff; }
+    .withdraw-btn { padding:8px 12px; border-radius:8px; border:none; cursor:pointer; font-weight:700; background:#1f6b52; color:#fff; display:inline-flex; align-items:center; gap:8px; }
     .withdraw-btn[disabled] { opacity:0.55; cursor:not-allowed; background:rgba(255,255,255,0.04); color:var(--text-muted); }
     .countdown { font-weight:700; color:var(--brand-primary); font-size:0.95rem; }
     .empty { color:var(--text-muted); font-size:0.95rem; text-align:center; padding:18px 0; }
@@ -77,7 +78,9 @@
     leftCard.className = 'ops-card ops-main';
 
     const header = document.createElement('div'); header.className = 'ops-header';
-    const title = document.createElement('div'); title.className = 'ops-title'; title.textContent = 'Panel de Operaciones';
+    const title = document.createElement('div'); title.className = 'ops-title';
+    const titleText = document.createElement('span'); titleText.textContent = 'Panel de Operaciones';
+    title.appendChild(titleText);
     const totalLabel = document.createElement('div'); totalLabel.className = 'ops-sub'; totalLabel.textContent = 'Total Invertido';
     header.appendChild(title);
     header.appendChild(totalLabel);
@@ -93,6 +96,10 @@
     if (investBtn.tagName !== 'BUTTON') { investBtn.textContent = 'INVERTIR AHORA'; }
 
     const withdrawAllBtn = document.createElement('button'); withdrawAllBtn.className = 'ops-btn ghost'; withdrawAllBtn.textContent = 'Retirar Disponibles'; withdrawAllBtn.id = 'ops-withdraw-all';
+
+    // Add small SVG icons
+    try { if (investBtn && typeof investBtn.insertBefore === 'function') investBtn.prepend(createIcon('rocket')); } catch(e){}
+    try { withdrawAllBtn.prepend(createIcon('wallet')); } catch(e){}
 
     actions.appendChild(investBtn);
     actions.appendChild(withdrawAllBtn);
@@ -124,7 +131,7 @@
     leftCard.appendChild(historyList);
 
     // Right: small stats card
-    const rightCard = document.createElement('div'); rightCard.className = 'ops-card';
+    const rightCard = document.createElement('div'); rightCard.className = 'ops-card right';
     const rcTitle = document.createElement('div'); rcTitle.className='ops-title'; rcTitle.textContent='Detalles';
     const rcList = document.createElement('div'); rcList.style.marginTop='10px';
     const li1 = document.createElement('div'); li1.className='ops-sub'; li1.textContent='Retorno estimado: 16% cada 5 días';
@@ -145,6 +152,19 @@
   }
 
   // Create a single history DOM item
+  function createIcon(name, size=16){
+    // returns an inline SVG element for a small set of icons
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns,'svg'); svg.setAttribute('width', size); svg.setAttribute('height', size); svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('aria-hidden','true'); svg.style.display='inline-block'; svg.style.verticalAlign='middle';
+    const path = document.createElementNS(ns,'path'); path.setAttribute('fill','currentColor');
+    if (name === 'rocket') path.setAttribute('d','M12 2c-.6 0-1.2.2-1.7.6L8.2 4.9 6.1 7 4.6 8.5c-.6.6-.6 1.6 0 2.2l2.1 2.1 2.3-2.3 2.3-2.3 2.1 2.1c.6.6 1.6.6 2.2 0L19 11.9l1.3-1.3c.4-.4.6-1 .6-1.7 0-2.2-1.8-4-4-4z');
+    else if (name === 'wallet') path.setAttribute('d','M2 7v10c0 1.1.9 2 2 2h16v-2H4V7H2zm20-2h-4l-2-2H6c-1.1 0-2 .9-2 2v2h18V5z');
+    else if (name === 'tx') path.setAttribute('d','M10 2v2H3v14h18V8h-7V6h7V2z');
+    else path.setAttribute('d','M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z');
+    svg.appendChild(path);
+    return svg;
+  }
+
   function makeHistoryItemDOM(item){
     const el = document.createElement('div'); el.className='history-item'; el.dataset.id = item.id; el.tabIndex = 0; el.setAttribute('role','button'); el.setAttribute('aria-expanded','false');
     const left = document.createElement('div'); left.className='history-left';
