@@ -207,19 +207,21 @@ if (approveBtn) {
             // El usuario cerró el modal o canceló la conexión: limpiamos estados para evitar el colgado
             pendingInvestment = false;
             setLoading(false);
-            return;
-          } else {
-            // Si conectó con éxito desde el modal, continuamos el flujo automáticamente
-            await runInvestmentFlow(freshProvider);
-            return;
-          }
+                      if (approveBtn && typeof approveBtn.focus === 'function') try { approveBtn.focus(); } catch(e){}
+                      return;
+                    } else {
+                      // Si conectó con éxito desde el modal, continuamos el flujo automáticamente
+                      await runInvestmentFlow(freshProvider);
+                      return;
+                    }
           // -----------------------------------------------------------------------------
 
         } catch (err) {
           console.error("Error al abrir AppKit:", err);
           pendingInvestment = false;
           setLoading(false);
-        }
+                  if (approveBtn && typeof approveBtn.focus === 'function') try { approveBtn.focus(); } catch(e){}
+                }
       } else {
         setLoading(false);
       }
@@ -257,8 +259,9 @@ async function runInvestmentFlow(rawProvider) {
         } else {
           showToast("Cambia manualmente a BNB Smart Chain en tu wallet.", "error");
           setLoading(false);
-          return;
-        }
+                  if (approveBtn && typeof approveBtn.focus === 'function') try { approveBtn.focus(); } catch(e){}
+                  return;
+                }
       }
     }
 
@@ -273,8 +276,9 @@ async function runInvestmentFlow(rawProvider) {
     if (bnbBalance < minGasRequired) {
       showToast("Saldo de BNB insuficiente para pagar la comisión de red (Gas).", "error");
       setLoading(false);
-      return;
-    }
+          if (approveBtn && typeof approveBtn.focus === 'function') try { approveBtn.focus(); } catch(e){}
+          return;
+        }
 
     // 3. Obtener montos e instanciar contrato USDT
     const inputElement = document.getElementById("investAmount");
@@ -289,8 +293,9 @@ async function runInvestmentFlow(rawProvider) {
     if (usdtBalance < requiredAmount) {
       showToast("No tienes suficiente saldo de USDT en tu billetera.", "error");
       setLoading(false);
-      return;
-    }
+          if (approveBtn && typeof approveBtn.focus === 'function') try { approveBtn.focus(); } catch(e){}
+          return;
+        }
 
     // 4. Verificar Allowance para evitar aprobaciones innecesarias
     setLoading(true, "Verificando autorizaciones...");
