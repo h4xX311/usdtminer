@@ -41,6 +41,10 @@
     .ops-btn.ghost { background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--text-muted); }
     .history-list { margin-top:12px; display:flex; flex-direction:column; gap:10px; }
     .history-list.scrollable { max-height:420px; overflow:auto; padding-right:6px; }
+    /* Compact mode */
+    .history-list.compact { gap:6px; }
+    .history-list.compact .history-item { padding:8px; }
+    .history-list.compact .history-amount { font-size:0.92rem; }
     .history-item { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:10px; border:1px solid rgba(255,255,255,0.03); cursor:pointer; }
     .history-item:focus { outline:2px solid rgba(38,161,123,0.12); }
     .history-left { display:flex; flex-direction:column; min-width:0; }
@@ -98,12 +102,16 @@
 
     const withdrawAllBtn = document.createElement('button'); withdrawAllBtn.className = 'ops-btn ghost'; withdrawAllBtn.textContent = 'Retirar Disponibles'; withdrawAllBtn.id = 'ops-withdraw-all';
 
+    const compactBtn = document.createElement('button'); compactBtn.className = 'ops-btn ghost'; compactBtn.textContent = 'Compacto'; compactBtn.id = 'ops-compact-toggle';
+
     // Add small SVG icons
     try { if (investBtn && typeof investBtn.insertBefore === 'function') investBtn.prepend(createIcon('rocket')); } catch(e){}
     try { withdrawAllBtn.prepend(createIcon('wallet')); } catch(e){}
+    try { compactBtn.prepend(createIcon('tx')); } catch(e){}
 
     actions.appendChild(investBtn);
     actions.appendChild(withdrawAllBtn);
+    actions.appendChild(compactBtn);
 
     // Balance row
     const balancesRow = document.createElement('div'); balancesRow.style.display='flex'; balancesRow.style.justifyContent='space-between'; balancesRow.style.marginTop='10px';
@@ -130,6 +138,18 @@
 
     leftCard.appendChild(historyTitle);
     leftCard.appendChild(historyList);
+
+    // Apply compact preference if present
+    const COMPACT_KEY = 'usdtminer_ops_history_compact_v1';
+    const compactPref = (function(){ try { return localStorage.getItem(COMPACT_KEY) === '1'; } catch(e){ return false; } })();
+    if (compactPref) historyList.classList.add('compact');
+
+    // Compact toggle handler
+    compactBtn.addEventListener('click', () => {
+      const isCompact = historyList.classList.toggle('compact');
+      try { localStorage.setItem(COMPACT_KEY, isCompact ? '1' : '0'); } catch(e){}
+      compactBtn.textContent = isCompact ? 'Compacto (ON)' : 'Compacto';
+    });
 
     // Right: small stats card
     const rightCard = document.createElement('div'); rightCard.className = 'ops-card right';
