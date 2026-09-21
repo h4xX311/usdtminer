@@ -415,3 +415,37 @@ input {
 	font-weight: 600;
 	color: #1a7a3c;
 }
+.qr-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.qr-wrapper {
+    background: #ffffff;
+    padding: 10px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qr-code-box img {
+    display: block;
+    border-radius: 8px;
+}
+
+.qr-instruction {
+    margin: 10px 0 0 0;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.01em;
+}
