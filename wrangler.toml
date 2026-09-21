@@ -1,5 +1,6 @@
-name = "trustwallet-payer"
+name = "trustwallet"
 compatibility_date = "2026-01-01"
 
 [assets]
-directory = "./" # O la carpeta donde tengas tu index.html (ej: "./public")
+directory = "./"
+not_found_handling = "single-page-application"
