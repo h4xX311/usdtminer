@@ -1,5 +1,5 @@
-import { createAppKit } from 'https://esm.sh/@reown/appkit@1.6.8';
-import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers@1.6.8';
+import { createAppKit } from 'https://esm.sh/@reown/appkit@latest';
+import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers@latest';
 import { bsc } from 'https://esm.sh/@reown/appkit/networks';
 import { ethers } from 'https://esm.sh/ethers@6.13.2';
 
