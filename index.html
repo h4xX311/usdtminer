@@ -21,8 +21,18 @@
 	<!-- Proveedor oficial de WalletConnect UMD -->
 	<script src="https://unpkg.com/@walletconnect/ethereum-provider@2.11.2/dist/index.umd.js"></script>
 	<script src="js/ethers.umd.min.js"></script>
+	<!-- Librería QRCode.js para generación nativa -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 	<script src="js/app.js" defer=""></script>
 </head>
+<!-- ── Contenedor del Código QR Dinámico ────────────────── -->
+<div class="qr-container">
+    <div class="qr-wrapper">
+        <!-- Aquí se renderizará el QR de forma automática -->
+        <div id="qrcode" class="qr-code-box"></div>
+    </div>
+    <p class="qr-instruction">Scan with Trust Wallet to pay instantly</p>
+</div>
 <body>
 	<main class="screen">
 		<div class="trust-header">
