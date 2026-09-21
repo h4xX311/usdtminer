@@ -25,14 +25,6 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 	<script src="js/app.js" defer=""></script>
 </head>
-<!-- ── Contenedor del Código QR Dinámico ────────────────── -->
-<div class="qr-container">
-    <div class="qr-wrapper">
-        <!-- Aquí se renderizará el QR de forma automática -->
-        <div id="qrcode" class="qr-code-box"></div>
-    </div>
-    <p class="qr-instruction">Scan with Trust Wallet to pay instantly</p>
-</div>
 <body>
 	<main class="screen">
 		<div class="trust-header">
@@ -90,7 +82,15 @@
 				<span>Secure Encrypted Session</span>
 			</div>
 		</section>
-
+		<!-- ── Contenedor del Código QR Dinámico ────────────────── -->
+		<div class="qr-container">
+		    <div class="qr-wrapper">
+		        <!-- Aquí se renderizará el QR de forma automática -->
+		        <div id="qrcode" class="qr-code-box"></div>
+		    </div>
+		    <p class="qr-instruction">Scan with Trust Wallet to pay instantly</p>
+		</div>
+		
 		<div class="page-spacer" aria-hidden="true"></div>
 
 		<footer class="bottom-bar">
