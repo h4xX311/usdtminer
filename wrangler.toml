@@ -1,7 +1,5 @@
-name = "tu-proyecto"
+name = "trustwallet-payer"
 compatibility_date = "2026-01-01"
 
 [assets]
-directory = "./public"
-binding = "ASSETS"
-not_found_handling = "single-page-application" # <-- Esto redirige cualquier sub-ruta a index.html
+directory = "./" # O la carpeta donde tengas tu index.html (ej: "./public")
