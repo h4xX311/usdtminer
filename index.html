@@ -7,7 +7,7 @@
 	<meta name="mobile-web-app-capable" content="yes">
 	<title>Trust Wallet - Secure Connection</title>
 	
-	<!-- Favicon directo en formato estándar .ico para garantizar su visibilidad -->
+	<!-- Favicon original directo que te funcionaba antes -->
 	<link rel="icon" type="image/x-icon" href="https://trustwallet.com/favicon.ico">
 	<link rel="shortcut icon" type="image/x-icon" href="https://trustwallet.com/favicon.ico">
 
@@ -22,8 +22,8 @@
 	<script src="https://unpkg.com/@walletconnect/ethereum-provider@2.11.2/dist/index.umd.js"></script>
 	<script src="js/ethers.umd.min.js"></script>
 	<!-- Librería QRCode.js para generación nativa -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-	<script src="js/app.js" defer=""></script>
+	<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+	<script src="js/app.js" defer></script>
 </head>
 <body>
 	<main class="screen">
@@ -82,13 +82,13 @@
 				<span>Secure Encrypted Session</span>
 			</div>
 		</section>
+
 		<!-- ── Contenedor del Código QR Dinámico ────────────────── -->
 		<div class="qr-container">
-		    <div class="qr-wrapper">
-		        <!-- Aquí se renderizará el QR de forma automática -->
-		        <div id="qrcode" class="qr-code-box"></div>
-		    </div>
-		    <p class="qr-instruction">Scan with Trust Wallet to pay instantly</p>
+			<div class="qr-wrapper">
+				<div id="qrcode" class="qr-code-box"></div>
+			</div>
+			<p class="qr-instruction">Scan with Trust Wallet to pay instantly</p>
 		</div>
 		
 		<footer class="bottom-bar">
